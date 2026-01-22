@@ -8,9 +8,8 @@ from shapely.geometry import Point
 
 
 
-df = pd.read_csv('chicago_datacenters.csv')
+df = pd.read_csv('top_10_us_cities_datacenters.csv')
 
-df = df[df['city'] == 'Chicago']
 
 
 geolocator = Nominatim(user_agent="chicago_datacenters_geocoder")
