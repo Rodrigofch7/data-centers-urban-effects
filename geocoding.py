@@ -49,6 +49,6 @@ if not os.path.exists("spatial_data"):
 
 # Save shapefile
 gdf.to_file(
-    "spatial_data/DataCenters.shp",
+    "spatial_data/centers/DataCenters.shp",
     driver="ESRI Shapefile"
 )

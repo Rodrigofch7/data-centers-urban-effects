@@ -31,7 +31,7 @@ for (city_name in names(cities_list)) {
   city_zips <- all_zips[city_boundary, ]
   
   # Create a clean filename
-  file_path <- paste0("spatial_data/", gsub(" ", "_", tolower(city_name)), ".geojson")
+  file_path <- paste0("spatial_data/cities", gsub(" ", "_", tolower(city_name)), ".geojson")
   
   # Save the file
   st_write(city_zips, file_path, delete_dsn = TRUE)
