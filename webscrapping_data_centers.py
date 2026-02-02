@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 import time
 
 # List of the top 10 biggest American cities and their corresponding Data Center Map paths
-# Format: (City Name, URL Path)
 cities = [
     ("New York", "new-york/new-york"),
     ("Los Angeles", "california/los-angeles"),
@@ -15,8 +14,32 @@ cities = [
     ("San Antonio", "texas/san-antonio"),
     ("San Diego", "california/san-diego"),
     ("Dallas", "texas/dallas"),
-    ("Jacksonville", "florida/jacksonville")
+    ("Jacksonville", "florida/jacksonville"),
+    ("Miami", "florida/miami"),
+    ("Boston", "massachusetts/boston"),
+    ("Atlanta", "georgia/atlanta"),
+    ("Santa Clara", "california/santa-clara"),
+    ("Denver", "colorado/denver")
 ]
+
+# State-only mapping
+CITY_TO_STATE = {
+    "New York":        "NY",
+    "Los Angeles":     "CA",
+    "Chicago":         "IL",
+    "Houston":         "TX",
+    "Phoenix":         "AZ",
+    "Philadelphia":    "PA",
+    "San Antonio":     "TX",
+    "San Diego":       "CA",
+    "Dallas":          "TX",
+    "Jacksonville":    "FL",
+    "Miami":           "FL",
+    "Boston":          "MA",
+    "Atlanta":         "GA",
+    "Santa Clara":     "CA",
+    "Denver":          "CO",
+}
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -33,7 +56,7 @@ for city_name, path in cities:
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
         
-        cards = soup.find_all("a", class_="ui card")
+        cards = soup.select(".ui.card")
         
         for card in cards:
             header_div = card.find("div", class_="header")
@@ -44,6 +67,7 @@ for city_name, path in cities:
             
             record = {
                 "scraped_city": city_name,
+                "state": CITY_TO_STATE[city_name],  # ✅ Add state here
                 "facility": facility_name,
                 "operator": details[0] if len(details) > 0 else "N/A",
                 "street": details[1] if len(details) > 1 else "N/A",

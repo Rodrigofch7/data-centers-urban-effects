@@ -1,65 +1,54 @@
+import pandas as pd
+import geopandas as gpd
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
-import re
-import pandas as pd
 from tqdm.auto import tqdm
-import geopandas as gpd
-from shapely.geometry import Point
+import os
 
-
-
+# Load data
 df = pd.read_csv('top_10_us_cities_datacenters.csv')
 
-
-
-geolocator = Nominatim(user_agent="chicago_datacenters_geocoder")
+# Initialize Geocoder
+geolocator = Nominatim(user_agent="datacenters_geocoder")
 _geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
 
-def geocode_address(addr):
-    return _geocode(addr)
+def geocode_address(street, state, city):
+    # Using a structured query guarantees the result stays in the correct state
+    return _geocode({
+        "street": street,
+        "city": city,
+        "state": state,
+        "country": "USA"
+    })
 
-def clean_address(addr):
-    return re.sub(r'\b([NSEW])\.\b', r'\1', addr)
-
-df["full_address"] = (
-    df["street"].str.strip()
-    + ", "
-    + df["city"].fillna("Chicago").str.strip()
-    + ", IL, USA"
-)
-
-df["full_address_clean"] = df["full_address"].apply(clean_address)
-
-# ✅ tqdm loop (robust)
+# --- Geocoding Execution ---
+print("Starting geocoding...")
 locations = []
-for addr in tqdm(df["full_address_clean"], total=len(df)):
-    locations.append(geocode_address(addr))
+for street, state, city in tqdm(zip(df["street"], df["state"], df["city_in_desc"]), total=len(df)):
+    locations.append(geocode_address(street, state, city))
 
+# Assign results
 df["location"] = locations
-
 df["latitude"] = df["location"].apply(lambda loc: loc.latitude if loc else None)
 df["longitude"] = df["location"].apply(lambda loc: loc.longitude if loc else None)
 
+# Drop the raw location object before saving
 df.drop(columns=["location"], inplace=True)
 
-
-
-# Create geometry column (lon, lat!)
-gdf["geometry"] = [
-    Point(xy) for xy in zip(gdf["longitude"], gdf["latitude"])
-]
-
-# Create GeoDataFrame in WGS84
+# --- GeoDataFrame Creation ---
+# Create GeoDataFrame in WGS84 (lat/lon)
 gdf = gpd.GeoDataFrame(
-    gdf,
-    geometry="geometry",
+    df, 
+    geometry=gpd.points_from_xy(df.longitude, df.latitude),
     crs="EPSG:4326"
 )
 
-gdf = gdf.to_crs(epsg=4326)   # US NAD83
+# Ensure the output directory exists
+if not os.path.exists("spatial_data"):
+    os.makedirs("spatial_data")
 
 # Save shapefile
 gdf.to_file(
-    "ChicagoDataCenters.shp",
+    "spatial_data/DataCenters.shp",
     driver="ESRI Shapefile"
 )
