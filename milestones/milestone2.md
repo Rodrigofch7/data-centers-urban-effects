@@ -15,33 +15,52 @@ Using multiple real-world datasets, we combine information on data center locati
 ### Data Source #1
 https://www.datacentermap.com/usa/illinois/chicago/
 Source Type: Scraped
+
 Approximate Number of Records (rows): 862
+
 Approximate Number of Attributes (columns): 6 
+
 Current Status: Successfully scraped
+
 Challenges: Some addresses are abbreviated (e.g., “St” instead of “Street”), requiring minor standardization. Otherwise, data quality is high.
 
 ### Data Source #2
 https://data.census.gov/table/ACSDP5Y2022.DP05?g=010XX00US$1400000
+
 Source Type: Bulk Data
+
 Approximate Number of Records (rows): 853k
+
 Approximate Number of Attributes (columns): 435
+
 Current Status: The data looks solid and ready to be used
+
 Challenges: ACS data is observational and aggregated, which limits causal inference. Geographic resolution may require careful alignment with data center locations, and time coverage is based on multi-year estimates rather than single-year observations.
 
 ### Data Source #3
 https://catalog.data.gov/dataset/u-s-electric-utility-companies-and-rates-look-up-by-zip-code-2024
+
 Source Type: Bulk Data
+
 Approximate Number of Records (rows): 49k
+
 Approximate Number of Attributes (columns): 9
+
 Current Status: The data looks solid and ready to be used
+
 Challenges: Although the data is granular at the zip code level, there will be some deduplication required (e.g. many rows are identical). While this is technically simple to address, it will make it so that the average price of electricity (presented in cents/kwh) is aggregated. This would make it so that our index may be generalized. 
 
 ### Data Source #4
 https://www.zillow.com/research/data/
+
 Source Type: Bulk Data
+
 Approximate Number of Records (rows): 26k
+
 Approximate Number of Attributes (columns): 321
+
 Current Status: The data looks solid and ready to be used
+
 Challenges: Some variables may be missing for certain regions or time periods, necessitating imputation or filtering. 
 
 ## Data Reconciliation Plan
@@ -56,24 +75,24 @@ We will collect data from multiple sources covering:
 All datasets will be merged using ZIP code as the primary geographic key. ZIP codes are present either directly or indirectly in all sources and provide the most consistent unit of alignment across datasets.
 
 Reconciling the data will require:
-    Extracting and standardizing ZIP codes from scraped data center addresses
-    Aggregating housing price and electricity cost data to the ZIP code level
-    Handling duplicate entries and minor inconsistencies across sources
+1. Extracting and standardizing ZIP codes from scraped data center addresses
+2. Aggregating housing price and electricity cost data to the ZIP code level
+3. Handling duplicate entries and minor inconsistencies across sources
 
 ZIP codes offer the best available common geographic unit across all datasets and allow us to combine infrastructure, housing, and cost data in a consistent way.
 
 ## Project Plan
 
 We will structure the project around the following components:
-    1. Web scraping data center locations: Collect and clean data center address and ZIP code information from DataCenterMap.
-    2. Preparing and merging bulk datasets: Process housing price and electricity price datasets and aggregate them to the ZIP code level.
-    3. Data reconciliation and index construction: Combine data center counts, housing prices, and electricity prices by ZIP code and construct an index that approximates relative cost pressures associated with data center concentration. This index is exploratory and not intended to imply causality.
-    4. Visualization of results: Create a map-based visualization (initially a heat map) to highlight spatial patterns across ZIP codes. The exact visualization may evolve based on results.
+1. Web scraping data center locations: Collect and clean data center address and ZIP code information from DataCenterMap.
+2. Preparing and merging bulk datasets: Process housing price and electricity price datasets and aggregate them to the ZIP code level.
+3. Data reconciliation and index construction: Combine data center counts, housing prices, and electricity prices by ZIP code and construct an index that approximates relative cost pressures associated with data center concentration. This index is exploratory and not intended to imply causality.
+4. Visualization of results: Create a map-based visualization (initially a heat map) to highlight spatial patterns across ZIP codes. The exact visualization may evolve based on results.
 
 The project is divided into three overlapping work streams:
-    Scraping: Rodrigo and Sinan
-    Analysis: Logan and Carlos
-    Visualization: Sinan and Carlos
+1. Scraping: Rodrigo and Sinan
+2. Analysis: Logan and Carlos
+3. Visualization: Sinan and Carlos
 
 To reduce bottlenecks, analysis and visualization will begin using partial or mock data if scraping is not fully complete. This overlap allows insights from analysis to inform visualization early, and issues discovered during scraping to be addressed before final integration.
 
