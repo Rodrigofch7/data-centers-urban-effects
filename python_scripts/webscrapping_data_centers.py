@@ -19,26 +19,26 @@ cities = [
     ("Boston", "massachusetts/boston"),
     ("Atlanta", "georgia/atlanta"),
     ("Santa Clara", "california/santa-clara"),
-    ("Denver", "colorado/denver")
+    ("Denver", "colorado/denver"),
 ]
 
 # State-only mapping
 CITY_TO_STATE = {
-    "New York":        "NY",
-    "Los Angeles":     "CA",
-    "Chicago":         "IL",
-    "Houston":         "TX",
-    "Phoenix":         "AZ",
-    "Philadelphia":    "PA",
-    "San Antonio":     "TX",
-    "San Diego":       "CA",
-    "Dallas":          "TX",
-    "Jacksonville":    "FL",
-    "Miami":           "FL",
-    "Boston":          "MA",
-    "Atlanta":         "GA",
-    "Santa Clara":     "CA",
-    "Denver":          "CO",
+    "New York": "NY",
+    "Los Angeles": "CA",
+    "Chicago": "IL",
+    "Houston": "TX",
+    "Phoenix": "AZ",
+    "Philadelphia": "PA",
+    "San Antonio": "TX",
+    "San Diego": "CA",
+    "Dallas": "TX",
+    "Jacksonville": "FL",
+    "Miami": "FL",
+    "Boston": "MA",
+    "Atlanta": "GA",
+    "Santa Clara": "CA",
+    "Denver": "CO",
 }
 
 headers = {
@@ -50,21 +50,21 @@ all_data = []
 for city_name, path in cities:
     url = f"https://www.datacentermap.com/usa/{path}/"
     print(f"Scraping {city_name}...")
-    
+
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
-        
+
         cards = soup.select(".ui.card")
-        
+
         for card in cards:
             header_div = card.find("div", class_="header")
             facility_name = header_div.get_text(strip=True) if header_div else "N/A"
-            
+
             description_div = card.find("div", class_="description")
             details = list(description_div.stripped_strings) if description_div else []
-            
+
             record = {
                 "scraped_city": city_name,
                 "state": CITY_TO_STATE[city_name],  # ✅ Add state here
@@ -75,10 +75,10 @@ for city_name, path in cities:
                 "city_in_desc": details[3] if len(details) > 3 else "N/A",
             }
             all_data.append(record)
-            
+
         # Respectful delay between cities
-        time.sleep(2) 
-        
+        time.sleep(2)
+
     except Exception as e:
         print(f"Could not scrape {city_name}: {e}")
 
