@@ -2,75 +2,85 @@ from shiny import App, ui, render, reactive
 from shinywidgets import output_widget, render_widget
 import plotly.express as px
 import pandas as pd
+import numpy as np
 
 # -----------------------------
-# Placeholder data
+# Enhanced Mock Data
 # -----------------------------
-
 def make_placeholder_data():
-    return pd.DataFrame({
-        "city": ["New York", "Chicago", "Dallas", "San Francisco", "Atlanta"],
-        "num_datacenters": [25, 18, 30, 15, 20],
-        "avg_power_mw": [40, 35, 50, 45, 38],
-        "avg_latency_ms": [12, 15, 10, 14, 13],
-        "latitude": [40.71, 41.88, 32.78, 37.77, 33.75],
-        "longitude": [-74.00, -87.63, -96.80, -122.42, -84.39],
-    })
+    # Simulating zip-level data within cities
+    cities = ["New York", "Chicago", "Dallas", "San Francisco", "Atlanta"]
+    data = []
+    for city in cities:
+        for i in range(5):  # 5 zip codes per city
+            data.append({
+                "zip_code": f"{city[:3].upper()}-{100 + i}",
+                "city": city,
+                "num_datacenters": np.random.randint(1, 10),
+                "avg_power_mw": np.random.uniform(10, 60),
+                "home_price_index": np.random.uniform(300000, 900000),
+                "energy_kwh_sqft": np.random.uniform(1.2, 4.5),
+                "latitude": [40.71, 41.88, 32.78, 37.77, 33.75][cities.index(city)] + np.random.uniform(-0.1, 0.1),
+                "longitude": [-74.00, -87.63, -96.80, -122.42, -84.39][cities.index(city)] + np.random.uniform(-0.1, 0.1),
+            })
+    return pd.DataFrame(data)
 
 # -----------------------------
 # UI
 # -----------------------------
-
 app_ui = ui.page_navbar(
     ui.nav_panel(
-        "Overview",
+        "Market Impact",
         ui.page_sidebar(
             ui.sidebar(
-                ui.h4("Controls"),
-                ui.p("Interactive prototype using placeholder data"),
+                ui.h4("Filters"),
                 ui.input_select(
-                    "metric",
-                    "Metric",
+                    "y_axis",
+                    "Impact Metric (Y-Axis)",
                     {
-                        "num_datacenters": "Number of Data Centers",
-                        "avg_power_mw": "Average Power (MW)",
-                        "avg_latency_ms": "Average Latency (ms)",
+                        "home_price_index": "Home Price Index",
+                        "energy_kwh_sqft": "Energy Intensity (kWh/sqft)",
+                        "avg_power_mw": "Data Center Load (MW)"
                     },
                 ),
                 ui.input_checkbox_group(
                     "cities",
-                    "Cities",
+                    "Filter Cities",
                     ["New York", "Chicago", "Dallas", "San Francisco", "Atlanta"],
                     selected=["New York", "Chicago", "Dallas", "San Francisco", "Atlanta"],
                 ),
                 ui.hr(),
-                ui.input_switch("normalize", "Normalize values", False),
+                ui.input_slider("price_range", "Home Price Range", 300000, 1000000, [300000, 1000000]),
             ),
+            # KPI Row
             ui.layout_columns(
                 ui.value_box(
-                    "Total Data Centers",
-                    ui.output_text("kpi_total"),
-                    showcase="📦",
+                    "Avg Home Price",
+                    ui.output_text("kpi_price"),
+                    showcase="🏠",
+                    theme="primary"
                 ),
                 ui.value_box(
-                    "Avg Power (MW)",
-                    ui.output_text("kpi_power"),
-                    showcase="⚡",
+                    "Energy Intensity",
+                    ui.output_text("kpi_energy"),
+                    showcase="🔌",
+                    theme="success"
                 ),
                 ui.value_box(
-                    "Avg Latency (ms)",
-                    ui.output_text("kpi_latency"),
-                    showcase="⏱️",
+                    "DC Saturation",
+                    ui.output_text("kpi_dc_count"),
+                    showcase="📊",
                 ),
                 col_widths=(4, 4, 4),
             ),
+            # Main Charts
             ui.layout_columns(
                 ui.card(
-                    ui.card_header("City Comparison"),
-                    output_widget("bar_plot"),
+                    ui.card_header("Real Estate vs. Energy Correlation"),
+                    output_widget("correlation_plot"),
                 ),
                 ui.card(
-                    ui.card_header("Geographic Distribution"),
+                    ui.card_header("Zip-Level Geospatial Heatmap"),
                     output_widget("map_plot"),
                 ),
                 col_widths=(6, 6),
@@ -78,106 +88,79 @@ app_ui = ui.page_navbar(
         ),
     ),
     ui.nav_panel(
-        "Table",
-        ui.layout_columns(
-            ui.card(
-                ui.card_header("Summary Table"),
-                ui.output_data_frame("summary_table"),
-            ),
-        ),
+        "Detailed Data",
+        ui.card(ui.output_data_frame("summary_table"))
     ),
-    ui.nav_panel(
-        "About",
-        ui.card(
-            ui.h4("Project context"),
-            ui.p(
-                "This dashboard is a prototype for analyzing the urban impacts of data centers "
-                "across major US cities. Future versions will integrate scraped facility-level data, "
-                "energy usage, water consumption, and policy-relevant outcomes."
-            ),
-        ),
-    ),
-    title=ui.h2("US Data Center Landscape", class_="fw-bold"),
-    bg="#0f172a",
+    title=ui.h2("Urban DC Intelligence", class_="fw-bold"),
+    bg="#1e293b",
     inverse=True,
 )
 
 # -----------------------------
 # Server
 # -----------------------------
-
 def server(input, output, session):
-    data = reactive.Value(make_placeholder_data())
+    full_data = reactive.Value(make_placeholder_data())
 
     @reactive.Calc
-    def filtered_data():
-        df = data().copy()
-        df = df[df["city"].isin(input.cities())]
-        if input.normalize():
-            cols = ["num_datacenters", "avg_power_mw", "avg_latency_ms"]
-            # Basic Z-score normalization
-            df[cols] = (df[cols] - df[cols].mean()) / df[cols].std()
-        return df
+    def filtered_df():
+        df = full_data()
+        idx = (df["city"].isin(input.cities())) & \
+              (df["home_price_index"] >= input.price_range()[0]) & \
+              (df["home_price_index"] <= input.price_range()[1])
+        return df[idx]
 
-    # ---------------- KPIs ----------------
+    # --- KPIs ---
+    @render.text
+    def kpi_price():
+        val = filtered_df()["home_price_index"].mean()
+        return f"${val:,.0f}"
 
     @render.text
-    def kpi_total():
-        val = filtered_data()["num_datacenters"].sum()
-        return f"{int(val)}"
+    def kpi_energy():
+        val = filtered_df()["energy_kwh_sqft"].mean()
+        return f"{val:.2f} kWh/sf"
 
     @render.text
-    def kpi_power():
-        val = filtered_data()["avg_power_mw"].mean()
-        return f"{round(val, 1)} MW"
+    def kpi_dc_count():
+        return str(filtered_df()["num_datacenters"].sum())
 
-    @render.text
-    def kpi_latency():
-        val = filtered_data()["avg_latency_ms"].mean()
-        return f"{round(val, 1)} ms"
-
-    # ---------------- Plots ----------------
-
+    # --- Visuals ---
     @render_widget
-    def bar_plot():
-        df = filtered_data()
-        fig = px.bar(
-            df,
-            x="city",
-            y=input.metric(),
+    def correlation_plot():
+        df = filtered_df()
+        fig = px.scatter(
+            df, 
+            x="num_datacenters", 
+            y=input.y_axis(),
             color="city",
-            title=f"Comparison: {input.metric().replace('_', ' ').title()}",
+            size="avg_power_mw",
+            hover_data=["zip_code"],
+            trendline="ols",
+            template="plotly_white"
         )
-        fig.update_layout(showlegend=False, height=400, margin=dict(t=40, b=0, l=0, r=0))
+        fig.update_layout(margin=dict(t=30, b=0, l=0, r=0))
         return fig
 
     @render_widget
     def map_plot():
-        df = filtered_data()
+        df = filtered_df()
         fig = px.scatter_mapbox(
             df,
             lat="latitude",
             lon="longitude",
-            size="num_datacenters",
-            color="avg_power_mw",
-            hover_name="city",
+            size="avg_power_mw",
+            color="home_price_index",
+            color_continuous_scale=px.colors.sequential.Viridis,
+            hover_name="zip_code",
             zoom=3,
+            mapbox_style="carto-darkmatter"
         )
-        fig.update_layout(
-            mapbox_style="carto-positron", 
-            height=400, 
-            margin=dict(t=0, b=0, l=0, r=0)
-        )
+        fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
         return fig
-
-    # ---------------- Table ----------------
 
     @render.data_frame
     def summary_table():
-        return render.DataTable(filtered_data())
-
-# -----------------------------
-# App
-# -----------------------------
+        return render.DataTable(filtered_df())
 
 app = App(app_ui, server)
