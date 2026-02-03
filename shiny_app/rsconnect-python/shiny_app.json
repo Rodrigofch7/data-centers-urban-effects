@@ -1,0 +1,12 @@
+{
+    "https://api.shinyapps.io": {
+        "server_url": "https://api.shinyapps.io",
+        "filename": "/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/shiny_app",
+        "app_url": "https://rodrigofrancac.shinyapps.io/project-datacenter-urban-effects/",
+        "app_id": "16586110",
+        "app_guid": null,
+        "title": "project-datacenter-urban-effects",
+        "app_mode": "python-shiny",
+        "app_store_version": 1
+    }
+}
