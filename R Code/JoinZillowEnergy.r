@@ -2,33 +2,35 @@ library(tidyverse)
 library(sf)
 library(stringr)
 
-# Use relative paths so your teammates can run this too!
-zillow <- read.csv("data/zillow_annual_summary.csv")
-
-zillow <- zillow %>% 
-  filter(year >= 2021 & year < 2025)
-
-# If the energy files are inside your repo's data folder:
-folder_path <- "data/" 
-# OR if you must point to your Windows Downloads folder from WSL:
-# folder_path <- "/mnt/c/Users/rodri/Downloads/EnergyData/"
-
-files <- list.files(path = folder_path, pattern = "iou_zipcodes_\\d{4}\\.csv", full.names = TRUE)
-
-energy <- read_csv(files, id = "file_source")
-
-energy <- energy %>%
-  mutate(year = as.numeric(str_extract(file_source, "\\d{4}")),
-         zip = as.character(zip))
-
-zillow <- zillow %>%
+# 1. Load Zillow Data
+zillow <- read_csv("data/zillow_annual_summary.csv") %>%
+  filter(year >= 2021 & year < 2025) %>%
   mutate(
-    RegionName = as.character(RegionName),
+    # Pad with leading zeros to 5 digits to ensure matching works
+    RegionName = str_pad(as.character(RegionName), width = 5, side = "left", pad = "0"),
     year = as.numeric(year)
   )
 
-final_df <- inner_join(zillow, energy, 
+# 2. Load Energy Data
+folder_path <- "data/" 
+files <- list.files(path = folder_path, pattern = "iou_zipcodes_\\d{4}\\.csv", full.names = TRUE)
+
+# read_csv is faster and handles column types better than read.csv
+energy <- read_csv(files, id = "file_source") %>%
+  mutate(
+    year = as.numeric(str_extract(file_source, "\\d{4}")),
+    # Pad energy zips to match Zillow format
+    zip = str_pad(as.character(zip), width = 5, side = "left", pad = "0")
+  )
+
+# 3. Join - Use left_join to keep Zillow rows even if Energy data is missing
+# This prevents "dropping" rows and instead preserves them with NA values
+final_df <- left_join(zillow, energy, 
                        by = c("RegionName" = "zip", "year" = "year"))
 
-# Saving to the project data folder instead of a local Desktop path
-write.csv(final_df, "data/ZillowEnergy.csv", row.names = FALSE)
+# 4. Final Clean
+# Optional: remove the 'file_source' column to keep the CSV clean
+final_df <- final_df %>% select(-file_source)
+
+# Save
+write_csv(final_df, "data/ZillowEnergy.csv")
