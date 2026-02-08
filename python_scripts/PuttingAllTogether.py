@@ -11,6 +11,25 @@ cities = gpd.read_file('/home/rodrigofrancachaves/capp30122/group_project/projec
 data["RegionName"] = data["RegionName"].astype(str).str.strip()
 cities["NAME20"] = cities["NAME20"].astype(str).str.strip()
 
+
+
+# Remove leading zeros from ZIP codes (e.g. '02108' -> '2108')
+data["RegionName"] = (
+    data["RegionName"]
+    .astype(str)
+    .str.strip()
+    .str.lstrip("0")
+)
+
+cities["NAME20"] = (
+    cities["NAME20"]
+    .astype(str)
+    .str.strip()
+    .str.lstrip("0")
+)
+
+
+
 # 3. Pivot the Energy Data (Only columns from the CSV)
 df_pivoted = data.pivot_table(
     index='RegionName', 
@@ -29,6 +48,10 @@ metadata = data.groupby('RegionName').agg({
     'ownership': 'first',
     'service_type': 'first'
 }).reset_index()
+
+
+set(data["RegionName"]).intersection(set(cities["NAME20"]))
+
 
 # 6. Combine CSV Metadata and Pivoted Rates
 df_final = metadata.merge(df_pivoted, on='RegionName', how='inner')
