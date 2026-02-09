@@ -6,7 +6,6 @@ zillow <- read_csv('/mnt/c/Users/rodri/Desktop/UChicago/2.SecondQuarter/Computer
 
 # 2. Pivot & Clean
 zillow_annual <- zillow %>%
-  # UPDATED: Since your columns are named "2000-01-31", we select 
   # columns that start with a digit (2) instead of "X"
   pivot_longer(
     cols = matches("^\\d"), 
