@@ -1,12 +1,11 @@
 from shiny import App, ui, render, reactive
 from shinywidgets import output_widget, render_widget
 import plotly.express as px
-import pandas as pd
 import geopandas as gpd
 import os
 
 # -----------------------------
-# Data Loading & Cleaning
+# Load and clean data
 # -----------------------------
 def load_data():
     app_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,11 +13,10 @@ def load_data():
     cities_path = os.path.join(app_dir, "Data", "cities_clean_imputed.gpkg")
     centers_path = os.path.join(app_dir, "Data", "DataCenters_clean.gpkg")
 
-    # Load GeoPackages
     cities = gpd.read_file(cities_path)
     centers = gpd.read_file(centers_path)
 
-    # Rename columns to friendly names
+    # Rename columns to human-friendly names
     cities = cities.rename(columns={
         "city_label":"City",
         "state":"State",
@@ -54,17 +52,13 @@ def load_data():
         "operator":"Operator",
         "street":"Street",
         "zip_code":"ZIP",
-        "city_in_de":"City",
-        "latitude":"Latitude",
-        "longitude":"Longitude"
+        "city_in_de":"City"
     })
 
     return cities, centers
 
 cities_gdf, centers_gdf = load_data()
-available_cities = sorted(cities_gdf["City"].unique().tolist())
 
-# Numeric columns for selection
 numeric_columns = [c for c in cities_gdf.columns if "Rate" in c or "Price" in c or "% Change" in c]
 
 # -----------------------------
@@ -75,70 +69,51 @@ app_ui = ui.page_navbar(
         "Market Impact",
         ui.page_sidebar(
             ui.sidebar(
-                ui.h4("Filters"),
-                ui.input_select("city","Select City",choices=available_cities,selected="chicago"),
-                ui.input_select("metric","Select Metric",choices={c:c for c in numeric_columns},selected="Residential Rate 2023"),
+                ui.h4("Filters (Optional)"),
+                ui.input_select("metric", "Select Metric to Visualize (Optional)", 
+                                choices={c:c for c in numeric_columns},
+                                selected=None),
                 ui.hr(),
                 ui.markdown("**Project:** Urban DC Effects")
             ),
+            # Map only (Chicago default)
             ui.layout_columns(
-                ui.value_box("Average Metric",ui.output_text("kpi_metric"),showcase="📊",theme="primary"),
-                ui.value_box("City Selected",ui.output_text("kpi_city_name"),showcase="📍"),
-                col_widths=(6,6)
-            ),
-            ui.layout_columns(
-                ui.card(ui.card_header("City Metrics"), output_widget("scatter_plot")),
                 ui.card(ui.card_header("City Map with DataCenters"), output_widget("map_plot")),
-                col_widths=(6,6)
+                col_widths=(12,)
             ),
         ),
     ),
-    ui.nav_panel("Detailed Data", ui.card(ui.output_data_frame("summary_table"))),
     title=ui.h2("Urban Intelligence Dashboard", class_="fw-bold"),
     bg="#1e293b",
     inverse=True,
 )
 
 # -----------------------------
-# SERVER
+# Server
 # -----------------------------
 def server(input, output, session):
     @reactive.Calc
     def filtered_city():
-        return cities_gdf[cities_gdf["City"].str.lower() == input.city().lower()]
+        # Only Chicago by default
+        return cities_gdf[cities_gdf["City"].str.lower() == "chicago"]
 
     @reactive.Calc
     def filtered_centers():
-        return centers_gdf[centers_gdf["City"].str.lower() == input.city().lower()]
-
-    @render.text
-    def kpi_metric():
-        df = filtered_city()
-        val = df[input.metric()].mean()
-        return f"{val:.4f}"
-
-    @render.text
-    def kpi_city_name():
-        return input.city().title()
-
-    @render_widget
-    def scatter_plot():
-        df = filtered_city()
-        fig = px.scatter(df,y=input.metric(),hover_data=["City"],template="plotly_white")
-        fig.update_layout(margin=dict(t=30,b=0,l=0,r=0))
-        return fig
+        return centers_gdf[centers_gdf["City"].str.lower() == "chicago"]
 
     @render_widget
     def map_plot():
         city_gdf = filtered_city()
         centers_sel = filtered_centers()
 
-        # City polygons
+        # Default color if no metric selected
+        color_metric = input.metric() or None
+
         fig = px.choropleth_mapbox(
             city_gdf,
             geojson=city_gdf.geometry.__geo_interface__,
             locations=city_gdf.index,
-            color=input.metric(),
+            color=color_metric,
             mapbox_style="carto-darkmatter",
             zoom=10,
             center={"lat": city_gdf.geometry.centroid.y.mean(),
@@ -147,7 +122,6 @@ def server(input, output, session):
             hover_name="City",
         )
 
-        # DataCenters overlay
         if not centers_sel.empty:
             fig.add_scattermapbox(
                 lat=centers_sel.geometry.y,
@@ -161,11 +135,7 @@ def server(input, output, session):
         fig.update_layout(margin=dict(t=0,b=0,l=0,r=0))
         return fig
 
-    @render.data_frame
-    def summary_table():
-        return filtered_city()
-
 # -----------------------------
-# RUN APP
+# Run app
 # -----------------------------
 app = App(app_ui, server)

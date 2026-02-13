@@ -77,7 +77,7 @@ gdf_final = gdf_final.merge(
 # ---------------------------------------------------
 
 gdf_final.to_file(
-    "spatial_data/cities_clean_imputed.gpkg",
+    "shiny_app/Data/cities_clean_imputed.gpkg",
     driver="GPKG"
 )
 
@@ -92,6 +92,11 @@ print("Saved as spatial_data/cities_clean_imputed.gpkg")
 data_centers = gpd.read_file(
     "/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/spatial_data/centers/DataCenters.shp"
 )
+
+
+# Convert both to lowercase and strip any accidental whitespace
+gdf_final["city_label"] = gdf_final["city_label"].str.lower().str.strip()
+data_centers["city_in_de"] = data_centers["city_in_de"].str.lower().str.strip()
 
 # Keep only cities that survived cleaning
 valid_cities = gdf_final["city_label"].unique()
@@ -109,7 +114,7 @@ data_centers_filtered = data_centers[
 # ---------------------------------------------------
 
 data_centers_filtered.to_file(
-    "spatial_data/DataCenters_clean.gpkg",
+    "shiny_app/Data/DataCenters_clean.gpkg",
     driver="GPKG"
 )
 
