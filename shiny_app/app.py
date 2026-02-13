@@ -3,6 +3,7 @@ import folium
 import branca.colormap as cm
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 import os
 
 # -----------------------------
@@ -11,8 +12,8 @@ import os
 def load_data():
     app_dir = os.path.dirname(os.path.abspath(__file__))
 
-    cities_path = os.path.join(app_dir, "Data", "cities_clean_imputed.gpkg")
-    centers_path = os.path.join(app_dir, "Data", "DataCenters_clean.gpkg")
+    cities_path = os.path.join(app_dir, "shiny_app/Data", "cities_clean_imputed.gpkg")
+    centers_path = os.path.join(app_dir, "shiny_app/Data", "DataCenters_clean.gpkg")
 
     cities = gpd.read_file(cities_path)
     centers = gpd.read_file(centers_path)
@@ -20,10 +21,6 @@ def load_data():
     cities = cities.rename(
         columns={
             "city_label": "City",
-            "state": "State",
-            "utility_name": "Utility",
-            "ownership": "Ownership",
-            "service_type": "Service Type",
             "avg_price_2021": "Avg Price 2021",
             "avg_price_2022": "Avg Price 2022",
             "avg_price_2023": "Avg Price 2023",
@@ -78,6 +75,44 @@ for col in numeric_columns:
 city_choices = sorted(cities_gdf["City"].dropna().unique().tolist())
 default_city = "Chicago" if "Chicago" in city_choices else city_choices[0]
 
+
+def format_value(value, metric):
+    if value is None or (isinstance(value, float) and np.isnan(value)):
+        return "N/A"
+    if "%" in metric or "Change" in metric:
+        return f"{value:.2f}%"
+    if "Price" in metric:
+        return f"${value:,.0f}"
+    if "Rate" in metric:
+        return f"{value:.4f} ¢/kWh"
+    return f"{value:,.2f}"
+
+
+def make_colormap(values, metric):
+    clean = values.dropna()
+    col_min = float(clean.min())
+    col_max = float(clean.max())
+    spread = col_max - col_min
+    mean_val = float(clean.mean())
+    if mean_val != 0 and (spread / abs(mean_val)) < 0.1:
+        col_min = float(np.percentile(clean, 2))
+        col_max = float(np.percentile(clean, 98))
+    colormap = cm.linear.YlOrRd_09.scale(col_min, col_max)
+    colormap.caption = metric
+    return colormap, col_min, col_max
+
+
+def dc_tooltip_html(facility, operator, street):
+    if not facility or str(facility).strip() in ("", "nan"):
+        return "<b>🏢 Data Center</b>"
+    parts = [f"<b>🏢 {facility}</b>"]
+    if operator and str(operator).strip() not in ("", "nan", "—"):
+        parts.append(f"<span style='color:#999;'>Operator:</span> {operator}")
+    if street and str(street).strip() not in ("", "nan", "—"):
+        parts.append(f"<span style='color:#999;'>Address:</span> {street}")
+    return "<br>".join(parts)
+
+
 # -----------------------------
 # UI
 # -----------------------------
@@ -95,7 +130,7 @@ app_ui = ui.page_navbar(
                 ),
                 ui.input_select(
                     "metric",
-                    "Select Metric to Visualize (Optional)",
+                    "Select Metric to Visualize",
                     choices={c: c for c in numeric_columns},
                     selected=numeric_columns[0] if numeric_columns else None,
                 ),
@@ -138,12 +173,10 @@ def server(input, output, session):
         centers_sel = filtered_centers()
         metric = input.metric()
 
-        # Fallback center if city not found
         if city_gdf.empty:
             m = folium.Map(location=[39.5, -98.35], zoom_start=4, tiles="CartoDB dark_matter")
             return ui.HTML(f'<div style="height:600px; width:100%;">{m._repr_html_()}</div>')
 
-        # Compute center from projected CRS to avoid geographic CRS warning
         centroids = city_gdf.geometry.to_crs(epsg=3857).centroid.to_crs(epsg=4326)
         center_lat = centroids.y.mean()
         center_lon = centroids.x.mean()
@@ -154,67 +187,67 @@ def server(input, output, session):
             tiles="CartoDB dark_matter",
         )
 
-        # ------------------------------------------------------------------
-        # THE KEY FOLIUM PATTERN: use GeoJsonTooltip + style_function.
-        #
-        # Instead of Folium's Choropleth (which still has internal ID
-        # matching), we use folium.GeoJson directly with a style_function
-        # that reads the metric value straight from each feature's
-        # properties dict. Zero ID matching — colors are applied per-feature
-        # at render time with no join step that can silently fail.
-        # ------------------------------------------------------------------
-        col_min = float(city_gdf[metric].min())
-        col_max = float(city_gdf[metric].max())
-
-        # Build a branca colormap (Viridis equivalent)
-        colormap = cm.linear.YlOrRd_09.scale(col_min, col_max)
-        colormap.caption = metric
-
-        # Convert to GeoJSON dict — to_json() keeps all properties intact
-        geojson_data = city_gdf.__geo_interface__
+        colormap, col_min, col_max = make_colormap(city_gdf[metric], metric)
 
         def style_function(feature):
             value = feature["properties"].get(metric)
-            if value is None:
-                return {
-                    "fillColor": "#333333",
-                    "color": "#555555",
-                    "weight": 0.5,
-                    "fillOpacity": 0.4,
-                }
+            if value is None or (isinstance(value, float) and np.isnan(value)):
+                return {"fillColor": "#333333", "color": "#444444", "weight": 0.5, "fillOpacity": 0.4}
+            clamped = max(col_min, min(col_max, value))
             return {
-                "fillColor": colormap(value),
-                "color": "#222222",
+                "fillColor": colormap(clamped),
+                "color": "#111111",
                 "weight": 0.5,
                 "fillOpacity": 0.75,
             }
 
+        def highlight_function(feature):
+            return {"fillOpacity": 0.95, "weight": 2, "color": "white"}
+
         folium.GeoJson(
-            geojson_data,
+            city_gdf.__geo_interface__,
             style_function=style_function,
-            name=metric,
+            highlight_function=highlight_function,
+            tooltip=folium.GeoJsonTooltip(
+                fields=["ZCTA5CE20", metric],
+                aliases=["ZIP Code", metric],
+                localize=True,
+                sticky=True,
+                style=(
+                    "background-color: #1e293b;"
+                    "color: #f1f5f9;"
+                    "font-family: monospace;"
+                    "font-size: 13px;"
+                    "padding: 6px 10px;"
+                    "border-radius: 4px;"
+                    "border: 1px solid #475569;"
+                ),
+            ),
         ).add_to(m)
 
-        # Add colormap legend
         colormap.add_to(m)
 
-        # Data center markers
         if not centers_sel.empty:
             for _, row in centers_sel.iterrows():
-                folium.CircleMarker(
+                facility = str(row.get("Facility Name", "") or "")
+                operator = str(row.get("Operator", "") or "—")
+                street   = str(row.get("Street",   "") or "—")
+
+                folium.Marker(
                     location=[row.geometry.y, row.geometry.x],
-                    radius=6,
-                    color="red",
-                    fill=True,
-                    fill_color="red",
-                    fill_opacity=0.9,
-                    popup=folium.Popup(
-                        str(row.get("Facility Name", "Data Center")), max_width=200
+                    icon=folium.Icon(
+                        color="white",
+                        icon_color="#1e293b",
+                        icon="building",
+                        prefix="fa",
+                    ),
+                    tooltip=folium.Tooltip(
+                        dc_tooltip_html(facility, operator, street),
+                        sticky=True,
                     ),
                 ).add_to(m)
 
-        map_html = m._repr_html_()
-        return ui.HTML(f'<div style="height:600px; width:100%;">{map_html}</div>')
+        return ui.HTML(f'<div style="height:600px; width:100%;">{m._repr_html_()}</div>')
 
 
 # -----------------------------

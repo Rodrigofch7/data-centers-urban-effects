@@ -3,126 +3,129 @@ import pandas as pd
 import numpy as np
 import os
 from sklearn.impute import KNNImputer
+from sklearn.preprocessing import StandardScaler
 
-# 1. Load data (keep geometry!)
+# 1. Load data
 input_path = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/spatial_data/cities/cities_with_energy_home_prices.geojson'
 gdf = gpd.read_file(input_path)
 
-# Replace empty strings with NA
 gdf = gdf.replace("", pd.NA)
 
-# Numeric columns you actually need in the app
 selected_columns = [
     'avg_price_2021', 'avg_price_2022', 'avg_price_2023', 'avg_price_2024',
     'comm_rate_2021', 'comm_rate_2022', 'comm_rate_2023', 'comm_rate_2024',
-    'ind_rate_2021', 'ind_rate_2022', 'ind_rate_2023', 'ind_rate_2024',
-    'pct_change_2021', 'pct_change_2022', 'pct_change_2023', 'pct_change_2024',
-    'res_rate_2021', 'res_rate_2022', 'res_rate_2023', 'res_rate_2024'
+    'ind_rate_2021',  'ind_rate_2022',  'ind_rate_2023',  'ind_rate_2024',
+    'pct_change_2021','pct_change_2022','pct_change_2023','pct_change_2024',
+    'res_rate_2021',  'res_rate_2022',  'res_rate_2023',  'res_rate_2024',
 ]
 
-# Work only with city_label + numeric columns
-gdf_subset = gdf[["city_label"] + selected_columns].copy()
+for col in selected_columns:
+    gdf[col] = pd.to_numeric(gdf[col], errors="coerce")
 
 # ---------------------------------------------------
 # 2. DROP cities with ANY column > 20% missing
 # ---------------------------------------------------
 missing_pct = (
-    gdf_subset
-    .groupby("city_label")
+    gdf
+    .groupby("city_label")[selected_columns]
     .apply(lambda x: x.isna().mean() * 100)
 )
 
 cities_to_drop = missing_pct[(missing_pct > 20).any(axis=1)].index
-
-print("Dropping these cities due to >20% missing:")
+print("Dropping cities due to >20% missing:")
 print(cities_to_drop.tolist())
 
-gdf_clean = gdf_subset[~gdf_subset["city_label"].isin(cities_to_drop)].copy()
+gdf_clean = gdf[~gdf["city_label"].isin(cities_to_drop)].copy()
 
 # ---------------------------------------------------
-# 3. KNN IMPUTATION
+# 3. KNN IMPUTATION — row-level + feature scaling
+#
+#    BUG 1 (fixed earlier): subsetting to city_label + numerics
+#    then merging back on city_label flattened all ZIP variation.
+#
+#    BUG 2 (fixed here): running KNN on raw unscaled values means
+#    avg_price (100,000s) completely dominates neighbor selection
+#    over rates (single digits). The imputer ignores rate columns
+#    when finding neighbors, so imputed rate values collapse to
+#    near-identical numbers across all ZIPs.
+#
+#    FIX: StandardScaler before imputing so every column
+#    contributes equally to neighbor distance calculation.
+#    Inverse transform restores original units afterward.
 # ---------------------------------------------------
+scaler = StandardScaler()
+scaled = scaler.fit_transform(gdf_clean[selected_columns])
+
 imputer = KNNImputer(n_neighbors=5)
-numeric_data = gdf_clean[selected_columns]
-imputed_array = imputer.fit_transform(numeric_data)
-gdf_clean[selected_columns] = imputed_array
+imputed_scaled = imputer.fit_transform(scaled)
+
+# Restore original units
+gdf_clean[selected_columns] = scaler.inverse_transform(imputed_scaled)
 
 # ---------------------------------------------------
-# 4. MERGE BACK (but then drop non‑essentials)
+# 4. Normalize city names
 # ---------------------------------------------------
-gdf_final = gdf[~gdf["city_label"].isin(cities_to_drop)].copy()
-
-# Drop original numeric columns to avoid duplication
-gdf_final = gdf_final.drop(columns=selected_columns, errors="ignore")
-
-# Merge imputed numeric columns back
-gdf_final = gdf_final.merge(gdf_clean, on="city_label", how="left")
-
-# Normalize city names
-gdf_final["city_label"] = (
-    gdf_final["city_label"]
+gdf_clean["city_label"] = (
+    gdf_clean["city_label"]
     .str.lower()
     .str.strip()
     .str.replace("_", " ", regex=False)
 )
 
 # ---------------------------------------------------
-# 5. STRIP MOST ATTRIBUTES + SIMPLIFY GEOMETRY
+# 5. SIMPLIFY GEOMETRY
 # ---------------------------------------------------
-print("\nSimplifying geometry to reduce file size...")
-original_crs = gdf_final.crs
+print("\nSimplifying geometry...")
+original_crs = gdf_clean.crs
+gdf_clean = gdf_clean.to_crs(epsg=3857)
+gdf_clean["geometry"] = gdf_clean.simplify(tolerance=200, preserve_topology=True)
+gdf_clean = gdf_clean.to_crs(original_crs)
 
-# Project to meters to use meter-based tolerance
-gdf_final = gdf_final.to_crs(epsg=3857)
-
-# Increase tolerance to simplify more (adjust if too coarse)
-gdf_final["geometry"] = gdf_final.simplify(tolerance=200, preserve_topology=True)
-
-# Project back
-gdf_final = gdf_final.to_crs(original_crs)
-
-# Keep only essential columns for app & joins
+# ---------------------------------------------------
+# 6. KEEP ONLY ESSENTIAL COLUMNS
+# ---------------------------------------------------
 essential_columns = [
-    "city_label",
-    "geometry",
+    "city_label", "ZCTA5CE20", "geometry",
     "avg_price_2021", "avg_price_2022", "avg_price_2023", "avg_price_2024",
     "comm_rate_2021", "comm_rate_2022", "comm_rate_2023", "comm_rate_2024",
-    "ind_rate_2021", "ind_rate_2022", "ind_rate_2023", "ind_rate_2024",
-    "pct_change_2021", "pct_change_2022", "pct_change_2023", "pct_change_2024",
-    "res_rate_2021", "res_rate_2022", "res_rate_2023", "res_rate_2024",
+    "ind_rate_2021",  "ind_rate_2022",  "ind_rate_2023",  "ind_rate_2024",
+    "pct_change_2021","pct_change_2022","pct_change_2023","pct_change_2024",
+    "res_rate_2021",  "res_rate_2022",  "res_rate_2023",  "res_rate_2024",
 ]
-existing_cols = [c for c in essential_columns if c in gdf_final.columns]
-gdf_final = gdf_final[existing_cols]
-
-# Save and check size
-os.makedirs("shiny_app/Data", exist_ok=True)
-output_city_path = "shiny_app/Data/cities_clean_imputed_simpler.gpkg"
-gdf_final.to_file(output_city_path, driver="GPKG")
-
-final_size = os.path.getsize(output_city_path) / (1024 * 1024)
-print(f"Success! Final city file size: {final_size:.2f} MB")
+existing_cols = [c for c in essential_columns if c in gdf_clean.columns]
+gdf_clean = gdf_clean[existing_cols]
 
 # ---------------------------------------------------
-# 6. FILTER & MINIMIZE DATA CENTERS
+# Sanity check — confirm variation is preserved
+# ---------------------------------------------------
+print("\n--- Sanity check (atlanta) ---")
+atl = gdf_clean[gdf_clean["city_label"] == "atlanta"]
+for col in ["avg_price_2021", "comm_rate_2021", "res_rate_2021"]:
+    if col in atl.columns:
+        print(f"  {col}: {atl[col].nunique()} unique vals | "
+              f"min={atl[col].min():.4f} max={atl[col].max():.4f}")
+
+os.makedirs("shiny_app/Data", exist_ok=True)
+output_path = "shiny_app/Data/cities_clean_imputed.gpkg"
+gdf_clean.to_file(output_path, driver="GPKG")
+
+final_size = os.path.getsize(output_path) / (1024 * 1024)
+print(f"\nSaved to {output_path} ({final_size:.2f} MB)")
+
+# ---------------------------------------------------
+# 7. FILTER & SAVE DATA CENTERS
 # ---------------------------------------------------
 data_centers = gpd.read_file(
     "/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/spatial_data/centers/DataCenters.shp"
 )
 
-# Keep only minimal fields (adjust list as needed)
-keep_dc_cols = [
-    col for col in ["id", "name", "city_in_de", "geometry"] if col in data_centers.columns
-]
+keep_dc_cols = [col for col in ["id", "name", "city_in_de", "geometry"] if col in data_centers.columns]
 data_centers = data_centers[keep_dc_cols]
-
-# Normalize names to match city_label
 data_centers["city_in_de"] = data_centers["city_in_de"].str.lower().str.strip()
 
-valid_cities = gdf_final["city_label"].unique()
+valid_cities = gdf_clean["city_label"].unique()
 data_centers_filtered = data_centers[data_centers["city_in_de"].isin(valid_cities)].copy()
 
-# Save minimal DataCenters file
-output_dc_path = "shiny_app/Data/DataCenters_clean_minimal.gpkg"
+output_dc_path = "shiny_app/Data/DataCenters_clean.gpkg"
 data_centers_filtered.to_file(output_dc_path, driver="GPKG")
-
-print(f"Saved filtered DataCenters: {len(data_centers_filtered)} records remaining.")
+print(f"Saved DataCenters: {len(data_centers_filtered)} records")

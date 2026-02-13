@@ -10,8 +10,7 @@ cities = gpd.read_file(
 )
 
 # ─────────────────────────────────────────────
-# 2. Standardize join keys (ONCE)
-#    Strip whitespace + remove leading zeros only
+# 2. Standardize join keys
 # ─────────────────────────────────────────────
 data["zip"] = (
     data["zip"]
@@ -28,59 +27,57 @@ cities["NAME20"] = (
 )
 
 # ─────────────────────────────────────────────
-# 3. Pivot numeric data
+# 3. Pivot numeric data — one row per ZIP × year
+#    combination, keeping ALL utility rows intact.
+#
+#    OLD BUG: aggfunc="mean" collapsed all utilities
+#    into a single average per ZIP, destroying the
+#    per-utility rate variation before the spatial join.
+#
+#    FIX: pivot on zip + utility_name so each utility
+#    keeps its own row, then spread years into columns.
 # ─────────────────────────────────────────────
 df_pivoted = data.pivot_table(
-    index="zip",
+    index=["zip", "utility_name", "state", "ownership", "service_type"],
     columns="year",
     values=["avg_price", "pct_change", "comm_rate", "ind_rate", "res_rate"],
-    aggfunc="mean"
+    aggfunc="first",   # one value per zip × utility × year — no averaging
 )
 
 # Flatten multi-index columns
 df_pivoted.columns = [
     f"{metric}_{int(year)}" for metric, year in df_pivoted.columns
 ]
+df_pivoted = df_pivoted.reset_index()
 
 # ─────────────────────────────────────────────
-# 4. Extract metadata (one row per ZIP)
-# ─────────────────────────────────────────────
-metadata = (
-    data.groupby("zip", as_index=False)
-    .agg({
-        "state": "first",
-        "utility_name": "first",
-        "ownership": "first",
-        "service_type": "first"
-    })
-)
-
-# ─────────────────────────────────────────────
-# 5. Combine metadata + pivoted data
-# ─────────────────────────────────────────────
-df_final = metadata.merge(df_pivoted, on="zip", how="inner")
-
-# ─────────────────────────────────────────────
-# 6. Master merge (cities on the left)
+# 4. Master merge — cities geometry on the left,
+#    all utility rows on the right (many-to-one on ZIP)
 # ─────────────────────────────────────────────
 merged_gdf = cities.merge(
-    df_final,
+    df_pivoted,
     left_on="NAME20",
     right_on="zip",
     how="left"
 )
 
 # ─────────────────────────────────────────────
-# 7. Cleanup duplicated columns & index
+# 5. Cleanup
 # ─────────────────────────────────────────────
 merged_gdf = merged_gdf.loc[:, ~merged_gdf.columns.duplicated()]
-
-merged_gdf.set_index("city_label", inplace=True)
-
 merged_gdf.drop(columns=["zip"], errors="ignore", inplace=True)
 
+# Sanity check before saving
+print(f"Total rows in output : {len(merged_gdf)}")
+atl = merged_gdf[merged_gdf["city_label"].str.lower().str.strip() == "atlanta"]
+print(f"Atlanta rows         : {len(atl)}")
+for col in ["comm_rate_2021", "res_rate_2021", "avg_price_2021"]:
+    if col in atl.columns:
+        vals = pd.to_numeric(atl[col], errors="coerce")
+        print(f"  {col}: {vals.nunique()} unique | min={vals.min():.4f} max={vals.max():.4f}")
+
 # ─────────────────────────────────────────────
-# 8. Save
+# 6. Save
 # ─────────────────────────────────────────────
 output_path = (
     "/home/rodrigofrancachaves/capp30122/"
@@ -89,6 +86,4 @@ output_path = (
 )
 
 merged_gdf.to_file(output_path, driver="GeoJSON")
-
-print("Process complete.")
-print("No duplicated columns. Index set to 'city_label'.")
+print("\nDone. Saved to", output_path)
