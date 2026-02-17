@@ -60,7 +60,7 @@ def load_data():
 
     centers = centers.rename(
         columns={
-            "scraped_ci": "Scraped ID",
+            "scraped_ci": "Scraped City",
             "state":      "State",
             "facility":   "Facility Name",
             "operator":   "Operator",
