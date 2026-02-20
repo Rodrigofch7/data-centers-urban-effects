@@ -5,7 +5,7 @@
         "app_url": "https://rodrigofrancac.shinyapps.io/project-datacenter-urban-effects/",
         "app_id": "16586110",
         "app_guid": null,
-        "title": "project-datacenter-urban-effects",
+        "title": "shiny_app",
         "app_mode": "python-shiny",
         "app_store_version": 1
     }
