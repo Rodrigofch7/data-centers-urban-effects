@@ -67,7 +67,7 @@ for city_name, path in cities:
 
             record = {
                 "scraped_city": city_name,
-                "state": CITY_TO_STATE[city_name],  # ✅ Add state here
+                "state": CITY_TO_STATE[city_name],  
                 "facility": facility_name,
                 "operator": details[0] if len(details) > 0 else "N/A",
                 "street": details[1] if len(details) > 1 else "N/A",
