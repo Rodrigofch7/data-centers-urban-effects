@@ -89,6 +89,6 @@ print(f"\nTotal data centers scraped: {len(df)}")
 print(df.head())
 
 # Save to CSV
-file_name = "top_10_us_cities_datacenters.csv"
+file_name = "top_us_cities_datacenters.csv"
 df.to_csv(file_name, index=False)
 print(f"File saved locally as {file_name}")
