@@ -45,6 +45,6 @@ chicago_data_centers["address_count"] = (
     chicago_data_centers.groupby("street_standard")["street_standard"].transform("size"))
 
 # Dropping duplicates by standardized street and keeping first:
-dedup = chicago_data_centers.drop_duplicates(subset=["street_standard"], keep="first")
+cleaned_data = chicago_data_centers.drop_duplicates(subset=["street_standard"], keep="first")
 
-dedup.to_csv("data/chicago_data_centers_cleaned.csv", index=False)
+cleaned_data.to_csv("data/chicago_data_centers.csv", index=False)
