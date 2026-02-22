@@ -20,7 +20,7 @@
 
 ## Overview
 
-<!-- Replace this section with a clear description of your project -->
+<!-- Description of the project -->
 
 ---
 
@@ -28,7 +28,7 @@
 
 - **1** — Text
 - **2** — Text
-- **3s** — Text
+- **3** — Text
 - **4** — Text
 - **5** — Text
 
@@ -113,8 +113,11 @@ This project is licensed under
 ## Contact
 
 **Name1** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
+
 **Name2** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
+
 **Name3** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
+
 **Name4** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
 
 Project Link: [https://github.com/]
