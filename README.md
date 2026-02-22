@@ -1,11 +1,14 @@
-# Data Centers Next Door: How Cloud Infrastructure Shapes Housing and Local Resource Costs.
+## 🚀 Live Dashboard
+**[View Interactive Dashboard →](https://rodrigofrancac.shinyapps.io/project-datacenter-urban-effects/)**
 
+---
+
+# Data Centers Next Door: How Cloud Infrastructure Shapes Housing and Local Resource Costs.
 > A computational and data-driven analysis of the impact of cloud infrastructure development on housing prices in Chicago.
 
 ---
 
 ## 📋 Table of Contents
-
 - [Overview](#overview)
 - [Features](#features)
 - [Data Sources](#data-sources)
@@ -19,7 +22,6 @@
 ---
 
 ## Overview
-
 This project investigates the relationship between large-scale cloud infrastructure development and housing price dynamics in Chicago between 2000 and 2025. Specifically, we analyze whether the construction and operation of data centers are associated with measurable changes in local housing costs.
 
 We collected and cleaned data center location data and constructed a curated dataset of confirmed facilities with a first_permit variable approximating when each data center began development or operations. We then integrate this dataset with historical housing price data at the ZIP code level to explore spatial and temporal patterns.
@@ -29,7 +31,6 @@ The project combines data cleaning, record linkage, and geospatial visualization
 ---
 
 ## Features
-
 - **Data Cleaning & Deduplication** — Consolidates and cleans raw data center and housing records, removing duplicates and unmatched entries.
 - **Chicago-Focused Dataset** — Filters national data to construct a curated dataset of confirmed Chicago data centers and housing prices.
 - **First Permit Construction** — Builds a first_permit variable to approximate when each data center began development or operations.
@@ -39,7 +40,6 @@ The project combines data cleaning, record linkage, and geospatial visualization
 ---
 
 ## Data Sources
-
 | Source | Description |
 |---|---|
 | [First source](#) | Text |
@@ -51,7 +51,6 @@ The project combines data cleaning, record linkage, and geospatial visualization
 ## Getting Started
 
 ### Prerequisites
-
 ```bash
 # Example
 code
@@ -59,25 +58,21 @@ code
 ```
 
 ### Installation
-
 ```bash
 # Clone the repository
 git clone https://github.com/
 ```
 
 ### Configuration
-
 1. 
 2. 
 
 ---
 
 ## Usage
-
 ```bash
 # Example
 code
-
 # Example
 code
 ```
@@ -85,7 +80,6 @@ code
 ---
 
 ## Project Structure
-
 ```
 repository/
 ├── directory1/
@@ -97,9 +91,7 @@ repository/
 ---
 
 ## Contributing
-
 Example
-
 1. 
 2. 
 3. 
@@ -109,19 +101,14 @@ Example
 ---
 
 ## License
-
 This project is licensed under 
 
 ---
 
 ## Contact
-
 **Name1** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
-
 **Name2** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
-
 **Name3** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
-
 **Name4** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
 
 Project Link: [https://github.com/]
