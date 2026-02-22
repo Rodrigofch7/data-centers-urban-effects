@@ -1,16 +1,50 @@
 import pandas as pd
+import string
 
-# Loading the dataset:
-datacenters = pd.read_csv("data/top_us_cities_datacenters.csv")
+chicago_data_centers = pd.read_csv("data/chicago_data_centers.csv")
 
-# Filtering only rows where scraped_city is Chicago:
-chicago_dc = datacenters[datacenters["scraped_city"] == "Chicago"].copy()
+# Defining a dictionary with words to standardize data center addresses:
+WORDS = {
+    "north": "n",
+    "south": "s",
+    "east": "e",
+    "west": "w",
+    "street": "st",
+    "avenue": "ave",
+    "road": "rd",
+    "boulevard": "blvd",
+    "drive": "dr",
+    "lane": "ln",
+    "place": "pl",
+    "court": "ct"
+}
 
-# Addding a new column called "first_permit":
-chicago_dc["first_permit"] = ""
+def standard_street(address):
+    if pd.isna(address):
+        return ""
 
-# Saving to a new CSV file
-chicago_dc.to_csv("data/chicago_data_centers.csv", index=False)
+    street_clean = str(address).lower().strip()
 
-# Printing result:
-print(chicago_dc.head())
+    # Removing punctuation by translating to spaces:
+    translation = str.maketrans({ch: " " for ch in string.punctuation})
+    street_clean = street_clean.translate(translation)
+
+    tokens = street_clean.split()  # Splitting on whitespace
+
+    clean_tokens = []
+    for token in tokens:
+        clean_tokens.append(WORDS.get(token, token))
+
+    return "_".join(clean_tokens)
+
+# Creating a standardized street key:
+chicago_data_centers["street_standard"] = chicago_data_centers["street"].apply(standard_street)
+
+# Counting how many rows share the same standardized street:
+chicago_data_centers["address_count"] = (
+    chicago_data_centers.groupby("street_standard")["street_standard"].transform("size"))
+
+# Dropping duplicates by standardized street and keeping first:
+dedup = chicago_data_centers.drop_duplicates(subset=["street_standard"], keep="first")
+
+dedup.to_csv("data/chicago_data_centers_cleaned.csv", index=False)
