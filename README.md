@@ -1,6 +1,6 @@
 # Data Centers Next Door: How Cloud Infrastructure Shapes Housing and Local Resource Costs.
 
-> A brief one-liner description of what this project does.
+> A computational and data-driven analysis of the impact of cloud infrastructure development on housing prices in Chicago.
 
 ---
 
@@ -20,17 +20,21 @@
 
 ## Overview
 
-<!-- Description of the project -->
+This project investigates the relationship between large-scale cloud infrastructure development and housing price dynamics in Chicago between 2000 and 2025. Specifically, we analyze whether the construction and operation of data centers are associated with measurable changes in local housing costs.
+
+We collected and cleaned data center location data and constructed a curated dataset of confirmed facilities with a first_permit variable approximating when each data center began development or operations. We then integrate this dataset with historical housing price data at the ZIP code level to explore spatial and temporal patterns.
+
+The project combines data cleaning, record linkage, and geospatial visualization techniques to generate an index trend, heat map, and other visual tools that help describe potential correlations between data center expansion and housing price changes. Our goal is not to claim causation, but to provide a data-driven foundation for understanding how digital infrastructure may interact with urban housing markets.
 
 ---
 
 ## Features
 
-- **1** — Text
-- **2** — Text
-- **3** — Text
-- **4** — Text
-- **5** — Text
+- **Data Cleaning & Deduplication** — Consolidates and cleans raw data center and housing records, removing duplicates and unmatched entries.
+- **Chicago-Focused Dataset** — Filters national data to construct a curated dataset of confirmed Chicago data centers and housing prices.
+- **First Permit Construction** — Builds a first_permit variable to approximate when each data center began development or operations.
+- **Housing Market Integration** — Merges data center data with ZIP code–level housing price data (2000–2025).
+- **Spatial & Temporal Visualization** — Generates trend index, heat map, and other visualizations to explore correlations between infrastructure expansion and housing prices.
 
 ---
 
