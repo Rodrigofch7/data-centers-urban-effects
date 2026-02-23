@@ -121,7 +121,5 @@ def test_parsing_handles_missing_fields():
 
 # --- Main Guard ---
 if __name__ == "__main__":
-    # This only runs if you do 'python scrape_datacenters.py'
-    # It won't run if you just run 'pytest'
     final_df = run_scraper()
     print(f"\nDone! Scraped {len(final_df)} centers.")
