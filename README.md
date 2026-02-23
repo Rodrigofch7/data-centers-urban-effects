@@ -1,11 +1,14 @@
-# Data Centers Next Door: How Cloud Infrastructure Shapes Housing and Local Resource Costs.
+## 🚀 Live Dashboard
+**[View Interactive Dashboard →](https://rodrigofrancac.shinyapps.io/project-datacenter-urban-effects/)**
 
+---
+
+# Data Centers Next Door: How Cloud Infrastructure Shapes Housing and Local Resource Costs.
 > A computational and data-driven analysis of the impact of cloud infrastructure development on housing prices in Chicago.
 
 ---
 
 ## 📋 Table of Contents
-
 - [Overview](#overview)
 - [Features](#features)
 - [Data Sources](#data-sources)
@@ -20,7 +23,6 @@
 ---
 
 ## Overview
-
 This project investigates the relationship between large-scale cloud infrastructure development and housing price dynamics in Chicago between 2000 and 2025. Specifically, we analyze whether the construction and operation of data centers are associated with measurable changes in local housing costs.
 
 We collected and cleaned data center location data and constructed a curated dataset of confirmed facilities with a first_permit variable approximating when each data center began development or operations. We then integrate this dataset with historical housing price data at the ZIP code level to explore spatial and temporal patterns.
@@ -30,7 +32,6 @@ The project combines data cleaning, record linkage, and geospatial visualization
 ---
 
 ## Features
-
 - **Data Cleaning & Deduplication** — Consolidates and cleans raw data center and housing records, removing duplicates and unmatched entries.
 - **Chicago-Focused Dataset** — Filters national data to construct a curated dataset of confirmed Chicago data centers and housing prices.
 - **First Permit Construction** — Builds a first_permit variable to approximate when each data center began development or operations.
@@ -40,7 +41,6 @@ The project combines data cleaning, record linkage, and geospatial visualization
 ---
 
 ## Data Sources
-
 | Source | Description |
 |---|---|
 | [Data Center Map](https://www.datacentermap.com/usa/illinois/chicago/) | A publicly accessible directory of data center facilities in the Chicago metropolitan area, listing sites with basic location and provider information. The database aggregates facility listings from operators and external sources to provide insight into the presence and distribution of data infrastructure in Chicago. |
@@ -59,6 +59,7 @@ See DATA_METHOD.md  for full documentation of the reconciliation and cleaning pr
 ## Getting Started
 
 ### Prerequisites
+<<<<<<< HEAD
 
 Before running the project, make sure you have:
 
@@ -69,6 +70,15 @@ Before running the project, make sure you have:
 
 ### General installation
 
+=======
+```bash
+# Example
+code
+# Example
+```
+
+### Installation
+>>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 ```bash
 # Clone the repository
 git clone https://github.com/<YOUR-USERNAME>/project-datacenter-urban-effects.git
@@ -86,13 +96,19 @@ uv sync
 ```
 
 ### Configuration
+<<<<<<< HEAD
 
 1. Ensure all required datasets are located in the data/ directory.
 2. Verify file paths inside Python scripts (e.g., data/top_us_cities_datacenters.csv) match your local structure.
+=======
+1. 
+2. 
+>>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 
 ---
 
 ## Usage
+<<<<<<< HEAD
 
 The project can be used in two main ways, you can reproduce the data pipeline or run the interactive dashboard
 
@@ -109,6 +125,13 @@ uv run python_scripts/zillow_data.py
 
 # Prepare merged dataset for dashboard
 uv run python_scripts/preparing_data_for_dashboard.py
+=======
+```bash
+# Example
+code
+# Example
+code
+>>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 ```
 
 This will:
@@ -137,7 +160,6 @@ This launches the interactive visualization environment, including:
 ---
 
 ## Project Structure
-
 ```
 project-datacenter-urban-effects/
 │
@@ -197,6 +219,7 @@ project-datacenter-urban-effects/
 ---
 
 ## Contributing
+<<<<<<< HEAD
 
 We welcome contributions that expand and strengthen this project beyond the course timeline.
 
@@ -234,17 +257,30 @@ If you’re interested in contributing, please review the guidelines in CONTRIBU
 3. Follow the contribution guidelines in CONTRIBUTING.md.
 4. Submit a pull request with a clear description of changes.
 5. Ensure all scripts run reproducibly before submitting.
+=======
+Example
+1. 
+2. 
+3. 
+4. 
+5. 
+>>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 
 ---
 
 ## License
+<<<<<<< HEAD
 
 This project is released under an open-source license. 
 See the LICENSE.md file for details.
+=======
+This project is licensed under 
+>>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 
 ---
 
 ## Contact
+<<<<<<< HEAD
 
 **Logan Burton** — [@loganburton](https://github.com/StLaurentMTL) — loganemail@uchicago.edu
 
@@ -253,5 +289,11 @@ See the LICENSE.md file for details.
 **Sinan Grehan** — [@sinangrehan](https://github.com/sinangrehan) — sinanemaiul@uchicago.edu
 
 **Carlos Eduardo Vargas** — [@cev2030](https://github.com/cev2030) — cev@uchicago.edu
+=======
+**Name1** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
+**Name2** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
+**Name3** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
+**Name4** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
+>>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 
 Project Link: [https://github.com/uchicago-2026-capp30122/project-datacenter-urban-effects]

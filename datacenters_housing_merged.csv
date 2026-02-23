@@ -1,0 +1,46 @@
+City_x,Operator,Address,Zipcode,RegionID,SizeRank,RegionType,State,City_y,Metro,CountyName,year,hval,hval_yrbefore,hval_yrafter
+Chicago,CoreWeave,301 Digital Xrds Dr,46320,,,,,,,,,,,
+Chicago,Lumen / CloudHQ,"1305 E. Algonquin Avenue,",60005,,,,,,,,,,,
+Chicago,Aligned Data Centers,150 NW Point Blvd,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2011,191204.0903866196,210760.0252359246,182032.33398693232
+Chicago,Aligned Data Centers,50 NW Point Blvd,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2011,191204.0903866196,210760.0252359246,182032.33398693232
+Chicago,Equinix,1905 Lunt Avenue,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2014,214913.2264410595,193726.39979104025,220444.91925478392
+Chicago,Digital Realty,2200 Busse Road,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2014,214913.2264410595,193726.39979104025,220444.91925478392
+Chicago,Csquare / CenterSquare,2425 Busse Road,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2014,214913.2264410595,193726.39979104025,220444.91925478392
+Chicago,STACK INFRASTRUCTURE,1301 Touhy Ave,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2015,220444.91925478392,214913.2264410595,229518.83680800023
+Chicago,EdgeConneX,1800 Nicholas Blvd,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2016,229518.83680800023,220444.91925478392,239239.929050601
+Chicago,Digital Realty,1400 East Devon Avenue,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2017,239239.929050601,229518.83680800023,250069.36720165212
+Chicago,EdgeConneX,1800 Nicholas Blvd,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2018,250069.36720165212,239239.929050601,251756.6526953805
+Chicago,T5 Data Centers,200 Innovation Dr,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2020,256291.58641548152,251756.6526953805,281628.70959472994
+Chicago,Skybox Datacenters,800 E Devon Ave,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2021,281628.70959472994,256291.58641548152,303355.30501012463
+Chicago,Microsoft,"Elk Grove Technology Park, Innovation Dr & Oakton St",60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2021,281628.70959472994,256291.58641548152,303355.30501012463
+Chicago,Stream Data Centers,1925 Busse Road,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2022,303355.30501012463,281628.70959472994,318294.6261387643
+Chicago,Equinix,2001 Lunt Ave,60007,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2023,318294.6261387643,303355.30501012463,344876.31380507565
+Chicago,Microsoft,Higgins Rd & Illinois,60010,,,,,,,,,,,
+Chicago,CloudHQ,1200 E Algonquin Rd,60016,,,,,,,,,,,
+Chicago,Iron Mountain Data Centers,1680 Touhy Avenue,60018,84287.0,3752.0,zip,IL,Des Plaines,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2023,311328.4017281578,299218.9243448894,336720.53409217927
+Chicago,DataBank,800 E Business Center Dr,60056,,,,,,,,,,,
+Chicago,Meta,1550 Metaverse Wy,60115,,,,,,,,,,,
+Chicago,Digital Realty,2425-2553 Edgington St,60131,84382.0,5727.0,zip,IL,Franklin Park,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2013,122932.55984988507,114938.54906332376,141541.27388344042
+Chicago,TierPoint,9333 West Grand Ave.,60131,84382.0,5727.0,zip,IL,Franklin Park,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2013,122932.55984988507,114938.54906332376,141541.27388344042
+Chicago,"NTT DATA, Inc.",275 Pierce Rd,60143,,,,,,,,,,,
+Chicago,Digital Fortress / Wovering Trading,360 E 22nd St.,60148,,,,,,,,,,,
+Chicago,Amazon,"Portage, IN",60148,,,,,,,,,,,
+Chicago,Digital Realty,505 North Railroad Avenue,60164,,,,,,,,,,,
+Chicago,Aligned Data Centers,505 Northwest Avenue,60164,,,,,,,,,,,
+Chicago,Microsoft,601-605 Northwest Ave,60164,,,,,,,,,,,
+Chicago,Element Critical,341 Haynes Dr,60191,,,,,,,,,,,
+Chicago,Element Critical,711 N. Edgewood Ave.,60191,,,,,,,,,,,
+Chicago,Edged Energy,2725 Bilter Rd,60502,,,,,,,,,,,
+Chicago,DataBank,1808 Swift Dr,60523,,,,,,,,,,,
+Chicago,"NaviSite, Inc. / NYI",800 Jorie Blvd,60523,,,,,,,,,,,
+Chicago,"XNet Information Systems, Inc. / Cyrus One",3080 Ogden Ave,60532,,,,,,,,,,,
+Chicago,CenterSquare,4513 Western Ave,60532,,,,,,,,,,,
+Chicago,CoreSite,400 S LaSalle St,60605,84607.0,3929.0,zip,IL,Chicago,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2013,326833.771067714,300076.02292603994,367746.0062152722
+Chicago,Digital Realty,600 South Federal Street,60605,84607.0,3929.0,zip,IL,Chicago,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2018,369048.4466948797,388214.146406136,354012.24432742206
+Chicago,Sinch / Digital Capital Partners,717 S Wells St,60607,84609.0,3650.0,zip,IL,Chicago,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2010,359370.8732737384,374186.2031637342,339667.4973400851
+Chicago,TierPoint,601 W. Polk St.,60607,84609.0,3650.0,zip,IL,Chicago,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2016,437521.66309419816,414016.6988783527,462519.3181653789
+Chicago,Serverfarm,840 S. Canal Street,60607,84609.0,3650.0,zip,IL,Chicago,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2016,437521.66309419816,414016.6988783527,462519.3181653789
+Chicago,QTS Data Centers,2800 S. Ashland Ave,60608,84610.0,99.0,zip,IL,Chicago,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2015,251382.1497994912,237847.85569051016,272114.9573521852
+Chicago,Lumen /  / DXC Technology,350 E Cermark Road,60616,84618.0,949.0,zip,IL,Chicago,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2011,269846.9356786696,296768.55785726843,235650.5668239072
+Chicago,Related Digital / Digital Crossroad,8080 S DuSable Lake Shore Dr,60617,84619.0,79.0,zip,IL,Chicago,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2020,127156.61592007655,119777.5324391135,151764.0109471985
+Chicago,"Cogent Communications, Inc. / QTS",4200 W 40th St,60632,84633.0,74.0,zip,IL,Chicago,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2015,132970.9354016944,118486.54503485332,147847.17394015708
