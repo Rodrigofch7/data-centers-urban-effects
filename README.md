@@ -268,7 +268,7 @@ See the LICENSE.md file for details.
 
 **Logan Burton** — [@loganburton](https://github.com/StLaurentMTL) — loganemail@uchicago.edu
 
-**Rodrigo Chaves** — [@rchaves](https://github.com/Rodrigofch7) — rodrigoemail@uchicago.edu
+**Rodrigo Chaves** — [@rchaves](https://github.com/Rodrigofch7) — rchaves@uchicago.edu
 
 **Sinan Grehan** — [@sinangrehan](https://github.com/sinangrehan) — sinanemaiul@uchicago.edu
 
