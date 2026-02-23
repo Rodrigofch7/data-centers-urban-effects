@@ -1,5 +1,5 @@
-🚀 Live Dashboard
-View Interactive Dashboard →
+## 🚀 Live Dashboard
+**[View Interactive Dashboard →](https://rodrigofrancac.shinyapps.io/project-datacenter-urban-effects/)**
 
 # Data Centers Next Door: How Cloud Infrastructure Shapes Housing and Local Resource Costs.
 
