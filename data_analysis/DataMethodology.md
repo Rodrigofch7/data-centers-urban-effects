@@ -16,7 +16,7 @@ $$
 Where $w_{j}$ represents the percentage weighting of the $j$th variable and $S_{ij}$ representing $i$th zip code's score for the respective $j$ variable. Higher index scores represent zip codes that are comparatively less affordable and lower index scores indicating relatively more affordable zip codes. 
 
 As an alternative specification, we have also included as an option to implement a z-scores approach in lieu to the decile ranking methodology that makes comparison between variables with different units of measure more standardized, where $S_{ij}$ is calculated as:
-$$
-S_{ij} = \frac{x_{ij} - \bar{x_{j}}}{\sigma_{j}} 
-$$
+
+$$S_{ij} = \frac{x_{ij} - \bar{x_{j}}}{\sigma_{j}}$$
+
 where $x_{ij}​$ is the raw value for zip code $i$, $\bar{x_j}​$ is the mean across zip codes for variable $j$, and $\sigma_{j}$​ is the corresponding standard deviation. This transformation centers each variable at zero allowing the index to capture relative deviations from the average rather than through rankings.
