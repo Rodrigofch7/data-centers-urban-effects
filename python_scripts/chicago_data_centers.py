@@ -1,7 +1,14 @@
 import pandas as pd
 import string
 
-chicago_data_centers = pd.read_csv("data/chicago_data_centers.csv")
+# Loading the dataset:
+chicago_data_centers = pd.read_csv("data/top_us_cities_datacenters.csv")
+
+# Keeping only Chicago rows, overwriting original variable:
+chicago_data_centers = chicago_data_centers[chicago_data_centers["scraped_city"] == "Chicago"].copy()
+
+# Addding a new column called "first_permit":
+chicago_data_centers["first_permit"] = ""
 
 # Defining a dictionary with words to standardize data center addresses:
 WORDS = {
@@ -25,7 +32,7 @@ def standard_street(address):
 
     street_clean = str(address).lower().strip()
 
-    # Removing punctuation by translating to spaces:
+    # Replacing punctuation with spaces:
     translation = str.maketrans({ch: " " for ch in string.punctuation})
     street_clean = street_clean.translate(translation)
 
@@ -45,6 +52,6 @@ chicago_data_centers["address_count"] = (
     chicago_data_centers.groupby("street_standard")["street_standard"].transform("size"))
 
 # Dropping duplicates by standardized street and keeping first:
-cleaned_data = chicago_data_centers.drop_duplicates(subset=["street_standard"], keep="first")
+chicago_data_centers = chicago_data_centers.drop_duplicates(subset=["street_standard"], keep="first")
 
-cleaned_data.to_csv("data/chicago_data_centers.csv", index=False)
+chicago_data_centers.to_csv("data/chicago_data_centers.csv", index=False)
