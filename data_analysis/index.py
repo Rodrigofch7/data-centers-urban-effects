@@ -1,6 +1,8 @@
 import pandas as pd
 from pathlib import Path
 
+# NOTE: THE METHODOLOGY AND INPUTS ARE SUBJECT TO CHANGE AS DATA BECOMES CLEANER
+
 # Data Analysis
 # We will create index as an indicator of affordability. Zip codes with
 # more data centers, higher average electricity and water prices, and
@@ -11,6 +13,7 @@ from pathlib import Path
 
 FILEPATH = Path(__file__).parent / "top_10_us_cities_datacenters_augmented_mock.csv"
 OUTPATH = Path(__file__).parent / "top_10_us_cities_datacenters_scores_mock.csv"
+
 
 print(FILEPATH)
 
@@ -27,36 +30,45 @@ unique_data_centers = (
 # Left joining this onto data_centers dataset
 data_centers = pd.merge(data_centers, unique_data_centers, on="zip_code")
 
-# NOTE: PROBABLY WANT TO NORMALIZE THIS FACILITY SCORE BY PER CAPITA, SO AS TO
-# NOT OVERINFLATE. WE COULD PROBABLY ALSO USE POPULATION TO SEE HOW MANY PEOPLE
-# WILL BE AFFECTED BY AN ADDITION OF A DATA CENTER
-
-
-# Index creation
-def score_creation(variable):
+# SCORING 
+def scoring(variable,method = "composite"):
     """
-    Takes a variable and calculates a "ranking" based on its decile value
+    Takes a variable and calculates a "ranking" based on its decile value or its
+    corresponding z-score. Each method has their distinct advantages and disadvantages
+    and be adjust as such. Default method will be the composite/quantile method
 
     Inputs:
-           dataset: a pandas dataframe
-           varaible: the variable by which we are calculating scores for
+           variable: a pandas dataframe variable by which we are calculating scores for
     """
-    score_name = f"{variable}_score"
+    if method == "composite":
+        score_name = f"{variable}_score"
 
-    data_centers[score_name] = pd.qcut(data_centers[variable], q=10, labels=False)
+        data_centers[score_name] = pd.qcut(data_centers[variable], q=10, labels=False)
 
+    elif method == "z-score":
+        z_score_name = f"{variable}_z_score"
 
-score_creation("avg_electricity_cost_usd_per_kwh")
-score_creation("avg_home_price_usd")
-score_creation("avg_water_cost_usd_monthly")
+        data_centers[z_score_name] = (data_centers[variable] - data_centers[variable].mean()) / data_centers[variable].std()
+    
+    else:
+        raise ValueError("Method must be 'composite' or 'z-score'!")
+
+# Composite Scoring Method
+scoring("avg_electricity_cost_usd_per_kwh", method = "composite")
+scoring("avg_home_price_usd",method = "composite")
+scoring("avg_water_cost_usd_monthly",method = "composite")
+
+# Z-Scoring Method
+scoring("avg_electricity_cost_usd_per_kwh",method = "z-score")
+scoring("avg_home_price_usd",method = "z-score")
+scoring("avg_water_cost_usd_monthly",method = "z-score")
 
 print(data_centers.head())
-
 
 # Creating the index score based on weights. The weights MUST add to 1!
 def index(
     facility_weight=0.25, home_weight=0.25, electricity_weight=0.25, water_weight=0.25
-):
+,method = "composite"):
     """
     Creates a composite index score for a zip code based on selected weights
 
@@ -76,20 +88,36 @@ def index(
         "water_price_weight": water_weight,
     }
 
-    data_centers["index_score"] = (
-        (data_centers["facility_count"] * weights["facility_weight"])
-        + (
-            data_centers["avg_electricity_cost_usd_per_kwh_score"]
-            * weights["electricity_price_weight"]
+    if method == "composite":
+        data_centers["index_score"] = (
+            (data_centers["facility_count"] * weights["facility_weight"])
+            + (
+                data_centers["avg_electricity_cost_usd_per_kwh_score"]
+                * weights["electricity_price_weight"]
+            )
+            + (data_centers["avg_home_price_usd_score"] * weights["home_price_weight"])
+            + (
+                data_centers["avg_water_cost_usd_monthly_score"]
+                * weights["water_price_weight"]
+            )
         )
-        + (data_centers["avg_home_price_usd_score"] * weights["home_price_weight"])
-        + (
-            data_centers["avg_water_cost_usd_monthly_score"]
-            * weights["water_price_weight"]
+    elif method == "z-score":
+                data_centers["z_index_score"] = (
+            (data_centers["facility_count"] * weights["facility_weight"])
+            + (
+                data_centers["avg_electricity_cost_usd_per_kwh_z_score"]
+                * weights["electricity_price_weight"]
+            )
+            + (data_centers["avg_home_price_usd_z_score"] * weights["home_price_weight"])
+            + (
+                data_centers["avg_water_cost_usd_monthly_z_score"]
+                * weights["water_price_weight"]
+            )
         )
-    )
 
+# Running index:
 index()
 
 #Exporting analysis onto .csv file
+#Composite Index mock output
 data_centers.to_csv(OUTPATH)
