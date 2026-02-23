@@ -1,18 +1,16 @@
-## 🚀 Live Dashboard
-**[View Interactive Dashboard →](https://rodrigofrancac.shinyapps.io/project-datacenter-urban-effects/)**
-
----
-
 # Data Centers Next Door: How Cloud Infrastructure Shapes Housing and Local Resource Costs.
+
 > A computational and data-driven analysis of the impact of cloud infrastructure development on housing prices in Chicago.
 
 ---
 
 ## 📋 Table of Contents
+
 - [Overview](#overview)
 - [Features](#features)
 - [Data Sources](#data-sources)
 - [Data Processing & Reconcilitation](#data-processing-&-reconcilitation)
+- [Data Methodology](#data-methodology)
 - [Getting Started](#getting-started)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
@@ -23,6 +21,7 @@
 ---
 
 ## Overview
+
 This project investigates the relationship between large-scale cloud infrastructure development and housing price dynamics in Chicago between 2000 and 2025. Specifically, we analyze whether the construction and operation of data centers are associated with measurable changes in local housing costs.
 
 We collected and cleaned data center location data and constructed a curated dataset of confirmed facilities with a first_permit variable approximating when each data center began development or operations. We then integrate this dataset with historical housing price data at the ZIP code level to explore spatial and temporal patterns.
@@ -32,6 +31,7 @@ The project combines data cleaning, record linkage, and geospatial visualization
 ---
 
 ## Features
+
 - **Data Cleaning & Deduplication** — Consolidates and cleans raw data center and housing records, removing duplicates and unmatched entries.
 - **Chicago-Focused Dataset** — Filters national data to construct a curated dataset of confirmed Chicago data centers and housing prices.
 - **First Permit Construction** — Builds a first_permit variable to approximate when each data center began development or operations.
@@ -41,6 +41,7 @@ The project combines data cleaning, record linkage, and geospatial visualization
 ---
 
 ## Data Sources
+
 | Source | Description |
 |---|---|
 | [Data Center Map](https://www.datacentermap.com/usa/illinois/chicago/) | A publicly accessible directory of data center facilities in the Chicago metropolitan area, listing sites with basic location and provider information. The database aggregates facility listings from operators and external sources to provide insight into the presence and distribution of data infrastructure in Chicago. |
@@ -52,14 +53,27 @@ The project combines data cleaning, record linkage, and geospatial visualization
 
 This project integrates infrastructure, housing, and demographic data from multiple sources. Data center locations were scraped and geocoded for spatial analysis. Housing price data (Zillow) was aggregated from monthly to annual values to align with socioeconomic indicators retrieved via the Census API (ACS 5-year estimates). All datasets were reconciled using geographic identifiers (ZIP codes and Census tracts) to enable spatial and temporal analysis.
 
-See DATA_METHOD.md  for full documentation of the reconciliation and cleaning process.
+See DataProcess.md  for full documentation of the reconciliation and cleaning process.
+
+---
+
+## Data Methodology
+
+To evaluate how data center concentration relates to neighborhood affordability, we construct a composite index at the ZIP code level. The index integrates housing costs, demographic characteristics, and the number of data centers within each ZIP code into a single comparative measure.
+
+We standardize each variable using a decile-based ranking approach, assigning ZIP codes to ten equally sized bins based on empirical quantiles. Lower deciles correspond to lower relative scores, while higher deciles indicate comparatively higher values. These standardized scores are then combined using a weighted average to produce a Composite Index score for each ZIP code.
+
+As an alternative specification, we also implement a z-score normalization approach, which standardizes variables by centering them around the mean and scaling by their standard deviation. This allows comparison across variables with different units of measurement and captures relative deviations rather than rank positions.
+
+Higher Composite Index scores indicate ZIP codes that are comparatively less affordable, while lower scores reflect relatively more affordable areas.
+
+For full technical documentation and mathematical formulation, see DataMethodology.md￼.
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-<<<<<<< HEAD
 
 Before running the project, make sure you have:
 
@@ -70,15 +84,6 @@ Before running the project, make sure you have:
 
 ### General installation
 
-=======
-```bash
-# Example
-code
-# Example
-```
-
-### Installation
->>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 ```bash
 # Clone the repository
 git clone https://github.com/<YOUR-USERNAME>/project-datacenter-urban-effects.git
@@ -96,19 +101,13 @@ uv sync
 ```
 
 ### Configuration
-<<<<<<< HEAD
 
 1. Ensure all required datasets are located in the data/ directory.
 2. Verify file paths inside Python scripts (e.g., data/top_us_cities_datacenters.csv) match your local structure.
-=======
-1. 
-2. 
->>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 
 ---
 
 ## Usage
-<<<<<<< HEAD
 
 The project can be used in two main ways, you can reproduce the data pipeline or run the interactive dashboard
 
@@ -125,13 +124,6 @@ uv run python_scripts/zillow_data.py
 
 # Prepare merged dataset for dashboard
 uv run python_scripts/preparing_data_for_dashboard.py
-=======
-```bash
-# Example
-code
-# Example
-code
->>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 ```
 
 This will:
@@ -160,6 +152,7 @@ This launches the interactive visualization environment, including:
 ---
 
 ## Project Structure
+
 ```
 project-datacenter-urban-effects/
 │
@@ -182,7 +175,7 @@ project-datacenter-urban-effects/
 │   │       ├── combined_cities.prj
 │   │       └── cities_with_energy_home_prices.geojson
 │   │
-│   ├── chicago_data_centers_clean (first_permit).csv
+│   ├── chicago_data_centers_match (first_permit).csv
 │   ├── chicago_data_centers.csv
 │   ├── top_us_cities_datacenters.csv
 │   ├── zillow_data_zip_code_cook_county.csv
@@ -197,6 +190,8 @@ project-datacenter-urban-effects/
 │   └── aggregate_city_geometries.py
 │
 ├── data_analysis/                           # Index construction & scoring logic
+│   ├── DataMethodology.md
+│   └── index.py
 │
 ├── R Code/                                  # Spatial boundary extraction
 │   └── fetch_city_zctas.r
@@ -219,7 +214,6 @@ project-datacenter-urban-effects/
 ---
 
 ## Contributing
-<<<<<<< HEAD
 
 We welcome contributions that expand and strengthen this project beyond the course timeline.
 
@@ -257,30 +251,17 @@ If you’re interested in contributing, please review the guidelines in CONTRIBU
 3. Follow the contribution guidelines in CONTRIBUTING.md.
 4. Submit a pull request with a clear description of changes.
 5. Ensure all scripts run reproducibly before submitting.
-=======
-Example
-1. 
-2. 
-3. 
-4. 
-5. 
->>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 
 ---
 
 ## License
-<<<<<<< HEAD
 
 This project is released under an open-source license. 
 See the LICENSE.md file for details.
-=======
-This project is licensed under 
->>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 
 ---
 
 ## Contact
-<<<<<<< HEAD
 
 **Logan Burton** — [@loganburton](https://github.com/StLaurentMTL) — loganemail@uchicago.edu
 
@@ -289,11 +270,5 @@ This project is licensed under
 **Sinan Grehan** — [@sinangrehan](https://github.com/sinangrehan) — sinanemaiul@uchicago.edu
 
 **Carlos Eduardo Vargas** — [@cev2030](https://github.com/cev2030) — cev@uchicago.edu
-=======
-**Name1** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
-**Name2** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
-**Name3** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
-**Name4** — [@handle1](https://socialmedia1.com/handle1) — email1@example.com
->>>>>>> 490550cb3f12f53a99b4f67533102ce057b7bae7
 
 Project Link: [https://github.com/uchicago-2026-capp30122/project-datacenter-urban-effects]
