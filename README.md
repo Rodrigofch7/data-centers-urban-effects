@@ -52,7 +52,7 @@ The project combines data cleaning, record linkage, and geospatial visualization
 
 This project integrates infrastructure, housing, and demographic data from multiple sources. Data center locations were scraped and geocoded for spatial analysis. Housing price data (Zillow) was aggregated from monthly to annual values to align with socioeconomic indicators retrieved via the Census API (ACS 5-year estimates). All datasets were reconciled using geographic identifiers (ZIP codes and Census tracts) to enable spatial and temporal analysis.
 
-See DATA_METHODS.md￼for full documentation of the reconciliation and cleaning process.
+See DATA_METHOD.md  for full documentation of the reconciliation and cleaning process.
 
 ---
 
@@ -63,7 +63,7 @@ See DATA_METHODS.md￼for full documentation of the reconciliation and cleaning 
 Before running the project, make sure you have:
 
 - Python 3.10+
-- pip or uv package manager
+- git uv package manager
 - Git
 - R (for spatial processing scripts)
 
