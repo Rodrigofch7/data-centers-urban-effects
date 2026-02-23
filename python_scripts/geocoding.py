@@ -9,7 +9,7 @@ import time
 import re
 
 # --- 1. Load and Filter Data ---
-df = pd.read_csv("data/top_10_us_cities_datacenters.csv")
+df = pd.read_csv("data/top_us_cities_datacenters.csv")
 
 cities = [
     "New York", "Los Angeles", "Chicago", "Houston", "Phoenix",
