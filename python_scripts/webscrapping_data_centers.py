@@ -83,6 +83,9 @@ def run_scraper():
     df.to_csv("data/top_us_cities_datacenters.csv", index=False)
     return df
 
+
+
+
 # --- Tests (Pytest) ---
 
 def test_city_to_state_mapping_integrity():
