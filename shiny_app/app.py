@@ -11,6 +11,17 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import io, base64
 
+# To run use in the terminal: shiny run --reload app.py
+
+# -----------------------------
+# UChicago Brand Constants
+# -----------------------------
+UCHICAGO_MAROON = "#800000"
+DARK_BG  = "#0f172a"
+CARD_BG  = "#1e293b"
+TEXT_COL = "#f1f5f9"
+ACC_COL  = "#800000"  # Swapped to Maroon
+
 # -----------------------------
 # Load data
 # -----------------------------
@@ -21,7 +32,6 @@ def load_data():
     cities       = gpd.read_file(cities_path)
     centers      = gpd.read_file(centers_path)
     return cities, centers, cities_path
-
 
 cities_gdf, centers_gdf, cities_path = load_data()
 cities_gdf  = cities_gdf.to_crs(epsg=4326)
@@ -70,7 +80,6 @@ def make_colormap(values, metric):
     colormap.caption = metric
     return colormap, col_min, col_max
 
-
 def dc_tooltip_html(row):
     zip_code   = str(row.get("ZCTA5CE20", "—") or "—").strip()
     year_built = str(row.get("year_as_datacenter", "—") or "—").strip()
@@ -89,7 +98,6 @@ def dc_tooltip_html(row):
         f"<span style='color:#94a3b8;'>Operator:</span> {operator}"
     )
 
-
 def fig_to_html(fig):
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight", facecolor=fig.get_facecolor())
@@ -97,12 +105,6 @@ def fig_to_html(fig):
     b64 = base64.b64encode(buf.read()).decode()
     plt.close(fig)
     return f'<img src="data:image/png;base64,{b64}" style="width:100%;border-radius:8px;">'
-
-
-DARK_BG  = "#0f172a"
-CARD_BG  = "#1e293b"
-TEXT_COL = "#f1f5f9"
-ACC_COL  = "#38bdf8"
 
 METRIC_GROUP_CHOICES = {}
 if ZILLOW_COLS:
@@ -116,7 +118,6 @@ if DC_COLS:
 # UI
 # =============================================================================
 app_ui = ui.page_navbar(
-
     ui.nav_panel(
         "🗺️ Map",
         ui.page_sidebar(
@@ -132,7 +133,7 @@ app_ui = ui.page_navbar(
                 ui.input_checkbox("show_centers", "Show Data Centers", value=True),
                 ui.hr(),
                 ui.markdown("**Chicago ZIP-level analysis**\n\nSources: Zillow · ACS 2022 · Manual DC inventory"),
-                style=f"background:{CARD_BG}; color:{TEXT_COL};",
+                style=f"background:{DARK_BG}; color:{TEXT_COL}; border-right: 2px solid {UCHICAGO_MAROON};",
             ),
             ui.card(
                 ui.card_header("Chicago — ZIP Code Choropleth"),
@@ -160,7 +161,7 @@ app_ui = ui.page_navbar(
                 ui.input_checkbox("color_by_dc", "Color by Data Center presence", value=False),
                 ui.hr(),
                 ui.markdown("Select any two numeric variables to explore their relationship across Chicago ZIP codes."),
-                style=f"background:{CARD_BG}; color:{TEXT_COL};",
+                style=f"background:{DARK_BG}; color:{TEXT_COL}; border-right: 2px solid {UCHICAGO_MAROON};",
             ),
             ui.layout_columns(
                 ui.card(ui.card_header("Scatter Plot"),          ui.output_ui("scatter_plot")),
@@ -171,8 +172,155 @@ app_ui = ui.page_navbar(
         ),
     ),
 
-    title=ui.h2("Chicago Data Center Dashboard", class_="fw-bold"),
-    bg="#1e293b",
+    ui.nav_panel(
+        "📈 Data Analysis",
+        ui.page_sidebar(
+            ui.sidebar(
+                ui.h4("Analysis Controls", style="color:#f1f5f9;"),
+                ui.hr(),
+                ui.markdown("**Coming soon**\n\nAnalysis tools will appear here."),
+                style=f"background:{DARK_BG}; color:{TEXT_COL}; border-right: 2px solid {UCHICAGO_MAROON};",
+            ),
+            ui.card(
+                ui.card_header("Data Analysis"),
+                ui.div(
+                    ui.tags.i(class_="fa fa-chart-line", style=f"font-size:48px; color:{UCHICAGO_MAROON}; margin-bottom:16px;"),
+                    ui.h3("Coming Soon", style=f"color:{TEXT_COL}; margin-bottom:8px;"),
+                    ui.p("This section is under construction. Data analysis tools and visualizations will be available here.", 
+                         style="color:#94a3b8; max-width:400px;"),
+                    style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:500px; text-align:center;",
+                ),
+            ),
+        ),
+    ),
+
+    ui.nav_spacer(),
+    ui.nav_control(
+        ui.tags.img(
+            src="uchicago_logo.png",
+            class_="uchicago-logo-nav"
+        )
+    ),
+
+    # --- BRANDING & GLOBAL CSS ---
+    header=ui.tags.head(
+        ui.tags.style(f"""
+            /* ── Navbar ── */
+            .navbar {{ background-color: {UCHICAGO_MAROON} !important; border-bottom: 2px solid #000; }}
+            .navbar-brand {{ flex-shrink: 0; margin-right: 24px; }}
+            .navbar-nav .nav-link {{
+                color: rgba(255,255,255,0.85) !important;
+                font-weight: 500;
+                font-size: 15px;
+                padding: 0 16px !important;
+            }}
+            .navbar-nav .nav-link:hover,
+            .navbar-nav .nav-link.active {{
+                color: #ffffff !important;
+                border-bottom: 2px solid #ffffff;
+            }}
+            .uchicago-logo-nav {{
+                height: 42px;
+                display: block;
+                margin: 0 8px;
+            }}
+            .navbar-nav.ms-auto {{
+                align-items: center;
+            }}
+
+            /* ── Full page background ── */
+            body, .bslib-page-sidebar, .bslib-sidebar-layout {{
+                background-color: {DARK_BG} !important;
+            }}
+
+            /* ── Sidebar panel ── */
+            .sidebar,
+            .bslib-sidebar-layout > .sidebar,
+            .bslib-sidebar-layout > .sidebar > .sidebar-content,
+            aside.sidebar {{
+                background-color: {DARK_BG} !important;
+                border-right: 2px solid {UCHICAGO_MAROON} !important;
+                color: {TEXT_COL} !important;
+            }}
+
+            /* ── Card headers ── */
+            .card-header {{
+                background-color: {UCHICAGO_MAROON} !important;
+                color: #ffffff !important;
+                border-bottom: 1px solid #5a0000 !important;
+                font-weight: 600;
+            }}
+
+            /* ── Cards ── */
+            .card {{
+                background-color: {CARD_BG} !important;
+                border: 1px solid #334155 !important;
+            }}
+
+            /* ── All labels in sidebar ── */
+            .sidebar label,
+            .sidebar .control-label,
+            .sidebar .form-check-label,
+            .sidebar p,
+            .sidebar strong,
+            .sidebar h4 {{
+                color: {TEXT_COL} !important;
+            }}
+
+            /* ── Select / input boxes ── */
+            .sidebar .form-select,
+            .sidebar .form-control,
+            .sidebar select {{
+                background-color: {CARD_BG} !important;
+                color: {TEXT_COL} !important;
+                border: 1px solid {UCHICAGO_MAROON} !important;
+            }}
+
+            /* ── Selectize dropdowns ── */
+            .sidebar .selectize-input,
+            .sidebar .selectize-input input {{
+                background-color: {CARD_BG} !important;
+                color: {TEXT_COL} !important;
+                border: 1px solid {UCHICAGO_MAROON} !important;
+                box-shadow: none !important;
+            }}
+            .sidebar .selectize-dropdown,
+            .sidebar .selectize-dropdown .option {{
+                background-color: {CARD_BG} !important;
+                color: {TEXT_COL} !important;
+            }}
+            .sidebar .selectize-dropdown .option:hover,
+            .sidebar .selectize-dropdown .option.active {{
+                background-color: {UCHICAGO_MAROON} !important;
+                color: #ffffff !important;
+            }}
+
+            /* ── Checkbox ── */
+            .sidebar .form-check-input {{
+                border-color: {UCHICAGO_MAROON} !important;
+                background-color: {CARD_BG} !important;
+            }}
+            .sidebar .form-check-input:checked {{
+                background-color: {UCHICAGO_MAROON} !important;
+                border-color: {UCHICAGO_MAROON} !important;
+            }}
+            .sidebar .form-check-input:focus {{
+                box-shadow: 0 0 0 0.2rem rgba(128,0,0,0.35) !important;
+            }}
+
+            /* ── HR dividers ── */
+            .sidebar hr {{
+                border-color: {UCHICAGO_MAROON} !important;
+                opacity: 0.5;
+            }}
+        """)
+    ),
+
+    title=ui.tags.span(
+        "Chicago Data Center Dashboard",
+        style="font-weight: bold; font-size: 22px; color: white; white-space: nowrap;"
+    ),
+    bg=UCHICAGO_MAROON,
     inverse=True,
 )
 
@@ -258,7 +406,7 @@ def server(input, output, session):
                     geom = list(geom.geoms)[0]
                 folium.Marker(
                     location=[geom.y, geom.x],
-                    icon=folium.Icon(color="white", icon_color="#1e293b", icon="building", prefix="fa"),
+                    icon=folium.Icon(color="white", icon_color=UCHICAGO_MAROON, icon="building", prefix="fa"),
                     tooltip=folium.Tooltip(
                         dc_tooltip_html(row),
                         sticky=True,
@@ -273,25 +421,16 @@ def server(input, output, session):
 
         return ui.HTML(f'<div style="height:620px; width:100%;">{m._repr_html_()}</div>')
 
-    # ── Explore page ──────────────────────────────────────────────────────────
     @reactive.Calc
     def plot_data():
         x_var = input.x_var()
         y_var = input.y_var()
-        
-        # Create a unique list of required columns
         raw_cols = [x_var, y_var, "Zip Code", "Total Data Centers"]
         cols_needed = [c for c in raw_cols if c in cities_df.columns]
-        
-        # FIX: Remove duplicates while preserving order
         cols_needed = list(dict.fromkeys(cols_needed))
-        
         df = cities_df[cols_needed].copy().reset_index(drop=True)
-        
-        # Now df[x_var] is guaranteed to be a Series
         df[x_var] = pd.to_numeric(df[x_var], errors="coerce")
         df[y_var] = pd.to_numeric(df[y_var], errors="coerce")
-        
         df = df.dropna(subset=[x_var, y_var]).reset_index(drop=True)
         return df, x_var, y_var
 
@@ -313,12 +452,12 @@ def server(input, output, session):
             has_dc = pd.to_numeric(df["Total Data Centers"], errors="coerce").fillna(0).to_numpy() > 0
             ax.scatter(x[~has_dc], y[~has_dc], color="#38bdf8", alpha=0.7,
                        edgecolors="#0f172a", linewidths=0.5, s=60, label="No Data Center", zorder=3)
-            ax.scatter(x[has_dc],  y[has_dc],  color="#f97316", alpha=0.9,
-                       edgecolors="#0f172a", linewidths=0.5, s=90, label="Has Data Center",
+            ax.scatter(x[has_dc],  y[has_dc],  color=UCHICAGO_MAROON, alpha=0.9,
+                       edgecolors="#f1f5f9", linewidths=0.5, s=90, label="Has Data Center",
                        zorder=4, marker="*")
             ax.legend(facecolor=CARD_BG, edgecolor="#475569", labelcolor=TEXT_COL, fontsize=9)
         else:
-            ax.scatter(x, y, color=ACC_COL, alpha=0.7,
+            ax.scatter(x, y, color=UCHICAGO_MAROON, alpha=0.7,
                        edgecolors="#0f172a", linewidths=0.5, s=60, zorder=3)
 
         try:
@@ -352,7 +491,7 @@ def server(input, output, session):
         fig, axes = plt.subplots(1, 2, figsize=(9, 4))
         fig.patch.set_facecolor(DARK_BG)
 
-        for ax, var, color in zip(axes, [x_var, y_var], [ACC_COL, "#a78bfa"]):
+        for ax, var, color in zip(axes, [x_var, y_var], [UCHICAGO_MAROON, "#a78bfa"]):
             vals = pd.to_numeric(df[var], errors="coerce").dropna().to_numpy().astype(float)
             ax.set_facecolor(CARD_BG)
             ax.hist(vals, bins=20, color=color, alpha=0.8, edgecolor="#0f172a")
@@ -405,7 +544,7 @@ def server(input, output, session):
         html = f"""
         <div style="background:{DARK_BG}; padding:16px; border-radius:8px; font-family:monospace;">
             <div style="margin-bottom:14px; padding:10px; background:{CARD_BG};
-                        border-radius:6px; border-left:4px solid {corr_color};">
+                        border-radius:6px; border-left:4px solid {UCHICAGO_MAROON};">
                 <span style="color:#94a3b8; font-size:12px;">Pearson Correlation</span><br>
                 <span style="color:{corr_color}; font-size:22px; font-weight:bold;">r = {corr:.4f}</span><br>
                 <span style="color:#94a3b8; font-size:11px;">{corr_label} {direction} relationship</span>
@@ -414,7 +553,7 @@ def server(input, output, session):
                 <thead>
                     <tr>
                         <th style="padding:6px 10px; color:#64748b; text-align:left;">Statistic</th>
-                        <th style="padding:6px 10px; color:{ACC_COL}; text-align:right;">{x_var[:28]}</th>
+                        <th style="padding:6px 10px; color:{UCHICAGO_MAROON}; text-align:right;">{x_var[:28]}</th>
                         <th style="padding:6px 10px; color:#a78bfa; text-align:right;">{y_var[:28]}</th>
                     </tr>
                 </thead>
@@ -426,4 +565,7 @@ def server(input, output, session):
 
 
 # =============================================================================
-app = App(app_ui, server)
+# Set path to the Data folder for local assets
+# =============================================================================
+www_dir = os.path.join(os.path.dirname(__file__), "Data")
+app = App(app_ui, server, static_assets=www_dir)
