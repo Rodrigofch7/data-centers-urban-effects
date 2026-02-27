@@ -12,6 +12,10 @@ import matplotlib.pyplot as plt
 import io, base64
 
 # To run use in the terminal: shiny run --reload app.py
+# To deploy:
+# rsconnect add --account rodrigofrancac --name rodrigofrancac --token XXXXXXXXXX --secret XXXXXXXXXX
+# Then cd shiny_app rsconnect deploy shiny app.py
+
 
 # -----------------------------
 # UChicago Brand Constants
