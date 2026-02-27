@@ -64,15 +64,40 @@ CENSUS_COLS = [c for c in [
 
 DC_COLS = [c for c in ["Total Data Centers"] if c in cities_df.columns]
 
+# ── Placeholder: Water columns (replace with real column names when data is ready) ──
+WATER_PLACEHOLDER_COLS = [
+    "Water Consumption (placeholder)",
+    "Water Infrastructure Score (placeholder)",
+]
+for col in WATER_PLACEHOLDER_COLS:
+    cities_df[col]  = np.nan
+    cities_gdf[col] = np.nan
+WATER_COLS = WATER_PLACEHOLDER_COLS
+
+# ── Placeholder: Electricity columns (replace with real column names when data is ready) ──
+ELECTRICITY_PLACEHOLDER_COLS = [
+    "Electricity Consumption (placeholder)",
+    "Electricity Infrastructure Score (placeholder)",
+]
+for col in ELECTRICITY_PLACEHOLDER_COLS:
+    cities_df[col]  = np.nan
+    cities_gdf[col] = np.nan
+ELECTRICITY_COLS = ELECTRICITY_PLACEHOLDER_COLS
+
 for col in ZILLOW_COLS + CENSUS_COLS + DC_COLS:
     cities_df[col]  = pd.to_numeric(cities_df[col],  errors="coerce")
     cities_gdf[col] = pd.to_numeric(cities_gdf[col], errors="coerce")
 
-ALL_NUMERIC = ZILLOW_COLS + CENSUS_COLS + DC_COLS
+ALL_NUMERIC = ZILLOW_COLS + CENSUS_COLS + DC_COLS + WATER_COLS + ELECTRICITY_COLS
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def make_colormap(values, metric):
     clean   = values.dropna()
+    # Handle all-NaN case (e.g. placeholder columns)
+    if clean.empty:
+        colormap         = cm.linear.YlOrRd_09.scale(0, 1)
+        colormap.caption = metric
+        return colormap, 0.0, 1.0
     col_min = float(clean.min())
     col_max = float(clean.max())
     spread  = col_max - col_min
@@ -112,11 +137,15 @@ def fig_to_html(fig):
 
 METRIC_GROUP_CHOICES = {}
 if ZILLOW_COLS:
-    METRIC_GROUP_CHOICES["zillow"]  = "🏠 Zillow Home Values (by year)"
+    METRIC_GROUP_CHOICES["zillow"]      = "🏠 Zillow Home Values (by year)"
 if CENSUS_COLS:
-    METRIC_GROUP_CHOICES["census"]  = "👥 Census & Demographics"
+    METRIC_GROUP_CHOICES["census"]      = "👥 Census & Demographics"
 if DC_COLS:
-    METRIC_GROUP_CHOICES["centers"] = "🏢 Data Centers"
+    METRIC_GROUP_CHOICES["centers"]     = "🏢 Data Centers"
+if WATER_COLS:
+    METRIC_GROUP_CHOICES["water"]       = "💧 Water (coming soon)"
+if ELECTRICITY_COLS:
+    METRIC_GROUP_CHOICES["electricity"] = "⚡ Electricity (coming soon)"
 
 # =============================================================================
 # UI
@@ -341,14 +370,32 @@ def server(input, output, session):
             cols = ZILLOW_COLS
         elif group == "census":
             cols = CENSUS_COLS
-        else:
+        elif group == "centers":
             cols = DC_COLS
+        elif group == "water":
+            cols = WATER_COLS
+        elif group == "electricity":
+            cols = ELECTRICITY_COLS
+        else:
+            cols = []
         if not cols:
             return ui.p("No columns found.", style="color:#f87171;")
-        return ui.input_select(
-            "metric", "Select Metric",
-            choices={c: c for c in cols},
-            selected=cols[-1] if group == "zillow" else cols[0],
+
+        # Warning badge for placeholder groups
+        notice = ui.div()
+        if group in ("water", "electricity"):
+            notice = ui.div(
+                "⚠️ Placeholder data — values are empty until real data is loaded.",
+                style="color:#facc15; font-size:11px; margin-bottom:6px; font-style:italic;"
+            )
+
+        return ui.div(
+            notice,
+            ui.input_select(
+                "metric", "Select Metric",
+                choices={c: c for c in cols},
+                selected=cols[0],
+            ),
         )
 
     @render.ui
@@ -361,6 +408,7 @@ def server(input, output, session):
             metric = fallback[0]
 
         gdf = cities_gdf.copy()
+        is_placeholder = gdf[metric].isna().all()
 
         tt_fields, tt_aliases = [], []
         if "Zip Code" in gdf.columns:
@@ -423,7 +471,19 @@ def server(input, output, session):
                     ),
                 ).add_to(m)
 
-        return ui.HTML(f'<div style="height:620px; width:100%;">{m._repr_html_()}</div>')
+        placeholder_banner = ""
+        if is_placeholder:
+            placeholder_banner = (
+                "<div style='background:#1e293b; border:1px solid #facc15; color:#facc15;"
+                "padding:8px 14px; border-radius:6px; font-family:monospace; font-size:12px;"
+                "margin-bottom:8px;'>⚠️ No data loaded yet for this metric — "
+                "map shows empty ZIP codes as placeholders.</div>"
+            )
+
+        return ui.HTML(
+            f"{placeholder_banner}"
+            f'<div style="height:620px; width:100%;">{m._repr_html_()}</div>'
+        )
 
     @reactive.Calc
     def plot_data():
