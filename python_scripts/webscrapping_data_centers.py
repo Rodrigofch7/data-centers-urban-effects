@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import time
 import pytest
 
+
 # --- Configuration & Metadata ---
 CITIES = [
     ("New York", "new-york/new-york"),
