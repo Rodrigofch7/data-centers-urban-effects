@@ -5,6 +5,8 @@ import time
 import pytest
 
 
+# To test run: python -m pytest tests/test_webscrapping.py
+
 # --- Configuration & Metadata ---
 CITIES = [
     ("New York", "new-york/new-york"),

@@ -12,9 +12,6 @@ import matplotlib.pyplot as plt
 import io, base64
 
 # To run use in the terminal: shiny run --reload app.py
-# To deploy:
-# rsconnect add --account rodrigofrancac --name rodrigofrancac --token XXXXXXXXXX --secret XXXXXXXXXX
-# Then cd shiny_app rsconnect deploy shiny app.py
 
 
 # -----------------------------
@@ -24,7 +21,65 @@ UCHICAGO_MAROON = "#800000"
 DARK_BG  = "#0f172a"
 CARD_BG  = "#1e293b"
 TEXT_COL = "#f1f5f9"
-ACC_COL  = "#800000"  # Swapped to Maroon
+ACC_COL  = "#800000"
+
+# -----------------------------
+# Column definitions
+# -----------------------------
+_EW_YEARS = [2021, 2022, 2023, 2024]
+
+_ELEC_BASE = {
+    'elec_total':           'Electricity: Total Housing Units',
+    'elec_not_charged':     'Electricity: Not Charged or Included in Fees',
+    'elec_charged':         'Electricity: Units Charged',
+    'elec_lt_50':           'Electricity: Under $50/month',
+    'elec_50_99':           'Electricity: $50-$99/month',
+    'elec_100_149':         'Electricity: $100-$149/month',
+    'elec_150_199':         'Electricity: $150-$199/month',
+    'elec_200_249':         'Electricity: $200-$249/month',
+    'elec_250_plus':        'Electricity: $250+/month',
+    'elec_total_moe':       'Electricity: Total (Margin of Error)',
+    'elec_not_charged_moe': 'Electricity: Not Charged (Margin of Error)',
+    'elec_charged_moe':     'Electricity: Units Charged (Margin of Error)',
+    'elec_lt_50_moe':       'Electricity: Under $50/month (Margin of Error)',
+    'elec_50_99_moe':       'Electricity: $50-$99/month (Margin of Error)',
+    'elec_100_149_moe':     'Electricity: $100-$149/month (Margin of Error)',
+    'elec_150_199_moe':     'Electricity: $150-$199/month (Margin of Error)',
+    'elec_200_249_moe':     'Electricity: $200-$249/month (Margin of Error)',
+    'elec_250_plus_moe':    'Electricity: $250+/month (Margin of Error)',
+}
+
+_WATER_BASE = {
+    'water_total':           'Water & Sewer: Total Housing Units',
+    'water_not_charged':     'Water & Sewer: Not Charged or Included in Fees',
+    'water_charged':         'Water & Sewer: Units Charged',
+    'water_lt_125':          'Water & Sewer: Under $125/year',
+    'water_125_249':         'Water & Sewer: $125-$249/year',
+    'water_250_499':         'Water & Sewer: $250-$499/year',
+    'water_500_749':         'Water & Sewer: $500-$749/year',
+    'water_750_999':         'Water & Sewer: $750-$999/year',
+    'water_1000_plus':       'Water & Sewer: $1,000+/year',
+    'water_total_moe':       'Water & Sewer: Total (Margin of Error)',
+    'water_not_charged_moe': 'Water & Sewer: Not Charged (Margin of Error)',
+    'water_charged_moe':     'Water & Sewer: Units Charged (Margin of Error)',
+    'water_lt_125_moe':      'Water & Sewer: Under $125/year (Margin of Error)',
+    'water_125_249_moe':     'Water & Sewer: $125-$249/year (Margin of Error)',
+    'water_250_499_moe':     'Water & Sewer: $250-$499/year (Margin of Error)',
+    'water_500_749_moe':     'Water & Sewer: $500-$749/year (Margin of Error)',
+    'water_750_999_moe':     'Water & Sewer: $750-$999/year (Margin of Error)',
+    'water_1000_plus_moe':   'Water & Sewer: $1,000+/year (Margin of Error)',
+}
+
+# Final friendly column names as they appear in the gpkg after renaming
+ALL_ELEC_COLS  = [f'{v} ({y} ACS)' for y in _EW_YEARS for v in _ELEC_BASE.values()]
+ALL_WATER_COLS = [f'{v} ({y} ACS)' for y in _EW_YEARS for v in _WATER_BASE.values()]
+
+# Grouped by year for the year-selector UI
+ELEC_BY_YEAR  = {y: [f'{v} ({y} ACS)' for v in _ELEC_BASE.values()] for y in _EW_YEARS}
+WATER_BY_YEAR = {y: [f'{v} ({y} ACS)' for v in _WATER_BASE.values()] for y in _EW_YEARS}
+
+# Zillow years present in data
+ZILLOW_YEARS = list(range(2000, 2027))
 
 # -----------------------------
 # Load data
@@ -41,59 +96,44 @@ cities_gdf, centers_gdf, cities_path = load_data()
 cities_gdf  = cities_gdf.to_crs(epsg=4326)
 centers_gdf = centers_gdf.to_crs(epsg=4326)
 
-# ── Rename year columns in cities_gdf for the map ────────────────────────────
-year_rename   = {str(y): f"Home Value {y}" for y in range(2000, 2026)}
+# ── Build friendly year column names for Zillow ───────────────────────────────
+year_rename   = {str(y): f"Median Home Value ({y})" for y in ZILLOW_YEARS}
 cities_gdf    = cities_gdf.rename(columns=year_rename)
-YEAR_COLS_NEW = [f"Home Value {y}" for y in range(2000, 2026)]
+YEAR_COLS_NEW = [f"Median Home Value ({y})" for y in ZILLOW_YEARS]
 
-# ── Build a clean flat DataFrame using fiona — bypasses geopandas internals ───
+# ── Build a clean flat DataFrame using fiona ──────────────────────────────────
 with fiona.open(cities_path) as src:
     records = [feat["properties"] for feat in src]
 cities_df = pd.DataFrame(records)
 cities_df = cities_df.rename(columns=year_rename)
 
-# ── Column groups ─────────────────────────────────────────────────────────────
+# ── Column groups (only keep cols that actually exist in the data) ─────────────
 ZILLOW_COLS = [c for c in YEAR_COLS_NEW if c in cities_df.columns]
 
 CENSUS_COLS = [c for c in [
     "Total Population", "Median Age", "Median Household Income",
-    "Median Home Value", "Gini Index", "Broadband %",
-    "Poverty %", "Unemployment Rate %", "Renter %",
-    "Black Population", "Asian Population", "Hispanic Population",
+    "Median Home Value (Census ACS)", "Gini Inequality Index",
+    "Broadband Adoption Rate (%)", "Poverty Rate (%)",
+    "Unemployment Rate (%)", "Renter-Occupied Share (%)",
+    "Black or African American Population", "Asian Population",
+    "Hispanic or Latino Population",
 ] if c in cities_df.columns]
 
 DC_COLS = [c for c in ["Total Data Centers"] if c in cities_df.columns]
 
-# ── Placeholder: Water columns (replace with real column names when data is ready) ──
-WATER_PLACEHOLDER_COLS = [
-    "Water Consumption (placeholder)",
-    "Water Infrastructure Score (placeholder)",
-]
-for col in WATER_PLACEHOLDER_COLS:
-    cities_df[col]  = np.nan
-    cities_gdf[col] = np.nan
-WATER_COLS = WATER_PLACEHOLDER_COLS
+ELEC_COLS  = [c for c in ALL_ELEC_COLS  if c in cities_df.columns]
+WATER_COLS = [c for c in ALL_WATER_COLS if c in cities_df.columns]
 
-# ── Placeholder: Electricity columns (replace with real column names when data is ready) ──
-ELECTRICITY_PLACEHOLDER_COLS = [
-    "Electricity Consumption (placeholder)",
-    "Electricity Infrastructure Score (placeholder)",
-]
-for col in ELECTRICITY_PLACEHOLDER_COLS:
-    cities_df[col]  = np.nan
-    cities_gdf[col] = np.nan
-ELECTRICITY_COLS = ELECTRICITY_PLACEHOLDER_COLS
-
-for col in ZILLOW_COLS + CENSUS_COLS + DC_COLS:
+# Coerce all numeric groups
+for col in ZILLOW_COLS + CENSUS_COLS + DC_COLS + ELEC_COLS + WATER_COLS:
     cities_df[col]  = pd.to_numeric(cities_df[col],  errors="coerce")
     cities_gdf[col] = pd.to_numeric(cities_gdf[col], errors="coerce")
 
-ALL_NUMERIC = ZILLOW_COLS + CENSUS_COLS + DC_COLS + WATER_COLS + ELECTRICITY_COLS
+ALL_NUMERIC = ZILLOW_COLS + CENSUS_COLS + DC_COLS + ELEC_COLS + WATER_COLS
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def make_colormap(values, metric):
-    clean   = values.dropna()
-    # Handle all-NaN case (e.g. placeholder columns)
+    clean = values.dropna()
     if clean.empty:
         colormap         = cm.linear.YlOrRd_09.scale(0, 1)
         colormap.caption = metric
@@ -110,20 +150,19 @@ def make_colormap(values, metric):
     return colormap, col_min, col_max
 
 def dc_tooltip_html(row):
-    zip_code   = str(row.get("ZCTA5CE20", "—") or "—").strip()
-    year_built = str(row.get("year_as_datacenter", "—") or "—").strip()
-    operator   = str(row.get("operator", "—") or "—").strip()
-    facility   = str(row.get("facility", "") or "").strip()
-
-    if zip_code   in ("", "nan"): zip_code   = "—"
-    if year_built in ("", "nan"): year_built = "Unknown"
-    if operator   in ("", "nan"): operator   = "—"
-
-    header = f"<b>🏢 {facility}</b>" if facility and facility != "nan" else "<b>🏢 Data Center</b>"
+    facility = str(row.get("Facility Name", row.get("facility", "")) or "").strip()
+    zip_code = str(row.get("Data Center ZIP Code", row.get("zip_code", "—")) or "—").strip()
+    operator = str(row.get("Operator", row.get("operator", "—")) or "—").strip()
+    city     = str(row.get("City", row.get("city_in_de", "—")) or "—").strip()
+    for v in ("", "nan", "None"):
+        if zip_code == v: zip_code = "—"
+        if operator == v: operator = "—"
+        if city     == v: city     = "—"
+    header = f"<b>🏢 {facility}</b>" if facility and facility not in ("nan", "None", "") else "<b>🏢 Data Center</b>"
     return (
         f"{header}<br>"
+        f"<span style='color:#94a3b8;'>City:</span> {city}<br>"
         f"<span style='color:#94a3b8;'>ZIP Code:</span> {zip_code}<br>"
-        f"<span style='color:#94a3b8;'>Est. Year Built:</span> {year_built}<br>"
         f"<span style='color:#94a3b8;'>Operator:</span> {operator}"
     )
 
@@ -135,17 +174,19 @@ def fig_to_html(fig):
     plt.close(fig)
     return f'<img src="data:image/png;base64,{b64}" style="width:100%;border-radius:8px;">'
 
+# ── Metric group choices ──────────────────────────────────────────────────────
 METRIC_GROUP_CHOICES = {}
 if ZILLOW_COLS:
-    METRIC_GROUP_CHOICES["zillow"]      = "🏠 Zillow Home Values (by year)"
+    METRIC_GROUP_CHOICES["zillow"]      = "🏠 Zillow Home Values"
 if CENSUS_COLS:
     METRIC_GROUP_CHOICES["census"]      = "👥 Census & Demographics"
 if DC_COLS:
     METRIC_GROUP_CHOICES["centers"]     = "🏢 Data Centers"
+if ELEC_COLS:
+    METRIC_GROUP_CHOICES["electricity"] = "⚡ Electricity Costs"
 if WATER_COLS:
-    METRIC_GROUP_CHOICES["water"]       = "💧 Water (coming soon)"
-if ELECTRICITY_COLS:
-    METRIC_GROUP_CHOICES["electricity"] = "⚡ Electricity (coming soon)"
+    METRIC_GROUP_CHOICES["water"]       = "💧 Water & Sewer Costs"
+
 
 # =============================================================================
 # UI
@@ -165,7 +206,7 @@ app_ui = ui.page_navbar(
                 ui.hr(),
                 ui.input_checkbox("show_centers", "Show Data Centers", value=True),
                 ui.hr(),
-                ui.markdown("**Chicago ZIP-level analysis**\n\nSources: Zillow · ACS 2022 · Manual DC inventory"),
+                ui.markdown("**Chicago ZIP-level analysis**\n\nSources: Zillow · ACS 2022 · NHGIS ACS 2021–2024 · Manual DC inventory"),
                 style=f"background:{DARK_BG}; color:{TEXT_COL}; border-right: 2px solid {UCHICAGO_MAROON};",
             ),
             ui.card(
@@ -219,7 +260,7 @@ app_ui = ui.page_navbar(
                 ui.div(
                     ui.tags.i(class_="fa fa-chart-line", style=f"font-size:48px; color:{UCHICAGO_MAROON}; margin-bottom:16px;"),
                     ui.h3("Coming Soon", style=f"color:{TEXT_COL}; margin-bottom:8px;"),
-                    ui.p("This section is under construction. Data analysis tools and visualizations will be available here.", 
+                    ui.p("This section is under construction. Data analysis tools and visualizations will be available here.",
                          style="color:#94a3b8; max-width:400px;"),
                     style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:500px; text-align:center;",
                 ),
@@ -229,44 +270,26 @@ app_ui = ui.page_navbar(
 
     ui.nav_spacer(),
     ui.nav_control(
-        ui.tags.img(
-            src="uchicago_logo.png",
-            class_="uchicago-logo-nav"
-        )
+        ui.tags.img(src="uchicago_logo.png", class_="uchicago-logo-nav")
     ),
 
-    # --- BRANDING & GLOBAL CSS ---
     header=ui.tags.head(
         ui.tags.style(f"""
-            /* ── Navbar ── */
             .navbar {{ background-color: {UCHICAGO_MAROON} !important; border-bottom: 2px solid #000; }}
             .navbar-brand {{ flex-shrink: 0; margin-right: 24px; }}
             .navbar-nav .nav-link {{
                 color: rgba(255,255,255,0.85) !important;
-                font-weight: 500;
-                font-size: 15px;
-                padding: 0 16px !important;
+                font-weight: 500; font-size: 15px; padding: 0 16px !important;
             }}
             .navbar-nav .nav-link:hover,
             .navbar-nav .nav-link.active {{
-                color: #ffffff !important;
-                border-bottom: 2px solid #ffffff;
+                color: #ffffff !important; border-bottom: 2px solid #ffffff;
             }}
-            .uchicago-logo-nav {{
-                height: 42px;
-                display: block;
-                margin: 0 8px;
-            }}
-            .navbar-nav.ms-auto {{
-                align-items: center;
-            }}
-
-            /* ── Full page background ── */
+            .uchicago-logo-nav {{ height: 42px; display: block; margin: 0 8px; }}
+            .navbar-nav.ms-auto {{ align-items: center; }}
             body, .bslib-page-sidebar, .bslib-sidebar-layout {{
                 background-color: {DARK_BG} !important;
             }}
-
-            /* ── Sidebar panel ── */
             .sidebar,
             .bslib-sidebar-layout > .sidebar,
             .bslib-sidebar-layout > .sidebar > .sidebar-content,
@@ -275,60 +298,36 @@ app_ui = ui.page_navbar(
                 border-right: 2px solid {UCHICAGO_MAROON} !important;
                 color: {TEXT_COL} !important;
             }}
-
-            /* ── Card headers ── */
             .card-header {{
                 background-color: {UCHICAGO_MAROON} !important;
                 color: #ffffff !important;
                 border-bottom: 1px solid #5a0000 !important;
                 font-weight: 600;
             }}
-
-            /* ── Cards ── */
             .card {{
                 background-color: {CARD_BG} !important;
                 border: 1px solid #334155 !important;
             }}
-
-            /* ── All labels in sidebar ── */
-            .sidebar label,
-            .sidebar .control-label,
-            .sidebar .form-check-label,
-            .sidebar p,
-            .sidebar strong,
-            .sidebar h4 {{
-                color: {TEXT_COL} !important;
-            }}
-
-            /* ── Select / input boxes ── */
-            .sidebar .form-select,
-            .sidebar .form-control,
-            .sidebar select {{
+            .sidebar label, .sidebar .control-label, .sidebar .form-check-label,
+            .sidebar p, .sidebar strong, .sidebar h4 {{ color: {TEXT_COL} !important; }}
+            .sidebar .form-select, .sidebar .form-control, .sidebar select {{
                 background-color: {CARD_BG} !important;
                 color: {TEXT_COL} !important;
                 border: 1px solid {UCHICAGO_MAROON} !important;
             }}
-
-            /* ── Selectize dropdowns ── */
-            .sidebar .selectize-input,
-            .sidebar .selectize-input input {{
+            .sidebar .selectize-input, .sidebar .selectize-input input {{
                 background-color: {CARD_BG} !important;
                 color: {TEXT_COL} !important;
                 border: 1px solid {UCHICAGO_MAROON} !important;
                 box-shadow: none !important;
             }}
-            .sidebar .selectize-dropdown,
-            .sidebar .selectize-dropdown .option {{
-                background-color: {CARD_BG} !important;
-                color: {TEXT_COL} !important;
+            .sidebar .selectize-dropdown, .sidebar .selectize-dropdown .option {{
+                background-color: {CARD_BG} !important; color: {TEXT_COL} !important;
             }}
             .sidebar .selectize-dropdown .option:hover,
             .sidebar .selectize-dropdown .option.active {{
-                background-color: {UCHICAGO_MAROON} !important;
-                color: #ffffff !important;
+                background-color: {UCHICAGO_MAROON} !important; color: #ffffff !important;
             }}
-
-            /* ── Checkbox ── */
             .sidebar .form-check-input {{
                 border-color: {UCHICAGO_MAROON} !important;
                 background-color: {CARD_BG} !important;
@@ -340,12 +339,7 @@ app_ui = ui.page_navbar(
             .sidebar .form-check-input:focus {{
                 box-shadow: 0 0 0 0.2rem rgba(128,0,0,0.35) !important;
             }}
-
-            /* ── HR dividers ── */
-            .sidebar hr {{
-                border-color: {UCHICAGO_MAROON} !important;
-                opacity: 0.5;
-            }}
+            .sidebar hr {{ border-color: {UCHICAGO_MAROON} !important; opacity: 0.5; }}
         """)
     ),
 
@@ -366,41 +360,86 @@ def server(input, output, session):
     @render.ui
     def metric_selector():
         group = input.metric_group()
+
         if group == "zillow":
-            cols = ZILLOW_COLS
+            # Year slider for Zillow
+            return ui.div(
+                ui.input_select(
+                    "zillow_year", "Year",
+                    choices={str(y): str(y) for y in ZILLOW_YEARS},
+                    selected="2024",
+                ),
+                ui.output_ui("metric_display"),
+            )
+
+        elif group in ("electricity", "water"):
+            # ACS year selector + metric selector for energy/water
+            year_cols = ELEC_BY_YEAR if group == "electricity" else WATER_BY_YEAR
+            return ui.div(
+                ui.input_select(
+                    "ew_year", "ACS Year",
+                    choices={str(y): str(y) for y in _EW_YEARS},
+                    selected="2024",
+                ),
+                ui.output_ui("ew_metric_selector"),
+            )
+
         elif group == "census":
             cols = CENSUS_COLS
         elif group == "centers":
             cols = DC_COLS
-        elif group == "water":
-            cols = WATER_COLS
-        elif group == "electricity":
-            cols = ELECTRICITY_COLS
         else:
             cols = []
+
         if not cols:
-            return ui.p("No columns found.", style="color:#f87171;")
-
-        # Warning badge for placeholder groups
-        notice = ui.div()
-        if group in ("water", "electricity"):
-            notice = ui.div(
-                "⚠️ Placeholder data — values are empty until real data is loaded.",
-                style="color:#facc15; font-size:11px; margin-bottom:6px; font-style:italic;"
-            )
-
-        return ui.div(
-            notice,
-            ui.input_select(
-                "metric", "Select Metric",
-                choices={c: c for c in cols},
-                selected=cols[0],
-            ),
+            return ui.p("No columns available.", style="color:#f87171;")
+        return ui.input_select(
+            "metric", "Select Metric",
+            choices={c: c for c in cols},
+            selected=cols[0],
         )
 
     @render.ui
+    def metric_display():
+        """Shows the resolved column name for Zillow year selection."""
+        year = input.zillow_year() if hasattr(input, 'zillow_year') else "2024"
+        col  = f"Median Home Value ({year})"
+        if col in cities_df.columns:
+            return ui.p(f"Showing: {col}", style="color:#94a3b8; font-size:11px; margin-top:4px;")
+        return ui.p("Year not available.", style="color:#f87171; font-size:11px;")
+
+    @render.ui
+    def ew_metric_selector():
+        group = input.metric_group()
+        year  = int(input.ew_year()) if hasattr(input, 'ew_year') else 2024
+        cols  = ELEC_BY_YEAR.get(year, []) if group == "electricity" else WATER_BY_YEAR.get(year, [])
+        cols  = [c for c in cols if c in cities_df.columns]
+        if not cols:
+            return ui.p("No data for this year.", style="color:#f87171;")
+        # Filter out MOE columns by default — keep them available but group them last
+        main_cols = [c for c in cols if "(Margin of Error)" not in c]
+        moe_cols  = [c for c in cols if "(Margin of Error)" in c]
+        ordered   = main_cols + moe_cols
+        return ui.input_select(
+            "metric", "Select Metric",
+            choices={c: c for c in ordered},
+            selected=ordered[0] if ordered else None,
+        )
+
+    def _resolved_metric():
+        """Return the currently selected metric column name."""
+        group = input.metric_group()
+        if group == "zillow":
+            year = getattr(input, 'zillow_year', lambda: "2024")()
+            return f"Median Home Value ({year})"
+        elif group in ("electricity", "water"):
+            return input.metric() if hasattr(input, 'metric') else None
+        else:
+            return input.metric() if hasattr(input, 'metric') else None
+
+    @render.ui
     def map_plot():
-        metric = input.metric()
+        metric = _resolved_metric()
         if not metric or metric not in cities_gdf.columns:
             fallback = [c for c in ALL_NUMERIC if c in cities_gdf.columns]
             if not fallback:
@@ -408,20 +447,17 @@ def server(input, output, session):
             metric = fallback[0]
 
         gdf = cities_gdf.copy()
-        is_placeholder = gdf[metric].isna().all()
 
         tt_fields, tt_aliases = [], []
         if "Zip Code" in gdf.columns:
-            tt_fields.append("Zip Code")
-            tt_aliases.append("ZIP Code")
-        tt_fields.append(metric)
-        tt_aliases.append(metric)
+            tt_fields.append("Zip Code");  tt_aliases.append("ZIP Code")
+        tt_fields.append(metric);          tt_aliases.append(metric)
 
         centroids  = gdf.geometry.to_crs(epsg=3857).centroid.to_crs(epsg=4326)
         center_lat = centroids.y.mean()
         center_lon = centroids.x.mean()
 
-        m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles="CartoDB dark_matter")
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=8, tiles="CartoDB dark_matter")
         colormap, col_min, col_max = make_colormap(gdf[metric], metric)
 
         def style_fn(feature):
@@ -471,31 +507,18 @@ def server(input, output, session):
                     ),
                 ).add_to(m)
 
-        placeholder_banner = ""
-        if is_placeholder:
-            placeholder_banner = (
-                "<div style='background:#1e293b; border:1px solid #facc15; color:#facc15;"
-                "padding:8px 14px; border-radius:6px; font-family:monospace; font-size:12px;"
-                "margin-bottom:8px;'>⚠️ No data loaded yet for this metric — "
-                "map shows empty ZIP codes as placeholders.</div>"
-            )
-
-        return ui.HTML(
-            f"{placeholder_banner}"
-            f'<div style="height:620px; width:100%;">{m._repr_html_()}</div>'
-        )
+        return ui.HTML(f'<div style="height:620px; width:100%;">{m._repr_html_()}</div>')
 
     @reactive.Calc
     def plot_data():
         x_var = input.x_var()
         y_var = input.y_var()
-        raw_cols = [x_var, y_var, "Zip Code", "Total Data Centers"]
-        cols_needed = [c for c in raw_cols if c in cities_df.columns]
-        cols_needed = list(dict.fromkeys(cols_needed))
-        df = cities_df[cols_needed].copy().reset_index(drop=True)
-        df[x_var] = pd.to_numeric(df[x_var], errors="coerce")
-        df[y_var] = pd.to_numeric(df[y_var], errors="coerce")
-        df = df.dropna(subset=[x_var, y_var]).reset_index(drop=True)
+        raw_cols     = [x_var, y_var, "Zip Code", "Total Data Centers"]
+        cols_needed  = list(dict.fromkeys([c for c in raw_cols if c in cities_df.columns]))
+        df           = cities_df[cols_needed].copy().reset_index(drop=True)
+        df[x_var]    = pd.to_numeric(df[x_var], errors="coerce")
+        df[y_var]    = pd.to_numeric(df[y_var], errors="coerce")
+        df           = df.dropna(subset=[x_var, y_var]).reset_index(drop=True)
         return df, x_var, y_var
 
     @render.ui
@@ -562,7 +585,7 @@ def server(input, output, session):
             mean_v = float(vals.mean())
             ax.axvline(mean_v, color="#fb923c", linewidth=1.5, linestyle="--",
                        label=f"Mean: {mean_v:,.1f}")
-            ax.set_title(var, color=TEXT_COL, fontsize=9)
+            ax.set_title(var[:40], color=TEXT_COL, fontsize=9)
             ax.tick_params(colors=TEXT_COL, labelsize=8)
             for spine in ax.spines.values():
                 spine.set_edgecolor("#475569")
@@ -629,7 +652,7 @@ def server(input, output, session):
 
 
 # =============================================================================
-# Set path to the Data folder for local assets
+# App
 # =============================================================================
 www_dir = os.path.join(os.path.dirname(__file__), "Data")
 app = App(app_ui, server, static_assets=www_dir)
