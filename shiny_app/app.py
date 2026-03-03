@@ -9,82 +9,106 @@ import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import io, base64
 
-# To run use in the terminal: shiny run --reload app.py
+# To run: shiny run --reload app.py
 # cd shiny_app -> rsconnect deploy shiny .
 
+# =============================================================================
+# BRAND & DESIGN TOKENS
+# =============================================================================
+MAROON      = "#800000"
+MAROON_DARK = "#5a0000"
+MAROON_MID  = "#a00000"
 
-# -----------------------------
-# UChicago Brand Constants
-# -----------------------------
-UCHICAGO_MAROON = "#800000"
-DARK_BG  = "#0f172a"
-CARD_BG  = "#1e293b"
-TEXT_COL = "#f1f5f9"
-ACC_COL  = "#800000"
+DARK_BG   = "#0d1117"
+PANEL_BG  = "#161b22"
+CARD_BG   = "#1c2128"
+BORDER    = "#30363d"
+TEXT_PRI  = "#e6edf3"
+TEXT_SEC  = "#8b949e"
+TEXT_ACC  = "#f0a500"   # gold accent
 
-# -----------------------------
-# Column definitions
-# -----------------------------
-_EW_YEARS = [2021, 2022, 2023, 2024]
-
-_ELEC_BASE = {
-    'elec_total':           'Electricity: Total Housing Units',
-    'elec_not_charged':     'Electricity: Not Charged or Included in Fees',
-    'elec_charged':         'Electricity: Units Charged',
-    'elec_lt_50':           'Electricity: Under $50/month',
-    'elec_50_99':           'Electricity: $50-$99/month',
-    'elec_100_149':         'Electricity: $100-$149/month',
-    'elec_150_199':         'Electricity: $150-$199/month',
-    'elec_200_249':         'Electricity: $200-$249/month',
-    'elec_250_plus':        'Electricity: $250+/month',
-    'elec_total_moe':       'Electricity: Total (Margin of Error)',
-    'elec_not_charged_moe': 'Electricity: Not Charged (Margin of Error)',
-    'elec_charged_moe':     'Electricity: Units Charged (Margin of Error)',
-    'elec_lt_50_moe':       'Electricity: Under $50/month (Margin of Error)',
-    'elec_50_99_moe':       'Electricity: $50-$99/month (Margin of Error)',
-    'elec_100_149_moe':     'Electricity: $100-$149/month (Margin of Error)',
-    'elec_150_199_moe':     'Electricity: $150-$199/month (Margin of Error)',
-    'elec_200_249_moe':     'Electricity: $200-$249/month (Margin of Error)',
-    'elec_250_plus_moe':    'Electricity: $250+/month (Margin of Error)',
+# =============================================================================
+# COLORBLIND-FRIENDLY COLORMAPS  (one per metric group)
+#
+#   viridis  → blue-green-yellow   (Zillow home values)
+#   cividis  → blue-yellow         (Census demographics)  CVD-safe by design
+#   plasma   → purple-orange-yel   (Data Centers)
+#   magma    → black-purple-white  (Electricity)
+#   YlGnBu   → yellow-green-blue   (Water & Sewer)
+# =============================================================================
+GROUP_CMAPS = {
+    "zillow":      "viridis",
+    "census":      "cividis",
+    "centers":     "plasma",
+    "electricity": "magma",
+    "water":       "YlGnBu",
 }
 
-_WATER_BASE = {
-    'water_total':           'Water & Sewer: Total Housing Units',
-    'water_not_charged':     'Water & Sewer: Not Charged or Included in Fees',
-    'water_charged':         'Water & Sewer: Units Charged',
-    'water_lt_125':          'Water & Sewer: Under $125/year',
-    'water_125_249':         'Water & Sewer: $125-$249/year',
-    'water_250_499':         'Water & Sewer: $250-$499/year',
-    'water_500_749':         'Water & Sewer: $500-$749/year',
-    'water_750_999':         'Water & Sewer: $750-$999/year',
-    'water_1000_plus':       'Water & Sewer: $1,000+/year',
-    'water_total_moe':       'Water & Sewer: Total (Margin of Error)',
-    'water_not_charged_moe': 'Water & Sewer: Not Charged (Margin of Error)',
-    'water_charged_moe':     'Water & Sewer: Units Charged (Margin of Error)',
-    'water_lt_125_moe':      'Water & Sewer: Under $125/year (Margin of Error)',
-    'water_125_249_moe':     'Water & Sewer: $125-$249/year (Margin of Error)',
-    'water_250_499_moe':     'Water & Sewer: $250-$499/year (Margin of Error)',
-    'water_500_749_moe':     'Water & Sewer: $500-$749/year (Margin of Error)',
-    'water_750_999_moe':     'Water & Sewer: $750-$999/year (Margin of Error)',
-    'water_1000_plus_moe':   'Water & Sewer: $1,000+/year (Margin of Error)',
-}
+def _mpl_to_hex_stops(cmap_name: str, n: int = 9) -> list:
+    cmap = plt.get_cmap(cmap_name)
+    return [mcolors.to_hex(cmap(i / (n - 1))) for i in range(n)]
 
-# Final friendly column names as they appear in the gpkg after renaming
-ALL_ELEC_COLS  = [f'{v} ({y} ACS)' for y in _EW_YEARS for v in _ELEC_BASE.values()]
-ALL_WATER_COLS = [f'{v} ({y} ACS)' for y in _EW_YEARS for v in _WATER_BASE.values()]
+def make_colormap(values, metric: str, group: str):
+    clean = values.dropna()
+    if clean.empty:
+        colormap = cm.LinearColormap(["#1a1a2e", "#f0a500"], vmin=0, vmax=1, caption=metric)
+        return colormap, 0.0, 1.0
 
-# Grouped by year for the year-selector UI
-ELEC_BY_YEAR  = {y: [f'{v} ({y} ACS)' for v in _ELEC_BASE.values()] for y in _EW_YEARS}
-WATER_BY_YEAR = {y: [f'{v} ({y} ACS)' for v in _WATER_BASE.values()] for y in _EW_YEARS}
+    col_min = float(np.percentile(clean, 2))
+    col_max = float(np.percentile(clean, 98))
+    if col_min == col_max:
+        col_min, col_max = float(clean.min()), float(clean.max())
+    if col_min == col_max:
+        col_max = col_min + 1
 
-# Zillow years present in data
-ZILLOW_YEARS = list(range(2000, 2027))
+    colors   = _mpl_to_hex_stops(GROUP_CMAPS.get(group, "viridis"), 9)
+    colormap = cm.LinearColormap(colors, vmin=col_min, vmax=col_max, caption=metric)
+    return colormap, col_min, col_max
 
-# -----------------------------
-# Load data
-# -----------------------------
+
+# =============================================================================
+# COLUMN DEFINITIONS
+# =============================================================================
+ZILLOW_YEARS         = [2010, 2019, 2024]
+ZILLOW_COLS_FRIENDLY = [f"Median Home Value ({y})" for y in ZILLOW_YEARS]
+
+CENSUS_COLS_FRIENDLY = [
+    "Median Household Income",
+    "Population Density (per sq km)",
+    "Broadband Adoption Rate (%)",
+    "Poverty Rate (%)",
+    "Unemployment Rate (%)",
+    "Renter-Occupied Share (%)",
+]
+
+DC_COLS_FRIENDLY = [
+    "Total Data Centers",
+    "Data Centers per 100,000 Residents",
+]
+
+ELEC_COLS_FRIENDLY = [
+    "Electricity: % Paying Above $50/month",
+    "Electricity: % Paying Above $150/month",
+    "Electricity: % Paying $250+/month",
+]
+
+WATER_COLS_FRIENDLY = [
+    "Water & Sewer: % Paying Above $125/year",
+    "Water & Sewer: % Paying Above $500/year",
+    "Water & Sewer: % Paying $1,000+/year",
+]
+
+OPTIONAL_COLS = ["Total Population", "Land Area (sq meters)"]
+
+METRIC_GROUP_CHOICES = {}
+
+
+# =============================================================================
+# LOAD DATA
+# =============================================================================
 def load_data():
     app_dir      = os.path.dirname(os.path.abspath(__file__))
     cities_path  = os.path.join(app_dir, "Data", "Chicago.gpkg")
@@ -97,59 +121,47 @@ cities_gdf, centers_gdf, cities_path = load_data()
 cities_gdf  = cities_gdf.to_crs(epsg=4326)
 centers_gdf = centers_gdf.to_crs(epsg=4326)
 
-# ── Build friendly year column names for Zillow ───────────────────────────────
-year_rename   = {str(y): f"Median Home Value ({y})" for y in ZILLOW_YEARS}
-cities_gdf    = cities_gdf.rename(columns=year_rename)
-YEAR_COLS_NEW = [f"Median Home Value ({y})" for y in ZILLOW_YEARS]
-
-# ── Build a clean flat DataFrame using fiona ──────────────────────────────────
 with fiona.open(cities_path) as src:
     records = [feat["properties"] for feat in src]
 cities_df = pd.DataFrame(records)
-cities_df = cities_df.rename(columns=year_rename)
 
-# ── Column groups (only keep cols that actually exist in the data) ─────────────
-ZILLOW_COLS = [c for c in YEAR_COLS_NEW if c in cities_df.columns]
+def _present(cols):
+    return [c for c in cols if c in cities_df.columns]
 
-CENSUS_COLS = [c for c in [
-    "Total Population", "Median Age", "Median Household Income",
-    "Median Home Value (Census ACS)", "Gini Inequality Index",
-    "Broadband Adoption Rate (%)", "Poverty Rate (%)",
-    "Unemployment Rate (%)", "Renter-Occupied Share (%)",
-    "Black or African American Population", "Asian Population",
-    "Hispanic or Latino Population",
-] if c in cities_df.columns]
+ZILLOW_COLS  = _present(ZILLOW_COLS_FRIENDLY)
+CENSUS_COLS  = _present(CENSUS_COLS_FRIENDLY)
+DC_COLS      = _present(DC_COLS_FRIENDLY)
+ELEC_COLS    = _present(ELEC_COLS_FRIENDLY)
+WATER_COLS   = _present(WATER_COLS_FRIENDLY)
+OPT_COLS     = _present(OPTIONAL_COLS)
 
-DC_COLS = [c for c in ["Total Data Centers"] if c in cities_df.columns]
+ALL_NUMERIC = ZILLOW_COLS + CENSUS_COLS + DC_COLS + ELEC_COLS + WATER_COLS + OPT_COLS
 
-ELEC_COLS  = [c for c in ALL_ELEC_COLS  if c in cities_df.columns]
-WATER_COLS = [c for c in ALL_WATER_COLS if c in cities_df.columns]
+for col in ALL_NUMERIC:
+    if col in cities_df.columns:
+        cities_df[col]  = pd.to_numeric(cities_df[col],  errors="coerce")
+    if col in cities_gdf.columns:
+        cities_gdf[col] = pd.to_numeric(cities_gdf[col], errors="coerce")
 
-# Coerce all numeric groups
-for col in ZILLOW_COLS + CENSUS_COLS + DC_COLS + ELEC_COLS + WATER_COLS:
-    cities_df[col]  = pd.to_numeric(cities_df[col],  errors="coerce")
-    cities_gdf[col] = pd.to_numeric(cities_gdf[col], errors="coerce")
+# col -> group lookup
+COL_GROUP = {}
+for c in ZILLOW_COLS:  COL_GROUP[c] = "zillow"
+for c in CENSUS_COLS:  COL_GROUP[c] = "census"
+for c in DC_COLS:      COL_GROUP[c] = "centers"
+for c in ELEC_COLS:    COL_GROUP[c] = "electricity"
+for c in WATER_COLS:   COL_GROUP[c] = "water"
+for c in OPT_COLS:     COL_GROUP[c] = "census"
 
-ALL_NUMERIC = ZILLOW_COLS + CENSUS_COLS + DC_COLS + ELEC_COLS + WATER_COLS
+if ZILLOW_COLS:  METRIC_GROUP_CHOICES["zillow"]      = "🏠  Home Values"
+if CENSUS_COLS:  METRIC_GROUP_CHOICES["census"]      = "👥  Demographics"
+if DC_COLS:      METRIC_GROUP_CHOICES["centers"]     = "🏢  Data Centers"
+if ELEC_COLS:    METRIC_GROUP_CHOICES["electricity"] = "⚡  Electricity"
+if WATER_COLS:   METRIC_GROUP_CHOICES["water"]       = "💧  Water & Sewer"
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-def make_colormap(values, metric):
-    clean = values.dropna()
-    if clean.empty:
-        colormap         = cm.linear.YlOrRd_09.scale(0, 1)
-        colormap.caption = metric
-        return colormap, 0.0, 1.0
-    col_min = float(clean.min())
-    col_max = float(clean.max())
-    spread  = col_max - col_min
-    mean_v  = float(clean.mean())
-    if mean_v != 0 and spread / abs(mean_v) < 0.1:
-        col_min = float(np.percentile(clean, 2))
-        col_max = float(np.percentile(clean, 98))
-    colormap         = cm.linear.YlOrRd_09.scale(col_min, col_max)
-    colormap.caption = metric
-    return colormap, col_min, col_max
 
+# =============================================================================
+# HELPERS
+# =============================================================================
 def dc_tooltip_html(row):
     facility = str(row.get("Facility Name", row.get("facility", "")) or "").strip()
     zip_code = str(row.get("Data Center ZIP Code", row.get("zip_code", "—")) or "—").strip()
@@ -159,84 +171,253 @@ def dc_tooltip_html(row):
         if zip_code == v: zip_code = "—"
         if operator == v: operator = "—"
         if city     == v: city     = "—"
-    header = f"<b>🏢 {facility}</b>" if facility and facility not in ("nan", "None", "") else "<b>🏢 Data Center</b>"
+    header = (f"<b>🏢 {facility}</b>"
+              if facility and facility not in ("nan", "None", "")
+              else "<b>🏢 Data Center</b>")
     return (
+        f"<div style='font-family:monospace;line-height:1.8;'>"
         f"{header}<br>"
-        f"<span style='color:#94a3b8;'>City:</span> {city}<br>"
-        f"<span style='color:#94a3b8;'>ZIP Code:</span> {zip_code}<br>"
-        f"<span style='color:#94a3b8;'>Operator:</span> {operator}"
+        f"<span style='color:#8b949e;'>City&nbsp;&nbsp;&nbsp;&nbsp;</span>{city}<br>"
+        f"<span style='color:#8b949e;'>ZIP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>{zip_code}<br>"
+        f"<span style='color:#8b949e;'>Operator&nbsp;</span>{operator}"
+        f"</div>"
     )
 
 def fig_to_html(fig):
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", bbox_inches="tight", facecolor=fig.get_facecolor())
+    fig.savefig(buf, format="png", bbox_inches="tight",
+                facecolor=fig.get_facecolor(), dpi=130)
     buf.seek(0)
     b64 = base64.b64encode(buf.read()).decode()
     plt.close(fig)
-    return f'<img src="data:image/png;base64,{b64}" style="width:100%;border-radius:8px;">'
+    return f'<img src="data:image/png;base64,{b64}" style="width:100%;border-radius:6px;">'
 
-# ── Metric group choices ──────────────────────────────────────────────────────
-METRIC_GROUP_CHOICES = {}
-if ZILLOW_COLS:
-    METRIC_GROUP_CHOICES["zillow"]      = "🏠 Zillow Home Values"
-if CENSUS_COLS:
-    METRIC_GROUP_CHOICES["census"]      = "👥 Census & Demographics"
-if DC_COLS:
-    METRIC_GROUP_CHOICES["centers"]     = "🏢 Data Centers"
-if ELEC_COLS:
-    METRIC_GROUP_CHOICES["electricity"] = "⚡ Electricity Costs"
-if WATER_COLS:
-    METRIC_GROUP_CHOICES["water"]       = "💧 Water & Sewer Costs"
+def setup_ax(ax, fig):
+    fig.patch.set_facecolor(DARK_BG)
+    ax.set_facecolor(CARD_BG)
+    ax.tick_params(colors=TEXT_SEC, labelsize=9)
+    for spine in ax.spines.values():
+        spine.set_edgecolor(BORDER)
+    ax.grid(True, color=BORDER, linewidth=0.4, linestyle="--", alpha=0.6)
+
+
+# =============================================================================
+# CSS
+# =============================================================================
+CUSTOM_CSS = f"""
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after {{ box-sizing: border-box; }}
+
+html, body {{
+  font-family: 'DM Sans', sans-serif;
+  background: {DARK_BG} !important;
+  color: {TEXT_PRI} !important;
+  font-size: 14px;
+}}
+
+/* ── Navbar ─────────────────────────────────────────── */
+.navbar {{
+  background: linear-gradient(135deg, {MAROON_DARK} 0%, {MAROON} 55%, {MAROON_MID} 100%) !important;
+  border-bottom: 1px solid {MAROON_DARK} !important;
+  box-shadow: 0 2px 24px rgba(0,0,0,0.7);
+  padding: 0 24px !important;
+}}
+.navbar-brand {{
+  font-family: 'DM Serif Display', serif !important;
+  font-size: 19px !important;
+  letter-spacing: 0.02em;
+  color: #fff !important;
+}}
+.navbar-nav .nav-link {{
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  color: rgba(255,255,255,0.78) !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0 18px !important;
+  transition: color 0.18s;
+}}
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active {{
+  color: #fff !important;
+  border-bottom: 2px solid {TEXT_ACC};
+}}
+.uchicago-logo-nav {{ height: 36px; display: block; margin: 0 6px; }}
+
+/* ── Sidebar ─────────────────────────────────────────── */
+.sidebar,
+.bslib-sidebar-layout > .sidebar,
+.bslib-sidebar-layout > .sidebar > .sidebar-content,
+aside.sidebar {{
+  background: {PANEL_BG} !important;
+  border-right: 1px solid {BORDER} !important;
+  color: {TEXT_PRI} !important;
+  padding: 20px 18px !important;
+}}
+.sidebar-section-title {{
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: {TEXT_SEC};
+  margin: 16px 0 6px;
+}}
+.sidebar label, .sidebar .control-label,
+.sidebar .form-check-label, .sidebar p, .sidebar strong {{
+  color: {TEXT_PRI} !important;
+  font-size: 13px;
+}}
+.sidebar h4 {{
+  font-family: 'DM Serif Display', serif !important;
+  font-size: 20px !important;
+  color: {TEXT_ACC} !important;
+  margin: 0 0 4px;
+  letter-spacing: 0.01em;
+}}
+.sidebar .form-select, .sidebar .form-control, .sidebar select {{
+  background: {CARD_BG} !important;
+  color: {TEXT_PRI} !important;
+  border: 1px solid {BORDER} !important;
+  border-radius: 6px !important;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}}
+.sidebar .form-select:focus {{
+  border-color: {MAROON} !important;
+  box-shadow: 0 0 0 2px rgba(128,0,0,0.22) !important;
+}}
+.sidebar .selectize-input, .sidebar .selectize-input input {{
+  background: {CARD_BG} !important;
+  color: {TEXT_PRI} !important;
+  border: 1px solid {BORDER} !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  font-size: 13px;
+}}
+.sidebar .selectize-dropdown, .sidebar .selectize-dropdown .option {{
+  background: {PANEL_BG} !important;
+  color: {TEXT_PRI} !important;
+  border: 1px solid {BORDER} !important;
+  font-size: 13px;
+}}
+.sidebar .selectize-dropdown .option:hover,
+.sidebar .selectize-dropdown .option.active {{
+  background: {MAROON} !important; color: #fff !important;
+}}
+.sidebar .form-check-input {{
+  border-color: {BORDER} !important; background: {CARD_BG} !important;
+}}
+.sidebar .form-check-input:checked {{
+  background: {MAROON} !important; border-color: {MAROON} !important;
+}}
+.sidebar .form-check-input:focus {{
+  box-shadow: 0 0 0 2px rgba(128,0,0,0.25) !important;
+}}
+.sidebar hr {{
+  border: none; border-top: 1px solid {BORDER} !important;
+  margin: 16px 0; opacity: 1;
+}}
+.source-note {{
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: {TEXT_SEC}; line-height: 1.65;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid {BORDER};
+}}
+
+/* ── Cards ───────────────────────────────────────────── */
+.card {{
+  background: {CARD_BG} !important;
+  border: 1px solid {BORDER} !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 0 6px 28px rgba(0,0,0,0.45);
+}}
+.card-header {{
+  background: linear-gradient(90deg, {MAROON_DARK} 0%, {MAROON} 100%) !important;
+  color: #fff !important;
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 10px !important; font-weight: 500 !important;
+  letter-spacing: 0.12em !important; text-transform: uppercase !important;
+  padding: 10px 16px !important; border-bottom: none !important;
+}}
+
+/* ── Global backgrounds ──────────────────────────────── */
+body, .bslib-page-sidebar, .bslib-sidebar-layout {{
+  background: {DARK_BG} !important;
+}}
+
+/* ── Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar {{ width: 5px; height: 5px; }}
+::-webkit-scrollbar-track {{ background: {DARK_BG}; }}
+::-webkit-scrollbar-thumb {{ background: {BORDER}; border-radius: 3px; }}
+::-webkit-scrollbar-thumb:hover {{ background: {MAROON}; }}
+"""
 
 
 # =============================================================================
 # UI
 # =============================================================================
 app_ui = ui.page_navbar(
+
+    # ── MAP ───────────────────────────────────────────────────────────────────
     ui.nav_panel(
-        "🗺️ Map",
+        "Map",
         ui.page_sidebar(
             ui.sidebar(
-                ui.h4("Map Controls", style="color:#f1f5f9;"),
+                ui.h4("Explore"),
+                ui.div("METRIC GROUP", class_="sidebar-section-title"),
                 ui.input_select(
-                    "metric_group", "Metric Group",
+                    "metric_group", None,
                     choices=METRIC_GROUP_CHOICES,
                     selected=list(METRIC_GROUP_CHOICES.keys())[0],
                 ),
+                ui.div("VARIABLE", class_="sidebar-section-title"),
                 ui.output_ui("metric_selector"),
                 ui.hr(),
-                ui.input_checkbox("show_centers", "Show Data Centers", value=True),
+                ui.input_checkbox("show_centers", "Show data center pins", value=True),
                 ui.hr(),
-                ui.markdown("**Chicago ZIP-level analysis**\n\nSources: Zillow · ACS 2022 · NHGIS ACS 2021–2024 · Manual DC inventory"),
-                style=f"background:{DARK_BG}; color:{TEXT_COL}; border-right: 2px solid {UCHICAGO_MAROON};",
+                ui.div(
+                    "Sources: Zillow (2010, 2019, 2024) · ACS 2022 · "
+                    "NHGIS 2022 · Manual DC inventory",
+                    class_="source-note"
+                ),
+                style=f"background:{PANEL_BG}; min-width:225px;",
             ),
             ui.card(
-                ui.card_header("Chicago — ZIP Code Choropleth"),
+                ui.card_header("Chicago Metro — ZIP Code Choropleth"),
                 ui.output_ui("map_plot"),
             ),
         ),
     ),
 
+    # ── RELATIONSHIPS ─────────────────────────────────────────────────────────
     ui.nav_panel(
-        "📊 Explore Relationships",
+        "Relationships",
         ui.page_sidebar(
             ui.sidebar(
-                ui.h4("Variable Selection", style="color:#f1f5f9;"),
+                ui.h4("Variables"),
+                ui.div("X AXIS", class_="sidebar-section-title"),
                 ui.input_select(
-                    "x_var", "X-axis Variable",
+                    "x_var", None,
                     choices={c: c for c in ALL_NUMERIC},
                     selected=ALL_NUMERIC[0] if ALL_NUMERIC else None,
                 ),
+                ui.div("Y AXIS", class_="sidebar-section-title"),
                 ui.input_select(
-                    "y_var", "Y-axis Variable",
+                    "y_var", None,
                     choices={c: c for c in ALL_NUMERIC},
                     selected=ALL_NUMERIC[1] if len(ALL_NUMERIC) > 1 else ALL_NUMERIC[0],
                 ),
                 ui.hr(),
-                ui.input_checkbox("color_by_dc", "Color by Data Center presence", value=False),
+                ui.input_checkbox("color_by_dc", "Highlight ZIPs with data centers", value=False),
                 ui.hr(),
-                ui.markdown("Select any two numeric variables to explore their relationship across Chicago ZIP codes."),
-                style=f"background:{DARK_BG}; color:{TEXT_COL}; border-right: 2px solid {UCHICAGO_MAROON};",
+                ui.div(
+                    "Each point is one ZIP code. Dashed line = linear trend.",
+                    class_="source-note"
+                ),
+                style=f"background:{PANEL_BG}; min-width:225px;",
             ),
             ui.layout_columns(
                 ui.card(ui.card_header("Scatter Plot"),          ui.output_ui("scatter_plot")),
@@ -247,229 +428,129 @@ app_ui = ui.page_navbar(
         ),
     ),
 
+    # ── ANALYSIS ──────────────────────────────────────────────────────────────
     ui.nav_panel(
-        "📈 Data Analysis",
+        "Analysis",
         ui.page_sidebar(
             ui.sidebar(
-                ui.h4("Analysis Controls", style="color:#f1f5f9;"),
+                ui.h4("Controls"),
                 ui.hr(),
-                ui.markdown("**Coming soon**\n\nAnalysis tools will appear here."),
-                style=f"background:{DARK_BG}; color:{TEXT_COL}; border-right: 2px solid {UCHICAGO_MAROON};",
+                ui.div("Coming soon.", class_="source-note"),
+                style=f"background:{PANEL_BG}; min-width:225px;",
             ),
             ui.card(
                 ui.card_header("Data Analysis"),
                 ui.div(
-                    ui.tags.i(class_="fa fa-chart-line", style=f"font-size:48px; color:{UCHICAGO_MAROON}; margin-bottom:16px;"),
-                    ui.h3("Coming Soon", style=f"color:{TEXT_COL}; margin-bottom:8px;"),
-                    ui.p("This section is under construction. Data analysis tools and visualizations will be available here.",
-                         style="color:#94a3b8; max-width:400px;"),
-                    style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:500px; text-align:center;",
+                    ui.h3("Coming Soon",
+                          style=f"font-family:'DM Serif Display',serif; color:{TEXT_ACC}; margin-bottom:10px;"),
+                    ui.p("Analysis tools and visualizations will appear here.",
+                         style=f"color:{TEXT_SEC}; max-width:360px; font-size:14px;"),
+                    style="display:flex;flex-direction:column;align-items:center;"
+                          "justify-content:center;height:480px;text-align:center;",
                 ),
             ),
         ),
     ),
 
     ui.nav_spacer(),
-    ui.nav_control(
-        ui.tags.img(src="uchicago_logo.png", class_="uchicago-logo-nav")
-    ),
+    ui.nav_control(ui.tags.img(src="uchicago_logo.png", class_="uchicago-logo-nav")),
 
     header=ui.tags.head(
-        ui.tags.style(f"""
-            .navbar {{ background-color: {UCHICAGO_MAROON} !important; border-bottom: 2px solid #000; }}
-            .navbar-brand {{ flex-shrink: 0; margin-right: 24px; }}
-            .navbar-nav .nav-link {{
-                color: rgba(255,255,255,0.85) !important;
-                font-weight: 500; font-size: 15px; padding: 0 16px !important;
-            }}
-            .navbar-nav .nav-link:hover,
-            .navbar-nav .nav-link.active {{
-                color: #ffffff !important; border-bottom: 2px solid #ffffff;
-            }}
-            .uchicago-logo-nav {{ height: 42px; display: block; margin: 0 8px; }}
-            .navbar-nav.ms-auto {{ align-items: center; }}
-            body, .bslib-page-sidebar, .bslib-sidebar-layout {{
-                background-color: {DARK_BG} !important;
-            }}
-            .sidebar,
-            .bslib-sidebar-layout > .sidebar,
-            .bslib-sidebar-layout > .sidebar > .sidebar-content,
-            aside.sidebar {{
-                background-color: {DARK_BG} !important;
-                border-right: 2px solid {UCHICAGO_MAROON} !important;
-                color: {TEXT_COL} !important;
-            }}
-            .card-header {{
-                background-color: {UCHICAGO_MAROON} !important;
-                color: #ffffff !important;
-                border-bottom: 1px solid #5a0000 !important;
-                font-weight: 600;
-            }}
-            .card {{
-                background-color: {CARD_BG} !important;
-                border: 1px solid #334155 !important;
-            }}
-            .sidebar label, .sidebar .control-label, .sidebar .form-check-label,
-            .sidebar p, .sidebar strong, .sidebar h4 {{ color: {TEXT_COL} !important; }}
-            .sidebar .form-select, .sidebar .form-control, .sidebar select {{
-                background-color: {CARD_BG} !important;
-                color: {TEXT_COL} !important;
-                border: 1px solid {UCHICAGO_MAROON} !important;
-            }}
-            .sidebar .selectize-input, .sidebar .selectize-input input {{
-                background-color: {CARD_BG} !important;
-                color: {TEXT_COL} !important;
-                border: 1px solid {UCHICAGO_MAROON} !important;
-                box-shadow: none !important;
-            }}
-            .sidebar .selectize-dropdown, .sidebar .selectize-dropdown .option {{
-                background-color: {CARD_BG} !important; color: {TEXT_COL} !important;
-            }}
-            .sidebar .selectize-dropdown .option:hover,
-            .sidebar .selectize-dropdown .option.active {{
-                background-color: {UCHICAGO_MAROON} !important; color: #ffffff !important;
-            }}
-            .sidebar .form-check-input {{
-                border-color: {UCHICAGO_MAROON} !important;
-                background-color: {CARD_BG} !important;
-            }}
-            .sidebar .form-check-input:checked {{
-                background-color: {UCHICAGO_MAROON} !important;
-                border-color: {UCHICAGO_MAROON} !important;
-            }}
-            .sidebar .form-check-input:focus {{
-                box-shadow: 0 0 0 0.2rem rgba(128,0,0,0.35) !important;
-            }}
-            .sidebar hr {{ border-color: {UCHICAGO_MAROON} !important; opacity: 0.5; }}
-        """)
+        ui.tags.style(CUSTOM_CSS),
+        ui.tags.link(rel="preconnect", href="https://fonts.googleapis.com"),
+        ui.tags.link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin=""),
     ),
 
     title=ui.tags.span(
         "Chicago Data Center Dashboard",
-        style="font-weight: bold; font-size: 22px; color: white; white-space: nowrap;"
+        style="font-family:'DM Serif Display',serif; font-size:18px; "
+              "color:#fff; letter-spacing:0.02em;"
     ),
-    bg=UCHICAGO_MAROON,
+    bg=MAROON,
     inverse=True,
 )
 
 
 # =============================================================================
-# Server
+# SERVER
 # =============================================================================
 def server(input, output, session):
 
     @render.ui
     def metric_selector():
         group = input.metric_group()
-
-        if group == "zillow":
-            # Year slider for Zillow
-            return ui.div(
-                ui.input_select(
-                    "zillow_year", "Year",
-                    choices={str(y): str(y) for y in ZILLOW_YEARS},
-                    selected="2024",
-                ),
-                ui.output_ui("metric_display"),
-            )
-
-        elif group in ("electricity", "water"):
-            # ACS year selector + metric selector for energy/water
-            year_cols = ELEC_BY_YEAR if group == "electricity" else WATER_BY_YEAR
-            return ui.div(
-                ui.input_select(
-                    "ew_year", "ACS Year",
-                    choices={str(y): str(y) for y in _EW_YEARS},
-                    selected="2024",
-                ),
-                ui.output_ui("ew_metric_selector"),
-            )
-
-        elif group == "census":
-            cols = CENSUS_COLS
-        elif group == "centers":
-            cols = DC_COLS
-        else:
-            cols = []
-
+        col_map = {
+            "zillow":      ZILLOW_COLS,
+            "census":      CENSUS_COLS,
+            "centers":     DC_COLS,
+            "electricity": ELEC_COLS,
+            "water":       WATER_COLS,
+        }
+        cols = col_map.get(group, [])
         if not cols:
-            return ui.p("No columns available.", style="color:#f87171;")
+            return ui.p("No columns available.", style="color:#f87171;font-size:12px;")
         return ui.input_select(
-            "metric", "Select Metric",
+            "metric", None,
             choices={c: c for c in cols},
-            selected=cols[0],
-        )
-
-    @render.ui
-    def metric_display():
-        """Shows the resolved column name for Zillow year selection."""
-        year = input.zillow_year() if hasattr(input, 'zillow_year') else "2024"
-        col  = f"Median Home Value ({year})"
-        if col in cities_df.columns:
-            return ui.p(f"Showing: {col}", style="color:#94a3b8; font-size:11px; margin-top:4px;")
-        return ui.p("Year not available.", style="color:#f87171; font-size:11px;")
-
-    @render.ui
-    def ew_metric_selector():
-        group = input.metric_group()
-        year  = int(input.ew_year()) if hasattr(input, 'ew_year') else 2024
-        cols  = ELEC_BY_YEAR.get(year, []) if group == "electricity" else WATER_BY_YEAR.get(year, [])
-        cols  = [c for c in cols if c in cities_df.columns]
-        if not cols:
-            return ui.p("No data for this year.", style="color:#f87171;")
-        # Filter out MOE columns by default — keep them available but group them last
-        main_cols = [c for c in cols if "(Margin of Error)" not in c]
-        moe_cols  = [c for c in cols if "(Margin of Error)" in c]
-        ordered   = main_cols + moe_cols
-        return ui.input_select(
-            "metric", "Select Metric",
-            choices={c: c for c in ordered},
-            selected=ordered[0] if ordered else None,
+            selected=cols[-1] if group == "zillow" else cols[0],
         )
 
     def _resolved_metric():
-        """Return the currently selected metric column name."""
-        group = input.metric_group()
-        if group == "zillow":
-            year = getattr(input, 'zillow_year', lambda: "2024")()
-            return f"Median Home Value ({year})"
-        elif group in ("electricity", "water"):
-            return input.metric() if hasattr(input, 'metric') else None
-        else:
-            return input.metric() if hasattr(input, 'metric') else None
+        try:   return input.metric()
+        except: return ALL_NUMERIC[0] if ALL_NUMERIC else None
 
+    def _current_group():
+        try:   return input.metric_group()
+        except: return "census"
+
+    # ── MAP ───────────────────────────────────────────────────────────────────
     @render.ui
     def map_plot():
         metric = _resolved_metric()
+        group  = _current_group()
+
         if not metric or metric not in cities_gdf.columns:
             fallback = [c for c in ALL_NUMERIC if c in cities_gdf.columns]
             if not fallback:
                 return ui.HTML("")
             metric = fallback[0]
+            group  = COL_GROUP.get(metric, "census")
 
         gdf = cities_gdf.copy()
-
-        tt_fields, tt_aliases = [], []
-        if "Zip Code" in gdf.columns:
-            tt_fields.append("Zip Code");  tt_aliases.append("ZIP Code")
-        tt_fields.append(metric);          tt_aliases.append(metric)
 
         centroids  = gdf.geometry.to_crs(epsg=3857).centroid.to_crs(epsg=4326)
         center_lat = centroids.y.mean()
         center_lon = centroids.x.mean()
 
-        m = folium.Map(location=[center_lat, center_lon], zoom_start=8, tiles="CartoDB dark_matter")
-        colormap, col_min, col_max = make_colormap(gdf[metric], metric)
+        m = folium.Map(
+            location=[center_lat, center_lon],
+            zoom_start=8,
+            tiles="CartoDB dark_matter",
+            prefer_canvas=True,
+        )
+
+        colormap, col_min, col_max = make_colormap(gdf[metric], metric, group)
+
+        tt_fields, tt_aliases = [], []
+        if "Zip Code" in gdf.columns:
+            tt_fields.append("Zip Code"); tt_aliases.append("ZIP")
+        tt_fields.append(metric); tt_aliases.append(metric)
 
         def style_fn(feature):
             val = feature["properties"].get(metric)
             if val is None or (isinstance(val, float) and np.isnan(val)):
-                return {"fillColor": "#333333", "color": "#444444", "weight": 0.5, "fillOpacity": 0.4}
-            clamped = max(col_min, min(col_max, val))
-            return {"fillColor": colormap(clamped), "color": "#111111", "weight": 0.5, "fillOpacity": 0.75}
+                return {"fillColor": "#21262d", "color": "#30363d",
+                        "weight": 0.4, "fillOpacity": 0.45}
+            clamped = max(col_min, min(col_max, float(val)))
+            return {
+                "fillColor":   colormap(clamped),
+                "color":       "#0d1117",
+                "weight":      0.6,
+                "fillOpacity": 0.83,
+            }
 
         def highlight_fn(feature):
-            return {"fillOpacity": 0.95, "weight": 2, "color": "white"}
+            return {"fillOpacity": 1.0, "weight": 2.2, "color": TEXT_ACC}
 
         folium.GeoJson(
             gdf.__geo_interface__,
@@ -479,14 +560,34 @@ def server(input, output, session):
                 fields=tt_fields, aliases=tt_aliases,
                 localize=True, sticky=True,
                 style=(
-                    "background-color:#1e293b; color:#f1f5f9;"
-                    "font-family:monospace; font-size:13px;"
-                    "padding:6px 10px; border-radius:4px; border:1px solid #475569;"
+                    f"background-color:{CARD_BG};"
+                    f"color:{TEXT_PRI};"
+                    "font-family:monospace;"
+                    "font-size:12px;"
+                    "padding:9px 13px;"
+                    "border-radius:7px;"
+                    f"border:1px solid {BORDER};"
+                    "box-shadow:0 4px 16px rgba(0,0,0,0.55);"
                 ),
             ),
         ).add_to(m)
 
         colormap.add_to(m)
+
+        # Polish the legend
+        m.get_root().html.add_child(folium.Element(f"""
+            <style>
+            .legend {{
+              background: {CARD_BG} !important;
+              border: 1px solid {BORDER} !important;
+              border-radius: 8px !important;
+              color: {TEXT_PRI} !important;
+              font-family: monospace !important;
+              font-size: 11px !important;
+              padding: 10px !important;
+            }}
+            </style>
+        """))
 
         if input.show_centers():
             for _, row in centers_gdf.iterrows():
@@ -495,78 +596,87 @@ def server(input, output, session):
                     geom = list(geom.geoms)[0]
                 folium.Marker(
                     location=[geom.y, geom.x],
-                    icon=folium.Icon(color="white", icon_color=UCHICAGO_MAROON, icon="building", prefix="fa"),
+                    icon=folium.Icon(color="white", icon_color=MAROON, icon="building", prefix="fa"),
                     tooltip=folium.Tooltip(
                         dc_tooltip_html(row),
                         sticky=True,
                         style=(
-                            "background-color:#1e293b; color:#f1f5f9;"
-                            "font-family:monospace; font-size:12px;"
-                            "padding:8px 12px; border-radius:4px;"
-                            "border:1px solid #475569; line-height:1.8;"
+                            f"background-color:{CARD_BG};"
+                            f"color:{TEXT_PRI};"
+                            "font-family:monospace;"
+                            "font-size:12px;"
+                            "padding:10px 14px;"
+                            "border-radius:7px;"
+                            f"border:1px solid {BORDER};"
                         ),
                     ),
                 ).add_to(m)
 
-        return ui.HTML(f'<div style="height:620px; width:100%;">{m._repr_html_()}</div>')
+        return ui.HTML(f'<div style="height:640px;width:100%;">{m._repr_html_()}</div>')
 
+    # ── SCATTER & DISTRIBUTIONS ───────────────────────────────────────────────
     @reactive.Calc
     def plot_data():
         x_var = input.x_var()
         y_var = input.y_var()
-        raw_cols     = [x_var, y_var, "Zip Code", "Total Data Centers"]
-        cols_needed  = list(dict.fromkeys([c for c in raw_cols if c in cities_df.columns]))
-        df           = cities_df[cols_needed].copy().reset_index(drop=True)
-        df[x_var]    = pd.to_numeric(df[x_var], errors="coerce")
-        df[y_var]    = pd.to_numeric(df[y_var], errors="coerce")
-        df           = df.dropna(subset=[x_var, y_var]).reset_index(drop=True)
-        return df, x_var, y_var
+        raw   = [x_var, y_var, "Zip Code", "Total Data Centers"]
+        cols  = list(dict.fromkeys([c for c in raw if c in cities_df.columns]))
+        df    = cities_df[cols].copy().reset_index(drop=True)
+        df[x_var] = pd.to_numeric(df[x_var], errors="coerce")
+        df[y_var] = pd.to_numeric(df[y_var], errors="coerce")
+        return df.dropna(subset=[x_var, y_var]).reset_index(drop=True), x_var, y_var
 
     @render.ui
     def scatter_plot():
         df, x_var, y_var = plot_data()
         if df.empty:
-            return ui.HTML("<p style='color:#f87171;'>No data available.</p>")
+            return ui.HTML(f"<p style='color:#f87171;padding:16px;'>No data available.</p>")
 
         x = df[x_var].to_numpy().astype(float)
         y = df[y_var].to_numpy().astype(float)
 
         fig, ax = plt.subplots(figsize=(9, 5))
-        fig.patch.set_facecolor(DARK_BG)
-        ax.set_facecolor(CARD_BG)
+        setup_ax(ax, fig)
 
         color_by = input.color_by_dc() and "Total Data Centers" in df.columns
         if color_by:
             has_dc = pd.to_numeric(df["Total Data Centers"], errors="coerce").fillna(0).to_numpy() > 0
-            ax.scatter(x[~has_dc], y[~has_dc], color="#38bdf8", alpha=0.7,
-                       edgecolors="#0f172a", linewidths=0.5, s=60, label="No Data Center", zorder=3)
-            ax.scatter(x[has_dc],  y[has_dc],  color=UCHICAGO_MAROON, alpha=0.9,
-                       edgecolors="#f1f5f9", linewidths=0.5, s=90, label="Has Data Center",
-                       zorder=4, marker="*")
-            ax.legend(facecolor=CARD_BG, edgecolor="#475569", labelcolor=TEXT_COL, fontsize=9)
+            # colorblind-friendly pair: blue vs gold
+            ax.scatter(x[~has_dc], y[~has_dc],
+                       color="#4895ef", alpha=0.65, edgecolors=DARK_BG,
+                       linewidths=0.4, s=52, label="No data center", zorder=3)
+            ax.scatter(x[has_dc], y[has_dc],
+                       color=TEXT_ACC, alpha=0.95, edgecolors=TEXT_PRI,
+                       linewidths=0.6, s=95, label="Has data center",
+                       zorder=4, marker="D")
+            ax.legend(facecolor=CARD_BG, edgecolor=BORDER,
+                      labelcolor=TEXT_PRI, fontsize=9, framealpha=0.9)
         else:
-            ax.scatter(x, y, color=UCHICAGO_MAROON, alpha=0.7,
-                       edgecolors="#0f172a", linewidths=0.5, s=60, zorder=3)
+            # cividis scatter — colorblind-safe continuous color
+            sc = ax.scatter(x, y, c=y, cmap="cividis", alpha=0.75,
+                            edgecolors=DARK_BG, linewidths=0.3, s=52, zorder=3)
+            cbar = fig.colorbar(sc, ax=ax, fraction=0.03, pad=0.01)
+            cbar.ax.tick_params(colors=TEXT_SEC, labelsize=8)
+            cbar.outline.set_edgecolor(BORDER)
 
         try:
-            m_coef, b_coef = np.polyfit(x, y, 1)
-            x_line = np.linspace(x.min(), x.max(), 200)
-            ax.plot(x_line, m_coef * x_line + b_coef, color="#fb923c",
-                    linewidth=1.5, linestyle="--", alpha=0.8, zorder=5)
+            coef = np.polyfit(x, y, 1)
+            xl   = np.linspace(x.min(), x.max(), 200)
+            ax.plot(xl, np.poly1d(coef)(xl), color=TEXT_ACC,
+                    linewidth=1.8, linestyle="--", alpha=0.85, zorder=5)
         except Exception:
             pass
 
         corr = float(np.corrcoef(x, y)[0, 1])
-        ax.annotate(f"r = {corr:.3f}", xy=(0.97, 0.05), xycoords="axes fraction",
-                    ha="right", color=TEXT_COL, fontsize=10,
-                    bbox=dict(boxstyle="round,pad=0.3", facecolor="#0f172a", edgecolor="#475569"))
-
-        ax.set_xlabel(x_var, color=TEXT_COL, fontsize=10)
-        ax.set_ylabel(y_var, color=TEXT_COL, fontsize=10)
-        ax.tick_params(colors=TEXT_COL)
-        for spine in ax.spines.values():
-            spine.set_edgecolor("#475569")
-        ax.grid(True, color="#334155", linewidth=0.4, linestyle="--")
+        ax.annotate(
+            f"r = {corr:.3f}",
+            xy=(0.97, 0.05), xycoords="axes fraction", ha="right",
+            color=TEXT_ACC, fontsize=10, fontfamily="monospace",
+            bbox=dict(boxstyle="round,pad=0.4", facecolor=DARK_BG,
+                      edgecolor=BORDER, alpha=0.92)
+        )
+        ax.set_xlabel(x_var, color=TEXT_SEC, fontsize=10, labelpad=8)
+        ax.set_ylabel(y_var, color=TEXT_SEC, fontsize=10, labelpad=8)
         plt.tight_layout()
         return ui.HTML(fig_to_html(fig))
 
@@ -574,79 +684,100 @@ def server(input, output, session):
     def dist_plot():
         df, x_var, y_var = plot_data()
         if df.empty:
-            return ui.HTML("<p style='color:#f87171;'>No data available.</p>")
+            return ui.HTML(f"<p style='color:#f87171;padding:16px;'>No data available.</p>")
 
         fig, axes = plt.subplots(1, 2, figsize=(9, 4))
         fig.patch.set_facecolor(DARK_BG)
 
-        for ax, var, color in zip(axes, [x_var, y_var], [UCHICAGO_MAROON, "#a78bfa"]):
+        cmaps_dist = ["plasma", "viridis"]
+        for ax, var, cname in zip(axes, [x_var, y_var], cmaps_dist):
             vals = pd.to_numeric(df[var], errors="coerce").dropna().to_numpy().astype(float)
-            ax.set_facecolor(CARD_BG)
-            ax.hist(vals, bins=20, color=color, alpha=0.8, edgecolor="#0f172a")
+            setup_ax(ax, fig)
+            n, bins, patches = ax.hist(vals, bins=22, alpha=0, edgecolor="none")
+            cmap_d = plt.get_cmap(cname)
+            norm_d = mcolors.Normalize(vmin=bins[0], vmax=bins[-1])
+            for patch, left in zip(patches, bins[:-1]):
+                patch.set_facecolor(cmap_d(norm_d(left)))
+                patch.set_alpha(0.88)
             mean_v = float(vals.mean())
-            ax.axvline(mean_v, color="#fb923c", linewidth=1.5, linestyle="--",
-                       label=f"Mean: {mean_v:,.1f}")
-            ax.set_title(var[:40], color=TEXT_COL, fontsize=9)
-            ax.tick_params(colors=TEXT_COL, labelsize=8)
-            for spine in ax.spines.values():
-                spine.set_edgecolor("#475569")
-            ax.grid(True, color="#334155", linewidth=0.3, linestyle="--")
-            ax.legend(facecolor=CARD_BG, edgecolor="#475569", labelcolor=TEXT_COL, fontsize=8)
+            ax.axvline(mean_v, color=TEXT_ACC, linewidth=1.8, linestyle="--",
+                       label=f"μ = {mean_v:,.1f}", zorder=5)
+            ax.set_title(var[:36], color=TEXT_PRI, fontsize=9,
+                         fontfamily="monospace", pad=8)
+            ax.tick_params(colors=TEXT_SEC, labelsize=8)
+            ax.legend(facecolor=CARD_BG, edgecolor=BORDER,
+                      labelcolor=TEXT_PRI, fontsize=8)
 
-        plt.tight_layout()
+        plt.tight_layout(pad=1.5)
         return ui.HTML(fig_to_html(fig))
 
     @render.ui
     def summary_stats():
         df, x_var, y_var = plot_data()
         if df.empty:
-            return ui.HTML("<p style='color:#f87171;'>No data available.</p>")
+            return ui.HTML(f"<p style='color:#f87171;padding:16px;'>No data available.</p>")
 
         x    = df[x_var].to_numpy().astype(float)
         y    = df[y_var].to_numpy().astype(float)
         corr = float(np.corrcoef(x, y)[0, 1])
         n    = len(df)
 
-        def stat_row(label, x_val, y_val):
-            return (
-                f"<tr>"
-                f"<td style='padding:6px 10px; color:#94a3b8;'>{label}</td>"
-                f"<td style='padding:6px 10px; color:{TEXT_COL}; text-align:right;'>{x_val}</td>"
-                f"<td style='padding:6px 10px; color:{TEXT_COL}; text-align:right;'>{y_val}</td>"
-                f"</tr>"
-            )
-
-        rows = "".join([
-            stat_row("N (ZIP codes)", f"{n}",                 f"{n}"),
-            stat_row("Mean",          f"{x.mean():,.2f}",     f"{y.mean():,.2f}"),
-            stat_row("Median",        f"{np.median(x):,.2f}", f"{np.median(y):,.2f}"),
-            stat_row("Std Dev",       f"{x.std():,.2f}",      f"{y.std():,.2f}"),
-            stat_row("Min",           f"{x.min():,.2f}",      f"{y.min():,.2f}"),
-            stat_row("Max",           f"{x.max():,.2f}",      f"{y.max():,.2f}"),
-        ])
-
         corr_color = "#4ade80" if abs(corr) > 0.5 else ("#facc15" if abs(corr) > 0.25 else "#f87171")
         corr_label = "Strong" if abs(corr) > 0.5 else ("Moderate" if abs(corr) > 0.25 else "Weak")
         direction  = "positive" if corr > 0 else "negative"
 
+        def row(label, xv, yv):
+            return (
+                f"<tr style='border-bottom:1px solid {BORDER};'>"
+                f"<td style='padding:7px 10px;color:{TEXT_SEC};"
+                f"font-family:monospace;font-size:11px;'>{label}</td>"
+                f"<td style='padding:7px 10px;color:{TEXT_PRI};"
+                f"text-align:right;font-family:monospace;font-size:11px;'>{xv}</td>"
+                f"<td style='padding:7px 10px;color:{TEXT_PRI};"
+                f"text-align:right;font-family:monospace;font-size:11px;'>{yv}</td>"
+                f"</tr>"
+            )
+
+        rows = "".join([
+            row("N (ZIP codes)", n, n),
+            row("Mean",   f"{x.mean():,.2f}",     f"{y.mean():,.2f}"),
+            row("Median", f"{np.median(x):,.2f}", f"{np.median(y):,.2f}"),
+            row("Std Dev",f"{x.std():,.2f}",      f"{y.std():,.2f}"),
+            row("Min",    f"{x.min():,.2f}",       f"{y.min():,.2f}"),
+            row("Max",    f"{x.max():,.2f}",       f"{y.max():,.2f}"),
+        ])
+
         html = f"""
-        <div style="background:{DARK_BG}; padding:16px; border-radius:8px; font-family:monospace;">
-            <div style="margin-bottom:14px; padding:10px; background:{CARD_BG};
-                        border-radius:6px; border-left:4px solid {UCHICAGO_MAROON};">
-                <span style="color:#94a3b8; font-size:12px;">Pearson Correlation</span><br>
-                <span style="color:{corr_color}; font-size:22px; font-weight:bold;">r = {corr:.4f}</span><br>
-                <span style="color:#94a3b8; font-size:11px;">{corr_label} {direction} relationship</span>
+        <div style="background:{DARK_BG};padding:16px;border-radius:8px;
+                    font-family:'DM Sans',sans-serif;">
+          <div style="margin-bottom:16px;padding:14px 16px;background:{CARD_BG};
+                      border-radius:8px;border-left:3px solid {MAROON};">
+            <div style="font-family:monospace;font-size:9px;color:{TEXT_SEC};
+                        letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px;">
+              Pearson Correlation
             </div>
-            <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                <thead>
-                    <tr>
-                        <th style="padding:6px 10px; color:#64748b; text-align:left;">Statistic</th>
-                        <th style="padding:6px 10px; color:{UCHICAGO_MAROON}; text-align:right;">{x_var[:28]}</th>
-                        <th style="padding:6px 10px; color:#a78bfa; text-align:right;">{y_var[:28]}</th>
-                    </tr>
-                </thead>
-                <tbody>{rows}</tbody>
-            </table>
+            <div style="font-size:28px;font-weight:700;color:{corr_color};
+                        font-family:'IBM Plex Mono',monospace;line-height:1;">
+              r = {corr:.4f}
+            </div>
+            <div style="font-size:11px;color:{TEXT_SEC};margin-top:5px;">
+              {corr_label} {direction} relationship &nbsp;·&nbsp; {n} ZIP codes
+            </div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="border-bottom:2px solid {MAROON};">
+                <th style="padding:7px 10px;color:{TEXT_SEC};text-align:left;
+                           font-size:9px;font-family:monospace;letter-spacing:0.1em;
+                           text-transform:uppercase;">Statistic</th>
+                <th style="padding:7px 10px;color:{TEXT_ACC};text-align:right;
+                           font-size:9px;font-family:monospace;">{x_var[:24]}</th>
+                <th style="padding:7px 10px;color:#a78bfa;text-align:right;
+                           font-size:9px;font-family:monospace;">{y_var[:24]}</th>
+              </tr>
+            </thead>
+            <tbody>{rows}</tbody>
+          </table>
         </div>
         """
         return ui.HTML(html)
