@@ -14,9 +14,6 @@ from pathlib import Path
 FILEPATH = Path(__file__).parent / "top_10_us_cities_datacenters_augmented_mock.csv"
 OUTPATH = Path(__file__).parent / "top_10_us_cities_datacenters_scores_mock.csv"
 
-
-print(FILEPATH)
-
 data_centers = pd.read_csv(FILEPATH)
 
 # Calculating the unique counts of data centers by zip codes
@@ -62,8 +59,6 @@ scoring("avg_water_cost_usd_monthly",method = "composite")
 scoring("avg_electricity_cost_usd_per_kwh",method = "z-score")
 scoring("avg_home_price_usd",method = "z-score")
 scoring("avg_water_cost_usd_monthly",method = "z-score")
-
-print(data_centers.head())
 
 # Creating the index score based on weights. The weights MUST add to 1!
 def index(
