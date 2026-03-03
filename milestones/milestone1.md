@@ -1,3 +1,5 @@
+[All details presented in this document are preliminary and may be refined or modified throughout the duration of the project.]
+
 \# **Data Centers Next Door:** *How Cloud Infrastructure Shapes Housing and Local Resource Costs.*
 
 **\#\# Members**
