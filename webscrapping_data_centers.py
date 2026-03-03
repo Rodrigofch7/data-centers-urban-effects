@@ -15,7 +15,7 @@ cities = [
     ("San Antonio", "texas/san-antonio"),
     ("San Diego", "california/san-diego"),
     ("Dallas", "texas/dallas"),
-    ("Jacksonville", "florida/jacksonville")
+    ("Jacksonville", "florida/jacksonville"),
 ]
 
 headers = {
@@ -27,21 +27,21 @@ all_data = []
 for city_name, path in cities:
     url = f"https://www.datacentermap.com/usa/{path}/"
     print(f"Scraping {city_name}...")
-    
+
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
-        
+
         cards = soup.find_all("a", class_="ui card")
-        
+
         for card in cards:
             header_div = card.find("div", class_="header")
             facility_name = header_div.get_text(strip=True) if header_div else "N/A"
-            
+
             description_div = card.find("div", class_="description")
             details = list(description_div.stripped_strings) if description_div else []
-            
+
             record = {
                 "scraped_city": city_name,
                 "facility": facility_name,
@@ -51,10 +51,10 @@ for city_name, path in cities:
                 "city_in_desc": details[3] if len(details) > 3 else "N/A",
             }
             all_data.append(record)
-            
+
         # Respectful delay between cities
-        time.sleep(2) 
-        
+        time.sleep(2)
+
     except Exception as e:
         print(f"Could not scrape {city_name}: {e}")
 
