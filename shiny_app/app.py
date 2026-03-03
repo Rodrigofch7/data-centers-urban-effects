@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import io, base64
 
 # To run use in the terminal: shiny run --reload app.py
+# cd shiny_app -> rsconnect deploy shiny .
 
 
 # -----------------------------
