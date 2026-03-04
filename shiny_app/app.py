@@ -102,7 +102,7 @@ METRIC_GROUP_CHOICES = {}
 
 
 # =============================================================================
-# LOAD DATA
+# LOAD & PRE-PROCESS DATA  ← all heavy lifting happens once at startup
 # =============================================================================
 def load_data():
     app_dir      = os.path.dirname(os.path.abspath(__file__))
@@ -115,6 +115,23 @@ def load_data():
 cities_gdf, centers_gdf, cities_path = load_data()
 cities_gdf  = cities_gdf.to_crs(epsg=4326)
 centers_gdf = centers_gdf.to_crs(epsg=4326)
+
+# ── Simplify geometries once — huge payload reduction, invisible at zoom 8 ──
+cities_gdf.geometry  = cities_gdf.geometry.simplify(tolerance=0.001, preserve_topology=True)
+centers_gdf.geometry = centers_gdf.geometry.simplify(tolerance=0.001, preserve_topology=True)
+
+# ── Pre-compute map centre once ──────────────────────────────────────────────
+_centroids  = cities_gdf.geometry.to_crs(epsg=3857).centroid.to_crs(epsg=4326)
+MAP_CENTER  = [float(_centroids.y.mean()), float(_centroids.x.mean())]
+
+# ── Pre-build tooltip field lists once ──────────────────────────────────────
+TT_FIELDS_BASE, TT_ALIASES_BASE = [], []
+for col, alias in [("Zip Code", "📍 ZIP"), ("City", "🏙️ City"),
+                   ("Community", "🏘️ Community"), ("County", "🗺️ County"),
+                   ("State", "📌 State")]:
+    if col in cities_gdf.columns:
+        TT_FIELDS_BASE.append(col)
+        TT_ALIASES_BASE.append(alias)
 
 with fiona.open(cities_path) as src:
     records = [feat["properties"] for feat in src]
@@ -132,6 +149,7 @@ OPT_COLS     = _present(OPTIONAL_COLS)
 
 ALL_NUMERIC = ZILLOW_COLS + CENSUS_COLS + DC_COLS + ELEC_COLS + WATER_COLS + OPT_COLS
 
+# ── Coerce ALL numerics once at load time (not inside reactive functions) ────
 for col in ALL_NUMERIC:
     if col in cities_df.columns:
         cities_df[col]  = pd.to_numeric(cities_df[col],  errors="coerce")
@@ -151,6 +169,9 @@ if CENSUS_COLS:  METRIC_GROUP_CHOICES["census"]      = "👥  Demographics"
 if DC_COLS:      METRIC_GROUP_CHOICES["centers"]     = "🏢  Data Centers"
 if ELEC_COLS:    METRIC_GROUP_CHOICES["electricity"] = "⚡  Electricity"
 if WATER_COLS:   METRIC_GROUP_CHOICES["water"]       = "💧  Water & Sewer"
+
+# ── Pre-serialize GeoJSON once — avoids repeated __geo_interface__ calls ─────
+CITIES_GEOJSON = cities_gdf.__geo_interface__
 
 
 # =============================================================================
@@ -193,6 +214,31 @@ def setup_ax(ax, fig):
     for spine in ax.spines.values():
         spine.set_edgecolor(BORDER)
     ax.grid(True, color=BORDER, linewidth=0.4, linestyle="--", alpha=0.6)
+
+# ── Pre-build data center markers HTML once ──────────────────────────────────
+def _build_dc_markers(m):
+    """Add data center markers to a folium map. Called only when needed."""
+    for _, row in centers_gdf.iterrows():
+        geom = row.geometry
+        if geom.geom_type == "MultiPoint":
+            geom = list(geom.geoms)[0]
+        folium.Marker(
+            location=[geom.y, geom.x],
+            icon=folium.Icon(color="white", icon_color=MAROON, icon="building", prefix="fa"),
+            tooltip=folium.Tooltip(
+                dc_tooltip_html(row),
+                sticky=True,
+                style=(
+                    f"background-color:{CARD_BG};"
+                    f"color:{TEXT_PRI};"
+                    "font-family:monospace;"
+                    "font-size:12px;"
+                    "padding:10px 14px;"
+                    "border-radius:7px;"
+                    f"border:1px solid {BORDER};"
+                ),
+            ),
+        ).add_to(m)
 
 
 # =============================================================================
@@ -351,7 +397,7 @@ body, .bslib-page-sidebar, .bslib-sidebar-layout {{
 
 
 # =============================================================================
-# UI
+# UI  (unchanged)
 # =============================================================================
 app_ui = ui.page_navbar(
 
@@ -512,7 +558,10 @@ def server(input, output, session):
         except: return "census"
 
     # ── MAP ───────────────────────────────────────────────────────────────────
+    # Only re-renders when metric or show_centers actually changes
     @render.ui
+    @reactive.event(input.metric_group, input.show_centers,
+                    lambda: _resolved_metric())
     def map_plot():
         metric = _resolved_metric()
         group  = _current_group()
@@ -524,29 +573,20 @@ def server(input, output, session):
             metric = fallback[0]
             group  = COL_GROUP.get(metric, "census")
 
-        gdf = cities_gdf.copy()
-
-        centroids  = gdf.geometry.to_crs(epsg=3857).centroid.to_crs(epsg=4326)
-        center_lat = centroids.y.mean()
-        center_lon = centroids.x.mean()
-
+        # Use pre-computed center — no CRS transform on every render
         m = folium.Map(
-            location=[center_lat, center_lon],
+            location=MAP_CENTER,
             zoom_start=8,
             tiles="CartoDB positron",
             prefer_canvas=True,
         )
 
-        colormap, col_min, col_max = make_colormap(gdf[metric], metric, group)
+        # Build colormap from pre-coerced column (no copy needed for read)
+        colormap, col_min, col_max = make_colormap(cities_gdf[metric], metric, group)
 
-        tt_fields, tt_aliases = [], []
-        if "Zip Code" in gdf.columns:
-            tt_fields.append("Zip Code");  tt_aliases.append("📍 ZIP")
-        for col, alias in [("City", "🏙️ City"), ("Community", "🏘️ Community"),
-                           ("County", "🗺️ County"), ("State", "📌 State")]:
-            if col in gdf.columns:
-                tt_fields.append(col); tt_aliases.append(alias)
-        tt_fields.append(metric); tt_aliases.append(f"📊 {metric}")
+        # Tooltip fields built from pre-computed base + current metric
+        tt_fields   = TT_FIELDS_BASE   + [metric]
+        tt_aliases  = TT_ALIASES_BASE  + [f"📊 {metric}"]
 
         def style_fn(feature):
             val = feature["properties"].get(metric)
@@ -564,8 +604,9 @@ def server(input, output, session):
         def highlight_fn(feature):
             return {"fillOpacity": 1.0, "weight": 2.2, "color": TEXT_ACC}
 
+        # Use pre-serialised GeoJSON — avoids repeated __geo_interface__ calls
         folium.GeoJson(
-            gdf.__geo_interface__,
+            CITIES_GEOJSON,
             style_function=style_fn,
             highlight_function=highlight_fn,
             tooltip=folium.GeoJsonTooltip(
@@ -603,27 +644,7 @@ def server(input, output, session):
         """))
 
         if input.show_centers():
-            for _, row in centers_gdf.iterrows():
-                geom = row.geometry
-                if geom.geom_type == "MultiPoint":
-                    geom = list(geom.geoms)[0]
-                folium.Marker(
-                    location=[geom.y, geom.x],
-                    icon=folium.Icon(color="white", icon_color=MAROON, icon="building", prefix="fa"),
-                    tooltip=folium.Tooltip(
-                        dc_tooltip_html(row),
-                        sticky=True,
-                        style=(
-                            f"background-color:{CARD_BG};"
-                            f"color:{TEXT_PRI};"
-                            "font-family:monospace;"
-                            "font-size:12px;"
-                            "padding:10px 14px;"
-                            "border-radius:7px;"
-                            f"border:1px solid {BORDER};"
-                        ),
-                    ),
-                ).add_to(m)
+            _build_dc_markers(m)   # uses pre-loaded centers_gdf, no re-read
 
         return ui.HTML(f'<div style="height:640px;width:100%;">{m._repr_html_()}</div>')
 
@@ -634,9 +655,8 @@ def server(input, output, session):
         y_var = input.y_var()
         raw   = [x_var, y_var, "Zip Code", "Total Data Centers"]
         cols  = list(dict.fromkeys([c for c in raw if c in cities_df.columns]))
+        # Numerics already coerced at load time — just select & dropna
         df    = cities_df[cols].copy().reset_index(drop=True)
-        df[x_var] = pd.to_numeric(df[x_var], errors="coerce")
-        df[y_var] = pd.to_numeric(df[y_var], errors="coerce")
         return df.dropna(subset=[x_var, y_var]).reset_index(drop=True), x_var, y_var
 
     @render.ui
@@ -702,7 +722,7 @@ def server(input, output, session):
 
         cmaps_dist = ["plasma", "viridis"]
         for ax, var, cname in zip(axes, [x_var, y_var], cmaps_dist):
-            vals = pd.to_numeric(df[var], errors="coerce").dropna().to_numpy().astype(float)
+            vals = df[var].dropna().to_numpy().astype(float)
             setup_ax(ax, fig)
             n, bins, patches = ax.hist(vals, bins=22, alpha=0, edgecolor="none")
             cmap_d = plt.get_cmap(cname)
@@ -802,10 +822,8 @@ def server(input, output, session):
             return None, y_var, x_vars
 
         needed = list(dict.fromkeys([y_var] + x_vars))
+        # Numerics already coerced at load time — just select & dropna
         df = cities_df[[c for c in needed if c in cities_df.columns]].copy()
-        for col in needed:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors="coerce")
         df = df.dropna().reset_index(drop=True)
         return df, y_var, x_vars
 
