@@ -6,7 +6,10 @@ from sklearn.impute import KNNImputer
 from sklearn.preprocessing import StandardScaler
 from census import Census
 from shapely import wkb
-
+from shapely.validation import make_valid
+from shapely.ops import unary_union
+import pgeocode
+import warnings
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 API_KEY = "fda60e79b0da81a8ac6472ff4250f47daa8c527b"
@@ -18,8 +21,6 @@ DC_INPUT_PATH     = '/home/rodrigofrancachaves/capp30122/group_project/project-d
 ENERGY_WATER_PATH = 'data/energy and water data/nhgis_energy_water_wide.csv'
 OUTPUT_CITIES     = 'shiny_app/Data/Chicago.gpkg'
 OUTPUT_CENTERS    = 'shiny_app/Data/ChicagoDataCenters.gpkg'
-
-
 
 # Only keep 3 Zillow snapshot years
 YEAR_COLS = ['2010', '2019', '2024']
@@ -39,11 +40,9 @@ ACS_VARS_CLEAN = {
 
 # Energy/water columns needed for threshold calculations (2022 ACS only)
 EW_COLS_NEEDED = [
-    # Electricity
     'elec_charged_2022',
     'elec_150_199_2022', 'elec_200_249_2022', 'elec_250_plus_2022',
     'elec_50_99_2022', 'elec_100_149_2022', 'elec_lt_50_2022',
-    # Water
     'water_charged_2022',
     'water_lt_125_2022',
     'water_125_249_2022', 'water_250_499_2022',
@@ -55,9 +54,14 @@ FRIENDLY_NAMES = {
     'ZCTA5CE20':  'Zip Code',
     'ALAND20':    'Land Area (sq meters)',
 
+    # Location
+    'City':   'City',
+    'County': 'County',
+    'State':  'State',
+
     # Data centers
-    'Total Data Centers':             'Total Data Centers',
-    'Data Centers per 100k Residents':'Data Centers per 100,000 Residents',
+    'Total Data Centers':              'Total Data Centers',
+    'Data Centers per 100k Residents': 'Data Centers per 100,000 Residents',
 
     # Zillow snapshots
     '2010': 'Median Home Value (2010)',
@@ -153,13 +157,61 @@ map_gdf = map_gdf.merge(counts_per_zip, on='ZCTA5CE20', how='left')
 map_gdf['Total Data Centers'] = map_gdf['Total Data Centers'].fillna(0).astype(int)
 
 # =============================================================================
+# STEP 2.5 — Clean geometries
+# =============================================================================
+print("STEP 2.5: Cleaning geometries...")
+
+map_gdf['geometry'] = map_gdf['geometry'].apply(
+    lambda g: make_valid(g) if g is not None and not g.is_valid else g
+)
+
+def fill_small_holes(geom, min_hole_area_m2=500_000):
+    from shapely.geometry import Polygon, MultiPolygon
+    def fill_poly(poly):
+        if poly is None:
+            return poly
+        new_interiors = [
+            ring for ring in poly.interiors
+            if Polygon(ring).area > min_hole_area_m2
+        ]
+        return Polygon(poly.exterior, new_interiors)
+    if geom.geom_type == 'Polygon':
+        return fill_poly(geom)
+    elif geom.geom_type == 'MultiPolygon':
+        return MultiPolygon([fill_poly(p) for p in geom.geoms])
+    return geom
+
+map_gdf = map_gdf.to_crs(epsg=3857)
+map_gdf['geometry'] = map_gdf['geometry'].apply(fill_small_holes)
+map_gdf = map_gdf.to_crs(epsg=4326)
+
+def keep_largest_parts(geom, min_area_fraction=0.01):
+    from shapely.geometry import MultiPolygon
+    if geom.geom_type == 'MultiPolygon':
+        total = geom.area
+        parts = [p for p in geom.geoms if p.area / total >= min_area_fraction]
+        if len(parts) == 1:
+            return parts[0]
+        return MultiPolygon(parts) if parts else geom
+    return geom
+
+map_gdf['geometry'] = map_gdf['geometry'].apply(keep_largest_parts)
+map_gdf['geometry'] = map_gdf['geometry'].simplify(tolerance=0.0001, preserve_topology=True)
+map_gdf['geometry'] = map_gdf['geometry'].buffer(0.00001).buffer(-0.00001)
+
+invalid = (~map_gdf.geometry.is_valid).sum()
+empty   = map_gdf.geometry.is_empty.sum()
+print(f"  -> Invalid geometries remaining: {invalid}")
+print(f"  -> Empty geometries: {empty}")
+print(f"  -> All geometries cleaned ✓")
+
+# =============================================================================
 # STEP 3 — Zillow (3 snapshot years only)
 # =============================================================================
 print("STEP 3: Merging Zillow snapshot years (2010, 2019, 2024)...")
 zillow_df = pd.read_csv(INPUT_PATH, dtype={'ZCTA5CE20': str})
 zillow_df['ZCTA5CE20'] = zillow_df['ZCTA5CE20'].astype(str).str.zfill(5)
 
-# Keep only the ZIP key and the 3 snapshot years
 available_years = [y for y in YEAR_COLS if y in zillow_df.columns]
 zillow_df = zillow_df[['ZCTA5CE20'] + available_years]
 for col in available_years:
@@ -169,13 +221,12 @@ gdf = map_gdf.merge(zillow_df, on='ZCTA5CE20', how='left')
 print(f"  -> {gdf['ZCTA5CE20'].nunique():,} unique ZIPs after Zillow merge")
 
 # =============================================================================
-# STEP 4 — Energy & Water (derive thresholds, then drop raw columns)
+# STEP 4 — Energy & Water
 # =============================================================================
 print("STEP 4: Merging Energy & Water data and computing cost thresholds...")
 ew_df = pd.read_csv(ENERGY_WATER_PATH, dtype={"ZCTA5A": str})
 ew_df['ZCTA5A'] = ew_df['ZCTA5A'].astype(str).str.zfill(5)
 
-# Keep only the columns we need for threshold math
 keep_ew = ['ZCTA5A'] + [c for c in EW_COLS_NEEDED if c in ew_df.columns]
 ew_df = ew_df[keep_ew]
 for col in keep_ew[1:]:
@@ -184,38 +235,25 @@ for col in keep_ew[1:]:
 gdf = gdf.merge(ew_df, left_on='ZCTA5CE20', right_on='ZCTA5A', how='left')
 gdf = gdf.drop(columns=['ZCTA5A'], errors='ignore')
 
-# ── Electricity thresholds ────────────────────────────────────────────────────
-# % paying above $50/month  = (charged - lt_50) / charged * 100
-# % paying above $150/month = (150_199 + 200_249 + 250_plus) / charged * 100
-# % paying $250+/month      = 250_plus / charged * 100
 def safe_pct(numerator, denominator):
     return np.where(denominator > 0, (numerator / denominator * 100).round(2), np.nan)
 
 if 'elec_charged_2022' in gdf.columns:
     charged_e = gdf['elec_charged_2022']
-    gdf['Elec % Above $50/month'] = safe_pct(
-        charged_e - gdf.get('elec_lt_50_2022', 0), charged_e)
+    gdf['Elec % Above $50/month']  = safe_pct(charged_e - gdf.get('elec_lt_50_2022', 0), charged_e)
     gdf['Elec % Above $150/month'] = safe_pct(
         gdf.get('elec_150_199_2022', 0) + gdf.get('elec_200_249_2022', 0) + gdf.get('elec_250_plus_2022', 0),
         charged_e)
-    gdf['Elec % Above $250/month'] = safe_pct(
-        gdf.get('elec_250_plus_2022', 0), charged_e)
+    gdf['Elec % Above $250/month'] = safe_pct(gdf.get('elec_250_plus_2022', 0), charged_e)
 
-# ── Water thresholds ──────────────────────────────────────────────────────────
-# % paying above $125/year  = (charged - lt_125) / charged * 100
-# % paying above $500/year  = (500_749 + 750_999 + 1000_plus) / charged * 100
-# % paying $1,000+/year     = 1000_plus / charged * 100
 if 'water_charged_2022' in gdf.columns:
     charged_w = gdf['water_charged_2022']
-    gdf['Water % Above $125/year'] = safe_pct(
-        charged_w - gdf.get('water_lt_125_2022', 0), charged_w)
-    gdf['Water % Above $500/year'] = safe_pct(
+    gdf['Water % Above $125/year']  = safe_pct(charged_w - gdf.get('water_lt_125_2022', 0), charged_w)
+    gdf['Water % Above $500/year']  = safe_pct(
         gdf.get('water_500_749_2022', 0) + gdf.get('water_750_999_2022', 0) + gdf.get('water_1000_plus_2022', 0),
         charged_w)
-    gdf['Water % Above $1000/year'] = safe_pct(
-        gdf.get('water_1000_plus_2022', 0), charged_w)
+    gdf['Water % Above $1000/year'] = safe_pct(gdf.get('water_1000_plus_2022', 0), charged_w)
 
-# Drop all raw energy/water columns — only keep the derived percentages
 gdf = gdf.drop(columns=[c for c in EW_COLS_NEEDED if c in gdf.columns])
 print("  -> Raw energy/water columns dropped; 6 threshold columns retained")
 
@@ -234,13 +272,11 @@ census_df = (
 for col in ACS_VARS_CLEAN.values():
     census_df[col] = pd.to_numeric(census_df[col], errors='coerce')
 
-# Derived rates only — drop raw counts after
 census_df['Broadband %']         = (census_df['Broadband Subscribers'] / census_df['Total Households'] * 100).round(2)
 census_df['Poverty %']           = (census_df['Population Below Poverty'] / census_df['Total Population'] * 100).round(2)
 census_df['Unemployment Rate %'] = (census_df['Unemployed Population'] / census_df['Labor Force Population'] * 100).round(2)
 census_df['Renter %']            = (census_df['Renter Occupied Units'] / (census_df['Owner Occupied Units'] + census_df['Renter Occupied Units']) * 100).round(2)
 
-# Keep only the columns we want in the final output
 census_keep = ['census_zip', 'Total Population', 'Median Household Income',
                'Broadband %', 'Poverty %', 'Unemployment Rate %', 'Renter %']
 census_df = census_df[census_keep]
@@ -250,25 +286,41 @@ gdf = gdf.merge(census_df, left_on='ZCTA5CE20', right_on='census_zip', how='left
 gdf = gdf.drop(columns=['census_zip', 'NAME'], errors='ignore')
 
 # =============================================================================
+# STEP 5.5 — City / County / State lookup
+# =============================================================================
+print("STEP 5.5: Adding City, County, State via pgeocode...")
+
+nomi = pgeocode.Nominatim('us')
+
+def get_zip_info(zipcode):
+    result = nomi.query_postal_code(str(zipcode))
+    if result is not None and pd.notna(result.get('place_name')):
+        return pd.Series({
+            'City':   result.get('place_name', '—'),
+            'County': result.get('county_name', '—'),
+            'State':  result.get('state_name',  '—'),
+        })
+    return pd.Series({'City': '—', 'County': '—', 'State': '—'})
+
+zip_info = gdf['ZCTA5CE20'].apply(get_zip_info)
+gdf = pd.concat([gdf.reset_index(drop=True), zip_info], axis=1)
+matched = zip_info['City'].ne('—').sum()
+print(f"  -> City/County/State resolved for {matched}/{len(gdf)} ZIPs")
+
+# =============================================================================
 # STEP 6 — Derived spatial variables
 # =============================================================================
 print("STEP 6: Computing population density and data centers per 100k residents...")
 
-# Population density: residents per sq km (ALAND20 is in sq meters)
 gdf['Population Density'] = (
     gdf['Total Population'] / (gdf['ALAND20'] / 1_000_000)
 ).round(2)
 
-# Data centers per 100,000 residents
 gdf['Data Centers per 100k Residents'] = np.where(
     gdf['Total Population'] > 0,
     (gdf['Total Data Centers'] / gdf['Total Population'] * 100_000).round(4),
     np.nan
 )
-
-# Drop Total Population and Land Area after deriving what we need
-# (keep them if you want — commented out so you can decide)
-# gdf = gdf.drop(columns=['Total Population', 'ALAND20'])
 
 # =============================================================================
 # STEP 7 — KNN Imputation across numeric columns
@@ -281,19 +333,38 @@ numeric_cols = [
     if col not in non_impute
 ]
 
-before_missing = gdf[numeric_cols].isna().sum().sum()
+impute_df = gdf[numeric_cols].copy()
+
+before_missing = impute_df.isna().sum().sum()
 print(f"  -> {len(numeric_cols)} numeric columns | {before_missing:,} missing values before imputation")
 
 scaler  = StandardScaler()
 imputer = KNNImputer(n_neighbors=5)
 
-scaled  = scaler.fit_transform(gdf[numeric_cols])
-imputed = imputer.fit_transform(scaled)
-gdf[numeric_cols] = scaler.inverse_transform(imputed)
+scaled   = scaler.fit_transform(impute_df)
+imputed  = imputer.fit_transform(scaled)
+restored = scaler.inverse_transform(imputed)
+
+result_df = pd.DataFrame(restored, columns=numeric_cols, index=gdf.index)
+
+# Clip each column to [0, observed_max] — no column should go negative
+# and none should exceed the real observed maximum
+for col in numeric_cols:
+    observed_min = impute_df[col].dropna().quantile(0.01)  # 1st percentile as floor
+    observed_max = impute_df[col].dropna().quantile(0.99)  # 99th percentile as ceiling
+    result_df[col] = result_df[col].clip(lower=max(0, observed_min), upper=observed_max)
+
+gdf[numeric_cols] = result_df
 
 after_missing = gdf[numeric_cols].isna().sum().sum()
 print(f"  -> {after_missing:,} missing values after imputation")
 
+# Sanity check
+print("  -> Post-imputation value ranges:")
+for col in numeric_cols:
+    print(f"     {col:<45} min={gdf[col].min():>12.2f}  max={gdf[col].max():>12.2f}")
+
+    
 # =============================================================================
 # STEP 8 — Validate
 # =============================================================================

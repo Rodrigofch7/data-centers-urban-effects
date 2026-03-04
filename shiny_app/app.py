@@ -11,6 +11,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import io, base64
+from scipy import stats as scipy_stats
 
 # To run: shiny run --reload app.py
 # cd shiny_app -> rsconnect deploy shiny .
@@ -28,16 +29,10 @@ CARD_BG   = "#1c2128"
 BORDER    = "#30363d"
 TEXT_PRI  = "#e6edf3"
 TEXT_SEC  = "#8b949e"
-TEXT_ACC  = "#f0a500"   # gold accent
+TEXT_ACC  = "#f0a500"
 
 # =============================================================================
-# COLORBLIND-FRIENDLY COLORMAPS  (one per metric group)
-#
-#   viridis  → blue-green-yellow   (Zillow home values)
-#   cividis  → blue-yellow         (Census demographics)  CVD-safe by design
-#   plasma   → purple-orange-yel   (Data Centers)
-#   magma    → black-purple-white  (Electricity)
-#   YlGnBu   → yellow-green-blue   (Water & Sewer)
+# COLORBLIND-FRIENDLY COLORMAPS
 # =============================================================================
 GROUP_CMAPS = {
     "zillow":      "viridis",
@@ -143,7 +138,6 @@ for col in ALL_NUMERIC:
     if col in cities_gdf.columns:
         cities_gdf[col] = pd.to_numeric(cities_gdf[col], errors="coerce")
 
-# col -> group lookup
 COL_GROUP = {}
 for c in ZILLOW_COLS:  COL_GROUP[c] = "zillow"
 for c in CENSUS_COLS:  COL_GROUP[c] = "census"
@@ -433,21 +427,35 @@ app_ui = ui.page_navbar(
         "Analysis",
         ui.page_sidebar(
             ui.sidebar(
-                ui.h4("Controls"),
+                ui.h4("Regression"),
+                ui.div("DEPENDENT VARIABLE (Y)", class_="sidebar-section-title"),
+                ui.input_select(
+                    "reg_y", None,
+                    choices={c: c for c in ALL_NUMERIC},
+                    selected=ALL_NUMERIC[0] if ALL_NUMERIC else None,
+                ),
+                ui.div("REGRESSORS (X)", class_="sidebar-section-title"),
+                ui.input_selectize(
+                    "reg_x", None,
+                    choices={c: c for c in ALL_NUMERIC},
+                    selected=[ALL_NUMERIC[1]] if len(ALL_NUMERIC) > 1 else [],
+                    multiple=True,
+                ),
                 ui.hr(),
-                ui.div("Coming soon.", class_="source-note"),
+                ui.input_checkbox("reg_intercept", "Include intercept", value=True),
+                ui.hr(),
+                ui.div(
+                    "OLS regression across all ZIP codes. "
+                    "Select one or more regressors.",
+                    class_="source-note"
+                ),
                 style=f"background:{PANEL_BG}; min-width:225px;",
             ),
-            ui.card(
-                ui.card_header("Data Analysis"),
-                ui.div(
-                    ui.h3("Coming Soon",
-                          style=f"font-family:'DM Serif Display',serif; color:{TEXT_ACC}; margin-bottom:10px;"),
-                    ui.p("Analysis tools and visualizations will appear here.",
-                         style=f"color:{TEXT_SEC}; max-width:360px; font-size:14px;"),
-                    style="display:flex;flex-direction:column;align-items:center;"
-                          "justify-content:center;height:480px;text-align:center;",
-                ),
+            ui.layout_columns(
+                ui.card(ui.card_header("Regression Results"), ui.output_ui("reg_summary")),
+                ui.card(ui.card_header("Fitted vs Actual"),   ui.output_ui("reg_fit_plot")),
+                ui.card(ui.card_header("Residuals"),          ui.output_ui("reg_resid_plot")),
+                col_widths=(12, 6, 6),
             ),
         ),
     ),
@@ -525,7 +533,7 @@ def server(input, output, session):
         m = folium.Map(
             location=[center_lat, center_lon],
             zoom_start=8,
-            tiles="CartoDB dark_matter",
+            tiles="CartoDB positron",
             prefer_canvas=True,
         )
 
@@ -533,8 +541,12 @@ def server(input, output, session):
 
         tt_fields, tt_aliases = [], []
         if "Zip Code" in gdf.columns:
-            tt_fields.append("Zip Code"); tt_aliases.append("ZIP")
-        tt_fields.append(metric); tt_aliases.append(metric)
+            tt_fields.append("Zip Code");  tt_aliases.append("📍 ZIP")
+        for col, alias in [("City", "🏙️ City"), ("Community", "🏘️ Community"),
+                           ("County", "🗺️ County"), ("State", "📌 State")]:
+            if col in gdf.columns:
+                tt_fields.append(col); tt_aliases.append(alias)
+        tt_fields.append(metric); tt_aliases.append(f"📊 {metric}")
 
         def style_fn(feature):
             val = feature["properties"].get(metric)
@@ -568,13 +580,14 @@ def server(input, output, session):
                     "border-radius:7px;"
                     f"border:1px solid {BORDER};"
                     "box-shadow:0 4px 16px rgba(0,0,0,0.55);"
+                    "min-width:220px;"
+                    "line-height:1.8;"
                 ),
             ),
         ).add_to(m)
 
         colormap.add_to(m)
 
-        # Polish the legend
         m.get_root().html.add_child(folium.Element(f"""
             <style>
             .legend {{
@@ -641,7 +654,6 @@ def server(input, output, session):
         color_by = input.color_by_dc() and "Total Data Centers" in df.columns
         if color_by:
             has_dc = pd.to_numeric(df["Total Data Centers"], errors="coerce").fillna(0).to_numpy() > 0
-            # colorblind-friendly pair: blue vs gold
             ax.scatter(x[~has_dc], y[~has_dc],
                        color="#4895ef", alpha=0.65, edgecolors=DARK_BG,
                        linewidths=0.4, s=52, label="No data center", zorder=3)
@@ -652,7 +664,6 @@ def server(input, output, session):
             ax.legend(facecolor=CARD_BG, edgecolor=BORDER,
                       labelcolor=TEXT_PRI, fontsize=9, framealpha=0.9)
         else:
-            # cividis scatter — colorblind-safe continuous color
             sc = ax.scatter(x, y, c=y, cmap="cividis", alpha=0.75,
                             edgecolors=DARK_BG, linewidths=0.3, s=52, zorder=3)
             cbar = fig.colorbar(sc, ax=ax, fraction=0.03, pad=0.01)
@@ -781,6 +792,177 @@ def server(input, output, session):
         </div>
         """
         return ui.HTML(html)
+
+    # ── REGRESSION ────────────────────────────────────────────────────────────
+    @reactive.Calc
+    def reg_data():
+        y_var  = input.reg_y()
+        x_vars = list(input.reg_x())
+        if not x_vars or not y_var:
+            return None, y_var, x_vars
+
+        needed = list(dict.fromkeys([y_var] + x_vars))
+        df = cities_df[[c for c in needed if c in cities_df.columns]].copy()
+        for col in needed:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+        df = df.dropna().reset_index(drop=True)
+        return df, y_var, x_vars
+
+    @render.ui
+    def reg_summary():
+        df, y_var, x_vars = reg_data()
+        if df is None or df.empty or not x_vars:
+            return ui.HTML(
+                f"<p style='color:{TEXT_SEC};padding:16px;'>"
+                f"Select at least one regressor to run the model.</p>"
+            )
+
+        y     = df[y_var].to_numpy().astype(float)
+        X_raw = df[x_vars].to_numpy().astype(float)
+        if input.reg_intercept():
+            X = np.column_stack([np.ones(len(X_raw)), X_raw])
+            coef_names = ["Intercept"] + x_vars
+        else:
+            X = X_raw
+            coef_names = x_vars
+
+        coefs, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
+        y_hat     = X @ coefs
+        residuals = y - y_hat
+        ss_res    = float(np.sum(residuals ** 2))
+        ss_tot    = float(np.sum((y - y.mean()) ** 2))
+        r2        = 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
+        n, k      = len(y), len(coefs)
+        r2_adj    = 1 - (1 - r2) * (n - 1) / (n - k - 1) if n > k + 1 else r2
+        mse       = ss_res / (n - k) if n > k else np.nan
+        rmse      = np.sqrt(mse) if not np.isnan(mse) else np.nan
+
+        try:
+            cov = mse * np.linalg.inv(X.T @ X)
+            se  = np.sqrt(np.diag(cov))
+            t   = coefs / se
+            p   = [2 * (1 - scipy_stats.t.cdf(abs(ti), df=n - k)) for ti in t]
+        except Exception:
+            se = [np.nan] * len(coefs)
+            t  = [np.nan] * len(coefs)
+            p  = [np.nan] * len(coefs)
+
+        def sig(pv):
+            if np.isnan(pv): return ""
+            if pv < 0.001:   return "***"
+            if pv < 0.01:    return "**"
+            if pv < 0.05:    return "*"
+            if pv < 0.1:     return "·"
+            return ""
+
+        def pval_color(pv):
+            if np.isnan(pv): return TEXT_SEC
+            if pv < 0.05:    return "#4ade80"
+            if pv < 0.1:     return "#facc15"
+            return "#f87171"
+
+        coef_rows = ""
+        for name, c, s, ti, pv in zip(coef_names, coefs, se, t, p):
+            coef_rows += (
+                f"<tr style='border-bottom:1px solid {BORDER};'>"
+                f"<td style='padding:7px 10px;color:{TEXT_ACC};font-family:monospace;font-size:11px;'>{name}</td>"
+                f"<td style='padding:7px 10px;color:{TEXT_PRI};text-align:right;font-family:monospace;font-size:11px;'>{c:,.4f}</td>"
+                f"<td style='padding:7px 10px;color:{TEXT_SEC};text-align:right;font-family:monospace;font-size:11px;'>{s:,.4f}</td>"
+                f"<td style='padding:7px 10px;color:{TEXT_SEC};text-align:right;font-family:monospace;font-size:11px;'>{ti:,.3f}</td>"
+                f"<td style='padding:7px 10px;color:{pval_color(pv)};text-align:right;font-family:monospace;font-size:11px;'>"
+                f"{'<0.001' if pv < 0.001 else f'{pv:.3f}'} {sig(pv)}</td>"
+                f"</tr>"
+            )
+
+        r2_color = "#4ade80" if r2 > 0.5 else ("#facc15" if r2 > 0.25 else "#f87171")
+
+        stat_cards = "".join([
+            f"<div style='flex:1;min-width:120px;padding:12px 16px;background:{CARD_BG};"
+            f"border-radius:8px;border-top:3px solid {col};'>"
+            f"<div style='font-size:9px;color:{TEXT_SEC};font-family:monospace;"
+            f"letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;'>{label}</div>"
+            f"<div style='font-size:22px;font-weight:700;color:{col};font-family:monospace;'>{val}</div>"
+            f"</div>"
+            for label, val, col in [
+                ("R²",      f"{r2:.4f}",    r2_color),
+                ("Adj. R²", f"{r2_adj:.4f}", r2_color),
+                ("RMSE",    f"{rmse:,.2f}", TEXT_ACC),
+                ("N",       str(n),         TEXT_SEC),
+            ]
+        ])
+
+        html = f"""
+        <div style="background:{DARK_BG};padding:16px;border-radius:8px;font-family:'DM Sans',sans-serif;">
+          <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+            {stat_cards}
+          </div>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="border-bottom:2px solid {MAROON};">
+                <th style="padding:7px 10px;color:{TEXT_SEC};text-align:left;font-size:9px;font-family:monospace;letter-spacing:0.1em;text-transform:uppercase;">Variable</th>
+                <th style="padding:7px 10px;color:{TEXT_SEC};text-align:right;font-size:9px;font-family:monospace;">Coef</th>
+                <th style="padding:7px 10px;color:{TEXT_SEC};text-align:right;font-size:9px;font-family:monospace;">Std Err</th>
+                <th style="padding:7px 10px;color:{TEXT_SEC};text-align:right;font-size:9px;font-family:monospace;">t</th>
+                <th style="padding:7px 10px;color:{TEXT_SEC};text-align:right;font-size:9px;font-family:monospace;">p-value</th>
+              </tr>
+            </thead>
+            <tbody>{coef_rows}</tbody>
+          </table>
+          <div style="margin-top:10px;font-size:10px;color:{TEXT_SEC};font-family:monospace;">
+            Significance: *** p&lt;0.001 &nbsp; ** p&lt;0.01 &nbsp; * p&lt;0.05 &nbsp; · p&lt;0.1
+          </div>
+        </div>
+        """
+        return ui.HTML(html)
+
+    @render.ui
+    def reg_fit_plot():
+        df, y_var, x_vars = reg_data()
+        if df is None or df.empty or not x_vars:
+            return ui.HTML("")
+
+        y     = df[y_var].to_numpy().astype(float)
+        X_raw = df[x_vars].to_numpy().astype(float)
+        X     = np.column_stack([np.ones(len(X_raw)), X_raw]) if input.reg_intercept() else X_raw
+        coefs, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
+        y_hat = X @ coefs
+
+        fig, ax = plt.subplots(figsize=(6, 4))
+        setup_ax(ax, fig)
+        ax.scatter(y, y_hat, color="#4895ef", alpha=0.6, edgecolors=DARK_BG,
+                   linewidths=0.3, s=40, zorder=3)
+        mn, mx = min(y.min(), y_hat.min()), max(y.max(), y_hat.max())
+        ax.plot([mn, mx], [mn, mx], color=TEXT_ACC, linewidth=1.6,
+                linestyle="--", alpha=0.85, zorder=4, label="Perfect fit")
+        ax.set_xlabel(f"Actual: {y_var[:30]}", color=TEXT_SEC, fontsize=9)
+        ax.set_ylabel("Fitted",                color=TEXT_SEC, fontsize=9)
+        ax.legend(facecolor=CARD_BG, edgecolor=BORDER, labelcolor=TEXT_PRI, fontsize=8)
+        plt.tight_layout()
+        return ui.HTML(fig_to_html(fig))
+
+    @render.ui
+    def reg_resid_plot():
+        df, y_var, x_vars = reg_data()
+        if df is None or df.empty or not x_vars:
+            return ui.HTML("")
+
+        y     = df[y_var].to_numpy().astype(float)
+        X_raw = df[x_vars].to_numpy().astype(float)
+        X     = np.column_stack([np.ones(len(X_raw)), X_raw]) if input.reg_intercept() else X_raw
+        coefs, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
+        y_hat     = X @ coefs
+        residuals = y - y_hat
+
+        fig, ax = plt.subplots(figsize=(6, 4))
+        setup_ax(ax, fig)
+        ax.scatter(y_hat, residuals, color="#a78bfa", alpha=0.6,
+                   edgecolors=DARK_BG, linewidths=0.3, s=40, zorder=3)
+        ax.axhline(0, color=TEXT_ACC, linewidth=1.4, linestyle="--", alpha=0.8)
+        ax.set_xlabel("Fitted values", color=TEXT_SEC, fontsize=9)
+        ax.set_ylabel("Residuals",     color=TEXT_SEC, fontsize=9)
+        plt.tight_layout()
+        return ui.HTML(fig_to_html(fig))
 
 
 # =============================================================================
