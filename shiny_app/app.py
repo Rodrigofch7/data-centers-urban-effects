@@ -102,7 +102,7 @@ METRIC_GROUP_CHOICES = {}
 
 
 # =============================================================================
-# LOAD & PRE-PROCESS DATA  ← all heavy lifting happens once at startup
+# LOAD & PRE-PROCESS DATA  <- all heavy lifting happens once at startup
 # =============================================================================
 def load_data():
     app_dir      = os.path.dirname(os.path.abspath(__file__))
@@ -116,15 +116,15 @@ cities_gdf, centers_gdf, cities_path = load_data()
 cities_gdf  = cities_gdf.to_crs(epsg=4326)
 centers_gdf = centers_gdf.to_crs(epsg=4326)
 
-# ── Simplify geometries once — huge payload reduction, invisible at zoom 8 ──
+# Simplify geometries once
 cities_gdf.geometry  = cities_gdf.geometry.simplify(tolerance=0.001, preserve_topology=True)
 centers_gdf.geometry = centers_gdf.geometry.simplify(tolerance=0.001, preserve_topology=True)
 
-# ── Pre-compute map centre once ──────────────────────────────────────────────
+# Pre-compute map centre once
 _centroids  = cities_gdf.geometry.to_crs(epsg=3857).centroid.to_crs(epsg=4326)
 MAP_CENTER  = [float(_centroids.y.mean()), float(_centroids.x.mean())]
 
-# ── Pre-build tooltip field lists once ──────────────────────────────────────
+# Pre-build tooltip field lists once
 TT_FIELDS_BASE, TT_ALIASES_BASE = [], []
 for col, alias in [("Zip Code", "📍 ZIP"), ("City", "🏙️ City"),
                    ("Community", "🏘️ Community"), ("County", "🗺️ County"),
@@ -149,7 +149,7 @@ OPT_COLS     = _present(OPTIONAL_COLS)
 
 ALL_NUMERIC = ZILLOW_COLS + CENSUS_COLS + DC_COLS + ELEC_COLS + WATER_COLS + OPT_COLS
 
-# ── Coerce ALL numerics once at load time (not inside reactive functions) ────
+# Coerce ALL numerics once at load time
 for col in ALL_NUMERIC:
     if col in cities_df.columns:
         cities_df[col]  = pd.to_numeric(cities_df[col],  errors="coerce")
@@ -164,13 +164,22 @@ for c in ELEC_COLS:    COL_GROUP[c] = "electricity"
 for c in WATER_COLS:   COL_GROUP[c] = "water"
 for c in OPT_COLS:     COL_GROUP[c] = "census"
 
+# Map group key -> list of columns (used by Relationships & Regressions)
+GROUP_COLS = {
+    "zillow":      ZILLOW_COLS,
+    "census":      CENSUS_COLS,
+    "centers":     DC_COLS,
+    "electricity": ELEC_COLS,
+    "water":       WATER_COLS,
+}
+
 if ZILLOW_COLS:  METRIC_GROUP_CHOICES["zillow"]      = "🏠  Home Values"
 if CENSUS_COLS:  METRIC_GROUP_CHOICES["census"]      = "👥  Demographics"
 if DC_COLS:      METRIC_GROUP_CHOICES["centers"]     = "🏢  Data Centers"
 if ELEC_COLS:    METRIC_GROUP_CHOICES["electricity"] = "⚡  Electricity"
 if WATER_COLS:   METRIC_GROUP_CHOICES["water"]       = "💧  Water & Sewer"
 
-# ── Pre-serialize GeoJSON once — avoids repeated __geo_interface__ calls ─────
+# Pre-serialize GeoJSON once
 CITIES_GEOJSON = cities_gdf.__geo_interface__
 
 
@@ -215,9 +224,8 @@ def setup_ax(ax, fig):
         spine.set_edgecolor(BORDER)
     ax.grid(True, color=BORDER, linewidth=0.4, linestyle="--", alpha=0.6)
 
-# ── Pre-build data center markers HTML once ──────────────────────────────────
 def _build_dc_markers(m):
-    """Add data center markers to a folium map. Called only when needed."""
+    """Add data center markers to a folium map."""
     for _, row in centers_gdf.iterrows():
         geom = row.geometry
         if geom.geom_type == "MultiPoint":
@@ -256,13 +264,41 @@ html, body {{
   font-size: 14px;
 }}
 
-/* ── Navbar ─────────────────────────────────────────── */
+/* Navbar */
 .navbar {{
   background: linear-gradient(135deg, {MAROON_DARK} 0%, {MAROON} 55%, {MAROON_MID} 100%) !important;
   border-bottom: 1px solid {MAROON_DARK} !important;
   box-shadow: 0 2px 24px rgba(0,0,0,0.7);
-  padding: 0 24px !important;
+  padding: 0 48px !important;
+  min-height: 52px !important;
 }}
+
+/* Bottom figurative bar */
+#bottom-bar {{
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: 42px;
+  background: linear-gradient(135deg, {MAROON_DARK} 0%, {MAROON} 55%, {MAROON_MID} 100%);
+  border-top: 1px solid {MAROON_DARK};
+  box-shadow: 0 -2px 24px rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  padding: 0 48px;
+  gap: 32px;
+}}
+#bottom-bar span {{
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  color: rgba(255,255,255,0.78);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: default;
+}}
+
+/* Push page content up so bottom bar doesn't overlap */
+body {{ padding-bottom: 42px !important; }}
 .navbar-brand {{
   font-family: 'DM Serif Display', serif !important;
   font-size: 19px !important;
@@ -286,7 +322,7 @@ html, body {{
 }}
 .uchicago-logo-nav {{ height: 36px; display: block; margin: 0 6px; }}
 
-/* ── Sidebar ─────────────────────────────────────────── */
+/* Sidebar */
 .sidebar,
 .bslib-sidebar-layout > .sidebar,
 .bslib-sidebar-layout > .sidebar > .sidebar-content,
@@ -366,7 +402,7 @@ aside.sidebar {{
   border-top: 1px solid {BORDER};
 }}
 
-/* ── Cards ───────────────────────────────────────────── */
+/* Cards */
 .card {{
   background: {CARD_BG} !important;
   border: 1px solid {BORDER} !important;
@@ -383,12 +419,12 @@ aside.sidebar {{
   padding: 10px 16px !important; border-bottom: none !important;
 }}
 
-/* ── Global backgrounds ──────────────────────────────── */
+/* Global backgrounds */
 body, .bslib-page-sidebar, .bslib-sidebar-layout {{
   background: {DARK_BG} !important;
 }}
 
-/* ── Scrollbar ───────────────────────────────────────── */
+/* Scrollbar */
 ::-webkit-scrollbar {{ width: 5px; height: 5px; }}
 ::-webkit-scrollbar-track {{ background: {DARK_BG}; }}
 ::-webkit-scrollbar-thumb {{ background: {BORDER}; border-radius: 3px; }}
@@ -397,11 +433,11 @@ body, .bslib-page-sidebar, .bslib-sidebar-layout {{
 
 
 # =============================================================================
-# UI  (unchanged)
+# UI
 # =============================================================================
 app_ui = ui.page_navbar(
 
-    # ── MAP ───────────────────────────────────────────────────────────────────
+    # MAP
     ui.nav_panel(
         "Map",
         ui.page_sidebar(
@@ -432,24 +468,22 @@ app_ui = ui.page_navbar(
         ),
     ),
 
-    # ── RELATIONSHIPS ─────────────────────────────────────────────────────────
+    # RELATIONSHIPS
     ui.nav_panel(
         "Relationships",
         ui.page_sidebar(
             ui.sidebar(
                 ui.h4("Variables"),
+                ui.div("FILTER BY GROUP (OPTIONAL)", class_="sidebar-section-title"),
+                ui.input_select(
+                    "rel_metric_group", None,
+                    choices={"all": "— All Variables —", **METRIC_GROUP_CHOICES},
+                    selected="all",
+                ),
                 ui.div("X AXIS", class_="sidebar-section-title"),
-                ui.input_select(
-                    "x_var", None,
-                    choices={c: c for c in ALL_NUMERIC},
-                    selected=ALL_NUMERIC[0] if ALL_NUMERIC else None,
-                ),
+                ui.output_ui("rel_x_selector"),
                 ui.div("Y AXIS", class_="sidebar-section-title"),
-                ui.input_select(
-                    "y_var", None,
-                    choices={c: c for c in ALL_NUMERIC},
-                    selected=ALL_NUMERIC[1] if len(ALL_NUMERIC) > 1 else ALL_NUMERIC[0],
-                ),
+                ui.output_ui("rel_y_selector"),
                 ui.hr(),
                 ui.input_checkbox("color_by_dc", "Highlight ZIPs with data centers", value=False),
                 ui.hr(),
@@ -468,25 +502,22 @@ app_ui = ui.page_navbar(
         ),
     ),
 
-    # ── ANALYSIS ──────────────────────────────────────────────────────────────
+    # REGRESSIONS (renamed from Analysis)
     ui.nav_panel(
-        "Analysis",
+        "Regressions",
         ui.page_sidebar(
             ui.sidebar(
                 ui.h4("Regression"),
-                ui.div("DEPENDENT VARIABLE (Y)", class_="sidebar-section-title"),
+                ui.div("FILTER BY GROUP (OPTIONAL)", class_="sidebar-section-title"),
                 ui.input_select(
-                    "reg_y", None,
-                    choices={c: c for c in ALL_NUMERIC},
-                    selected=ALL_NUMERIC[0] if ALL_NUMERIC else None,
+                    "reg_metric_group", None,
+                    choices={"all": "— All Variables —", **METRIC_GROUP_CHOICES},
+                    selected="all",
                 ),
+                ui.div("DEPENDENT VARIABLE (Y)", class_="sidebar-section-title"),
+                ui.output_ui("reg_y_selector"),
                 ui.div("REGRESSORS (X)", class_="sidebar-section-title"),
-                ui.input_selectize(
-                    "reg_x", None,
-                    choices={c: c for c in ALL_NUMERIC},
-                    selected=[ALL_NUMERIC[1]] if len(ALL_NUMERIC) > 1 else [],
-                    multiple=True,
-                ),
+                ui.output_ui("reg_x_selector"),
                 ui.hr(),
                 ui.input_checkbox("reg_intercept", "Include intercept", value=True),
                 ui.hr(),
@@ -513,6 +544,23 @@ app_ui = ui.page_navbar(
         ui.tags.style(CUSTOM_CSS),
         ui.tags.link(rel="preconnect", href="https://fonts.googleapis.com"),
         ui.tags.link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin=""),
+        ui.tags.script("""
+            document.addEventListener('DOMContentLoaded', function() {
+                var bar = document.createElement('div');
+                bar.id = 'bottom-bar';
+                bar.innerHTML = '<span>— University of Chicago —</span>';
+                bar.style.transform = 'translateY(100%)';
+                bar.style.transition = 'transform 0.3s ease';
+                document.body.appendChild(bar);
+                window.addEventListener('scroll', function() {
+                    if (window.scrollY > 40) {
+                        bar.style.transform = 'translateY(0)';
+                    } else {
+                        bar.style.transform = 'translateY(100%)';
+                    }
+                });
+            });
+        """),
     ),
 
     title=ui.tags.span(
@@ -557,8 +605,58 @@ def server(input, output, session):
         try:   return input.metric_group()
         except: return "census"
 
+    # ── Relationships: dynamic X / Y selectors ────────────────────────────────
+    @render.ui
+    def rel_x_selector():
+        group = input.rel_metric_group()
+        cols  = ALL_NUMERIC if group == "all" else GROUP_COLS.get(group, ALL_NUMERIC)
+        if not cols:
+            return ui.p("No columns available.", style="color:#f87171;font-size:12px;")
+        return ui.input_select(
+            "x_var", None,
+            choices={c: c for c in cols},
+            selected=cols[0],
+        )
+
+    @render.ui
+    def rel_y_selector():
+        group = input.rel_metric_group()
+        cols  = ALL_NUMERIC if group == "all" else GROUP_COLS.get(group, ALL_NUMERIC)
+        if not cols:
+            return ui.p("No columns available.", style="color:#f87171;font-size:12px;")
+        return ui.input_select(
+            "y_var", None,
+            choices={c: c for c in cols},
+            selected=cols[1] if len(cols) > 1 else cols[0],
+        )
+
+    # ── Regressions: dynamic Y and X selectors ────────────────────────────────
+    @render.ui
+    def reg_y_selector():
+        group = input.reg_metric_group()
+        cols  = ALL_NUMERIC if group == "all" else GROUP_COLS.get(group, ALL_NUMERIC)
+        if not cols:
+            return ui.p("No columns available.", style="color:#f87171;font-size:12px;")
+        return ui.input_select(
+            "reg_y", None,
+            choices={c: c for c in cols},
+            selected=cols[0],
+        )
+
+    @render.ui
+    def reg_x_selector():
+        group = input.reg_metric_group()
+        cols  = ALL_NUMERIC if group == "all" else GROUP_COLS.get(group, ALL_NUMERIC)
+        if not cols:
+            return ui.p("No columns available.", style="color:#f87171;font-size:12px;")
+        return ui.input_selectize(
+            "reg_x", None,
+            choices={c: c for c in cols},
+            selected=[cols[1]] if len(cols) > 1 else [],
+            multiple=True,
+        )
+
     # ── MAP ───────────────────────────────────────────────────────────────────
-    # Only re-renders when metric or show_centers actually changes
     @render.ui
     @reactive.event(input.metric_group, input.show_centers,
                     lambda: _resolved_metric())
@@ -573,7 +671,6 @@ def server(input, output, session):
             metric = fallback[0]
             group  = COL_GROUP.get(metric, "census")
 
-        # Use pre-computed center — no CRS transform on every render
         m = folium.Map(
             location=MAP_CENTER,
             zoom_start=8,
@@ -581,10 +678,8 @@ def server(input, output, session):
             prefer_canvas=True,
         )
 
-        # Build colormap from pre-coerced column (no copy needed for read)
         colormap, col_min, col_max = make_colormap(cities_gdf[metric], metric, group)
 
-        # Tooltip fields built from pre-computed base + current metric
         tt_fields   = TT_FIELDS_BASE   + [metric]
         tt_aliases  = TT_ALIASES_BASE  + [f"📊 {metric}"]
 
@@ -604,7 +699,6 @@ def server(input, output, session):
         def highlight_fn(feature):
             return {"fillOpacity": 1.0, "weight": 2.2, "color": TEXT_ACC}
 
-        # Use pre-serialised GeoJSON — avoids repeated __geo_interface__ calls
         folium.GeoJson(
             CITIES_GEOJSON,
             style_function=style_fn,
@@ -644,26 +738,28 @@ def server(input, output, session):
         """))
 
         if input.show_centers():
-            _build_dc_markers(m)   # uses pre-loaded centers_gdf, no re-read
+            _build_dc_markers(m)
 
         return ui.HTML(f'<div style="height:640px;width:100%;">{m._repr_html_()}</div>')
 
     # ── SCATTER & DISTRIBUTIONS ───────────────────────────────────────────────
     @reactive.Calc
     def plot_data():
-        x_var = input.x_var()
-        y_var = input.y_var()
+        try:
+            x_var = input.x_var()
+            y_var = input.y_var()
+        except:
+            return pd.DataFrame(), "", ""
         raw   = [x_var, y_var, "Zip Code", "Total Data Centers"]
         cols  = list(dict.fromkeys([c for c in raw if c in cities_df.columns]))
-        # Numerics already coerced at load time — just select & dropna
         df    = cities_df[cols].copy().reset_index(drop=True)
         return df.dropna(subset=[x_var, y_var]).reset_index(drop=True), x_var, y_var
 
     @render.ui
     def scatter_plot():
         df, x_var, y_var = plot_data()
-        if df.empty:
-            return ui.HTML(f"<p style='color:#f87171;padding:16px;'>No data available.</p>")
+        if df.empty or not x_var:
+            return ui.HTML("<p style='color:#f87171;padding:16px;'>No data available.</p>")
 
         x = df[x_var].to_numpy().astype(float)
         y = df[y_var].to_numpy().astype(float)
@@ -714,8 +810,8 @@ def server(input, output, session):
     @render.ui
     def dist_plot():
         df, x_var, y_var = plot_data()
-        if df.empty:
-            return ui.HTML(f"<p style='color:#f87171;padding:16px;'>No data available.</p>")
+        if df.empty or not x_var:
+            return ui.HTML("<p style='color:#f87171;padding:16px;'>No data available.</p>")
 
         fig, axes = plt.subplots(1, 2, figsize=(9, 4))
         fig.patch.set_facecolor(DARK_BG)
@@ -745,8 +841,8 @@ def server(input, output, session):
     @render.ui
     def summary_stats():
         df, x_var, y_var = plot_data()
-        if df.empty:
-            return ui.HTML(f"<p style='color:#f87171;padding:16px;'>No data available.</p>")
+        if df.empty or not x_var:
+            return ui.HTML("<p style='color:#f87171;padding:16px;'>No data available.</p>")
 
         x    = df[x_var].to_numpy().astype(float)
         y    = df[y_var].to_numpy().astype(float)
@@ -816,13 +912,15 @@ def server(input, output, session):
     # ── REGRESSION ────────────────────────────────────────────────────────────
     @reactive.Calc
     def reg_data():
-        y_var  = input.reg_y()
-        x_vars = list(input.reg_x())
+        try:
+            y_var  = input.reg_y()
+            x_vars = list(input.reg_x())
+        except:
+            return None, "", []
         if not x_vars or not y_var:
             return None, y_var, x_vars
 
         needed = list(dict.fromkeys([y_var] + x_vars))
-        # Numerics already coerced at load time — just select & dropna
         df = cities_df[[c for c in needed if c in cities_df.columns]].copy()
         df = df.dropna().reset_index(drop=True)
         return df, y_var, x_vars
