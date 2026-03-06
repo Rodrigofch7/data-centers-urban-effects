@@ -674,7 +674,7 @@ def server(input, output, session):
         m = folium.Map(
             location=MAP_CENTER,
             zoom_start=8,
-            tiles="CartoDB positron",
+            tiles="OpenStreetMap",
             prefer_canvas=True,
         )
 
@@ -693,7 +693,7 @@ def server(input, output, session):
                 "fillColor":   colormap(clamped),
                 "color":       "#0d1117",
                 "weight":      0.6,
-                "fillOpacity": 0.83,
+                "fillOpacity": 0.5,
             }
 
         def highlight_fn(feature):
