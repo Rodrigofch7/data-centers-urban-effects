@@ -116,6 +116,43 @@ def clean_monthHHC():
 
     return housing_cost_data
 
+# Function to add housing cost scores to the datacenter dataset:
+def add_housing_cost_scores():
+    # Loading files:
+    dc = pd.read_csv("data/chicago_data_centers_2.csv")
+    hc = pd.read_csv("data/housing_cost_data.csv")
+
+    # Ensuring consistent types:
+    dc["Zipcode"] = dc["Zipcode"].astype(int)
+    dc["First_Operation_Permit"] = dc["First_Operation_Permit"].astype(int)
+
+    hc["Zipcode"] = hc["Zipcode"].astype(int)
+    hc["end_year"] = hc["end_year"].astype(int)
+
+    # Defining years to lookup:
+    dc["year_before"] = dc["First_Operation_Permit"] - 1
+    dc["year_after"]  = dc["First_Operation_Permit"]
+
+    # Keeping only what we need from housing cost data:
+    hc_lookup = hc[["Zipcode", "end_year", "Housing_Costs_Score"]].copy()
+
+    # Merging the before column:
+    dc = dc.merge(hc_lookup, left_on=["Zipcode", "year_before"], right_on=["Zipcode", "end_year"],
+        how="left").rename(columns={"Housing_Costs_Score": "HC_Score_Before"}).drop(columns=["end_year"])
+
+    # Merging the before column:
+    dc = dc.merge(hc_lookup, left_on=["Zipcode", "year_after"], right_on=["Zipcode", "end_year"],
+        how="left").rename(columns={"Housing_Costs_Score": "HC_Score_After"}).drop(columns=["end_year"])
+
+    # Dropping helper columns:
+    dc = dc.drop(columns=["year_before", "year_after"])
+
+    # Saving the file:
+    out_path = "data/chicago_data_centers_final.csv"
+    dc.to_csv(out_path, index=False)
+
+    return dc
+
 # Running cleaning pipeline:
 if __name__ == "__main__":
     print("Cleaning scraped data center dataset...")
@@ -126,5 +163,8 @@ if __name__ == "__main__":
 
     print("Cleaning household housing cost dataset...")
     clean_monthHHC()
+
+    print("Adding housing cost scores...")
+    add_housing_cost_scores()
 
     print("All cleaned datasets created successfully.")
