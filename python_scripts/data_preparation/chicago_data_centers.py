@@ -37,7 +37,7 @@ def standard_street(address):
 # Clean scraped data center dataset:
 def clean_scraped_datacenters():
     
-    chicago_datacenters:  pd.DataFrame = pd.read_csv("data/top_us_cities_datacenters.csv")
+    chicago_datacenters:  pd.DataFrame = pd.read_csv("data/housing_and_data_centers_data/top_us_cities_datacenters.csv")
 
     chicago_datacenters = chicago_datacenters[chicago_datacenters["scraped_city"] == "Chicago"].copy()
 
@@ -67,7 +67,7 @@ def clean_datacenter_housing_data():
         "Operator",
         "Address",
         "Zipcode",
-        "County_Name",
+        "CountyName",
         "year",
         "hval",
         "hval_yrbefore",
@@ -93,7 +93,7 @@ def clean_datacenter_housing_data():
 # Function to clean household costs dataset:
 def clean_monthHHC():
     # Loading dataset:
-    housing_cost_data = pd.read_csv("data/sinas_data/monthHHC_cleaned.csv")
+    housing_cost_data = pd.read_csv("data/sinans_data/monthHHC_cleaned.csv")
 
     # Keeping Chicago datacenters zipcodes:
     zipcodes = [ 46320, 60005, 60007, 60010, 60016, 60018, 60056, 60115, 
@@ -115,3 +115,16 @@ def clean_monthHHC():
     housing_cost_data .to_csv("data/housing_cost_data.csv", index=False)
 
     return housing_cost_data
+
+# Running cleaning pipeline:
+if __name__ == "__main__":
+    print("Cleaning scraped data center dataset...")
+    clean_scraped_datacenters()
+
+    print("Cleaning merged housing + data center dataset...")
+    clean_datacenter_housing_data()
+
+    print("Cleaning household housing cost dataset...")
+    clean_monthHHC()
+
+    print("All cleaned datasets created successfully.")
