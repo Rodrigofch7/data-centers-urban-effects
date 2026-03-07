@@ -182,6 +182,21 @@ if WATER_COLS:   METRIC_GROUP_CHOICES["water"]       = "💧  Water & Sewer"
 # Pre-serialize GeoJSON once
 CITIES_GEOJSON = cities_gdf.__geo_interface__
 
+# ── Boundary overlay layers (outline only — no fill) ─────────────────────────
+def _load_boundary(filename):
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Data", filename)
+    if os.path.exists(path):
+        return gpd.read_file(path).to_crs(epsg=4326)
+    return None
+
+illinois_gdf    = _load_boundary("illinois.gpkg")
+cook_county_gdf = _load_boundary("cook_county.gpkg")
+chicago_gdf     = _load_boundary("chicagoproper.gpkg")
+
+ILLINOIS_GEOJSON    = illinois_gdf.__geo_interface__    if illinois_gdf    is not None else None
+COOK_COUNTY_GEOJSON = cook_county_gdf.__geo_interface__ if cook_county_gdf is not None else None
+CHICAGO_GEOJSON     = chicago_gdf.__geo_interface__     if chicago_gdf     is not None else None
+
 
 # =============================================================================
 # HELPERS
@@ -452,7 +467,10 @@ app_ui = ui.page_navbar(
                 ui.div("VARIABLE", class_="sidebar-section-title"),
                 ui.output_ui("metric_selector"),
                 ui.hr(),
-                ui.input_checkbox("show_centers", "Show data center pins", value=True),
+                ui.input_checkbox("show_centers",  "Data Centers",  value=True),
+                ui.input_checkbox("show_illinois", "Illinois",      value=True),
+                ui.input_checkbox("show_cook",     "Cook County",   value=True),
+                ui.input_checkbox("show_chicago",  "Chicago", value=True),
                 ui.hr(),
                 ui.div(
                     "Sources: Zillow (2010, 2019, 2024) · ACS 2022 · "
@@ -502,7 +520,7 @@ app_ui = ui.page_navbar(
         ),
     ),
 
-    # REGRESSIONS (renamed from Analysis)
+    # REGRESSIONS
     ui.nav_panel(
         "Regressions",
         ui.page_sidebar(
@@ -658,8 +676,8 @@ def server(input, output, session):
 
     # ── MAP ───────────────────────────────────────────────────────────────────
     @render.ui
-    @reactive.event(input.metric_group, input.show_centers,
-                    lambda: _resolved_metric())
+    @reactive.event(input.metric_group, input.show_centers, input.show_illinois,
+                    input.show_cook, input.show_chicago, lambda: _resolved_metric())
     def map_plot():
         metric = _resolved_metric()
         group  = _current_group()
@@ -687,12 +705,12 @@ def server(input, output, session):
             val = feature["properties"].get(metric)
             if val is None or (isinstance(val, float) and np.isnan(val)):
                 return {"fillColor": "#21262d", "color": "#30363d",
-                        "weight": 0.4, "fillOpacity": 0.45}
+                        "weight": 0.3, "fillOpacity": 0.45}
             clamped = max(col_min, min(col_max, float(val)))
             return {
                 "fillColor":   colormap(clamped),
                 "color":       "#0d1117",
-                "weight":      0.6,
+                "weight":      0.3,
                 "fillOpacity": 0.5,
             }
 
@@ -737,10 +755,40 @@ def server(input, output, session):
             </style>
         """))
 
+        # ── Boundary overlays (outline only, no interaction) ─────────────────
+        if input.show_illinois() and ILLINOIS_GEOJSON is not None:
+            folium.GeoJson(
+                ILLINOIS_GEOJSON,
+                style_function=lambda feature: {
+                    "fillColor": "none", "fillOpacity": 0.0,
+                    "color": "#000000", "weight": 1,
+                },
+                interactive=False,
+            ).add_to(m)
+        if input.show_cook() and COOK_COUNTY_GEOJSON is not None:
+            folium.GeoJson(
+                COOK_COUNTY_GEOJSON,
+                style_function=lambda feature: {
+                    "fillColor": "none", "fillOpacity": 0.0,
+                    "color": "#ffffff", "weight": 1,
+                },
+                interactive=False,
+            ).add_to(m)
+        if input.show_chicago() and CHICAGO_GEOJSON is not None:
+            folium.GeoJson(
+                CHICAGO_GEOJSON,
+                style_function=lambda feature: {
+                    "fillColor": "none", "fillOpacity": 0.0,
+                    "color": "#ffffff", "weight": 1,
+                },
+                interactive=False,
+            ).add_to(m)
+
         if input.show_centers():
             _build_dc_markers(m)
 
         return ui.HTML(f'<div style="height:640px;width:100%;">{m._repr_html_()}</div>')
+
 
     # ── SCATTER & DISTRIBUTIONS ───────────────────────────────────────────────
     @reactive.Calc
