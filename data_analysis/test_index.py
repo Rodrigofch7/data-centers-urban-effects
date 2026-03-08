@@ -1,5 +1,6 @@
 import pandas as pd
 import random
+import pytest
 from pathlib import Path
 from faker import Faker
 from index import scoring
@@ -20,7 +21,7 @@ def make_data(n):
 
     # Setting Maximum Bounds
     MAX_HOME_PRICE = 1000000
-    MIN_MAX_PRICE = 10000
+    MIN_HOME_PRICE = 10000
 
     # Setting fake dataset
     dummy_data = Faker(["en_US"])
@@ -45,26 +46,49 @@ def make_data(n):
     return testing_data
 
 
-dummy_set = make_data(20)
+# dummy_set = make_data(20)
 # dummy_set.to_csv(OUTPATH)
 
-
-# Testing scoring()
+# Testing the composite method
 def test_scoring_composite():
+
     # Creating Dataset
     dummy_set = make_data(20)
 
-    # Scoring
+    # Testing scores for Home Price Changes
     scoring(dummy_set, "Home Price Change")
 
-    # Testing scores for Home Price Changes
-    assert dummy_set.iloc[0]["Home Price Change_score"] == 7
+    assert dummy_set.iloc[0]["Home Price Change_score"] == 6
     assert dummy_set.iloc[1]["Home Price Change_score"] == 5
-    assert dummy_set.iloc[4]["Home Price Change_score"] == 1
-    assert dummy_set.iloc[19]["Home Price Change_score"] == 6
+    assert dummy_set.iloc[4]["Home Price Change_score"] == 10
+    assert dummy_set.iloc[11]["Home Price Change_score"] == 8
 
     # Testing scores for Cost of Living Changes
     scoring(dummy_set, "Cost of Living Change")
 
+    assert dummy_set.iloc[0]["Cost of Living Change_score"] == 7
+    assert dummy_set.iloc[1]["Cost of Living Change_score"] == 3
+    assert dummy_set.iloc[6]["Cost of Living Change_score"] == 6
+    assert dummy_set.iloc[19]["Cost of Living Change_score"] == 2
 
-test_scoring_composite()
+def test_scoring_z():
+
+    # Creating Dataset 
+    dummy_set = make_data(20)
+
+    # Testing z-scores for Home Price Changes
+    scoring(dummy_set, "Home Price Change",method = "z-score")
+    
+    assert dummy_set.iloc[0]["Home Price Change_z_score"] == pytest.approx(0.521080127,abs=1e-6)
+    assert dummy_set.iloc[2]["Home Price Change_z_score"] == pytest.approx(-1.384384169,abs=1e-6)
+    assert dummy_set.iloc[9]["Home Price Change_z_score"] == pytest.approx(0.900714387,abs=1e-6)
+    assert dummy_set.iloc[18]["Home Price Change_z_score"] == pytest.approx(0.546306918,abs=1e-6)
+
+    # Testing z-scores for Cost of Living Changes
+    scoring(dummy_set, "Cost of Living Change",method = "z-score")
+
+    # Testing z-scores for Cost of Living Changes
+    assert dummy_set.iloc[0]["Cost of Living Change_z_score"] == pytest.approx(0.103753224,abs=1e-6)
+    assert dummy_set.iloc[10]["Cost of Living Change_z_score"] == pytest.approx(2.049777643,abs=1e-6)
+    assert dummy_set.iloc[11]["Cost of Living Change_z_score"] == pytest.approx(-0.490012321,abs=1e-6)
+    assert dummy_set.iloc[17]["Cost of Living Change_z_score"] == pytest.approx(1.500362168,abs=1e-6)
