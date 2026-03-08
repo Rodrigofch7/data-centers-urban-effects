@@ -736,6 +736,21 @@ body, .bslib-page-sidebar, .bslib-sidebar-layout {{
   text-align: center;
 }}
 .empty-state svg {{ opacity: 0.3; }}
+
+/* ── Sidebar toggle button ── */
+.sidebar-toggle,
+[data-bs-toggle="collapse"],
+.bslib-sidebar-layout .collapse-toggle {{
+  color: #ffffff !important;
+  background: transparent !important;
+}}
+.sidebar-toggle svg,
+[data-bs-toggle="collapse"] svg,
+.bslib-sidebar-layout .collapse-toggle svg {{
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}}
 """
 
 
