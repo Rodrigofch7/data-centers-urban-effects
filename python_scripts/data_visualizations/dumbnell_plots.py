@@ -57,7 +57,7 @@ def dumbbell_plot(
         .mark_rule(color="gray", strokeWidth=3)
         .encode(
             y=alt.Y(f"{dc_code}:N", sort=sort, title="Data Center"),
-            x=alt.X(f"{before_var}:Q", title=value_lab),
+            x=alt.X(f"{before_var}:Q", title=value_lab, scale=alt.Scale(zero=False)),
             x2=f"{after_var}:Q",
             tooltip=[
                 alt.Tooltip(f"{dc_code}:N", title="Data Center"),
@@ -71,7 +71,7 @@ def dumbbell_plot(
     dots = (alt.Chart(points).mark_point(size=70, filled=True)
         .encode(
             y=alt.Y(f"{dc_code}:N", sort=sort, title="Data Center"),
-            x=alt.X("value:Q", title=value_lab),
+            x=alt.X("value:Q", title=value_lab, scale=alt.Scale(zero=False)),
             color=alt.Color(
                 "period:N", title="Period", 
                 scale=alt.Scale(domain=[before_lab, after_lab],
