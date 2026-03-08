@@ -19,6 +19,7 @@ INPUT_PATH        = '/home/rodrigofrancachaves/capp30122/group_project/project-d
 MAP_PATH          = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/spatial_data/cities/ChicagoMetroArea.parquet'
 DC_INPUT_PATH     = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/spatial_data/centers/DataCentersChicagoMetroArea.parquet'
 ENERGY_WATER_PATH = 'data/energy and water data/nhgis_energy_water_wide.csv'
+HHC_PATH = 'data/sinans_data/pivoted_HHCScores.csv'
 OUTPUT_CITIES     = 'shiny_app/Data/Chicago.gpkg'
 OUTPUT_CENTERS    = 'shiny_app/Data/ChicagoDataCenters.gpkg'
 
@@ -94,6 +95,11 @@ FRIENDLY_NAMES = {
     'city_in_de': 'City',
     'latitude':   'Latitude',
     'longitude':  'Longitude',
+
+    # Housing Costs Monthly Housing Costs ; Universe:    Occupied housing units; Source code: B25104
+    'HHC Score (2007-2011)': 'Household Cost Score (2007–2011)',
+    'HHC Score (2019-2023)': 'Household Cost Score (2019–2023)',
+    'HHC Score (2020-2024)': 'Household Cost Score (2020–2024)',
 }
 
 
@@ -256,6 +262,27 @@ if 'water_charged_2022' in gdf.columns:
 
 gdf = gdf.drop(columns=[c for c in EW_COLS_NEEDED if c in gdf.columns])
 print("  -> Raw energy/water columns dropped; 6 threshold columns retained")
+
+# =============================================================================
+# STEP 4.5 — Household Cost Scores
+# =============================================================================
+print("STEP 4.5: Merging Household Cost Scores...")
+hhc_df = pd.read_csv(HHC_PATH, dtype={'ZCTA5A': str})
+hhc_df['ZCTA5A'] = hhc_df['ZCTA5A'].astype(str).str.zfill(5)
+
+# Keep earliest, a mid-point, and latest snapshot for trend context
+hhc_keep_cols = ['2007-2011', '2019-2023', '2020-2024']
+available_hhc = [c for c in hhc_keep_cols if c in hhc_df.columns]
+hhc_df = hhc_df[['ZCTA5A'] + available_hhc].rename(
+    columns={c: f'HHC Score ({c})' for c in available_hhc}
+)
+for col in hhc_df.columns[1:]:
+    hhc_df[col] = pd.to_numeric(hhc_df[col], errors='coerce')
+
+gdf = gdf.merge(hhc_df, left_on='ZCTA5CE20', right_on='ZCTA5A', how='left')
+gdf = gdf.drop(columns=['ZCTA5A'], errors='ignore')
+print(f"  -> HHC score columns added: {[c for c in gdf.columns if 'HHC' in c]}")
+
 
 # =============================================================================
 # STEP 5 — Census Data
