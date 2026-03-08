@@ -139,7 +139,7 @@ This will:
 
 Navigate to the dashboard directory:
 ```bash
-cd shini_app
+cd shiny_app
 ```
 Then run:
 ```bash
