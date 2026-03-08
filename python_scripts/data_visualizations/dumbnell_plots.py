@@ -90,3 +90,34 @@ def dumbbell_plot(
                                                     max(300, len(plot) * 25))))
 
     return chart
+
+def housing_price_dumbbell(df: pd.DataFrame) -> alt.Chart:
+    """
+    This function creates a dumbbell plot for housing prices 
+    before and after each data center permit year.
+    """
+    return dumbbell_plot(
+        df=df,
+        before_var="Housing_Avg_Price_Before_Permit",
+        after_var="Housing_Avg_Price_After_Permit",
+        change_var="Housing_Change",
+        value_lab="Average Housing Price",
+        title="Housing Prices Before and After Data Center Permit",
+        before_lab="Before Permit",
+        after_lab="After Permit")
+
+
+def housing_costs_dumbbell(df: pd.DataFrame) -> alt.Chart:
+    """
+    This function creates a dumbbell plot for housing cost scores
+    before and after permit year.
+    """
+    return dumbbell_plot(
+        df=df,
+        before_var="HC_Score_Before",
+        after_var="HC_Score_After",
+        change_var="HC_Score_Change",
+        value_lab="Housing Cost Score",
+        title="Housing Cost Scores Before and After Data Center Permit",
+        before_lab="Before Permit",
+        after_lab="After Permit")
