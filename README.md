@@ -143,7 +143,7 @@ cd shiny_app
 ```
 Then run:
 ```bash
-python app.py
+cd shiny_app -> shiny run --reload app.py
 ```
 
 This launches the interactive visualization environment, including:
