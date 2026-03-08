@@ -196,10 +196,7 @@ project-datacenter-urban-effects/
 │   ├── DataMethodology.md
 │   └── index.py
 │
-├── R Code/                                  # Spatial boundary extraction
-│   └── fetch_city_zctas.r
-│
-├── shini_app/                               # Interactive dashboard
+├── shiny_app/                               # Interactive dashboard
 │   ├── app.py
 │   ├── Data/
 │   └── requirements.txt
