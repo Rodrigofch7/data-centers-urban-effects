@@ -34,14 +34,13 @@ TEXT_ACC  = "#f0a500"
 # =============================================================================
 # COLORBLIND-FRIENDLY COLORMAPS
 # =============================================================================
-# High-contrast colormaps readable on a dark map background.
-# YlOrRd / RdPu / Blues all have bright high ends that pop against #0d1117.
 GROUP_CMAPS = {
-    "zillow":      "YlOrRd",    # yellow→orange→red: home values
-    "census":      "RdPu",      # white→pink→purple: demographics
-    "centers":     "YlGn",      # yellow→green: data center counts
-    "electricity": "YlOrBr",    # yellow→orange→brown: electricity costs
-    "water":       "GnBu",      # green→blue: water costs
+    "zillow":      "YlOrRd",
+    "census":      "RdPu",
+    "centers":     "YlGn",
+    "electricity": "YlOrBr",
+    "water":       "GnBu",
+    "hhc":         "OrRd",   # orange→red: cost burden score
 }
 
 def _mpl_to_hex_stops(cmap_name: str, n: int = 9) -> list:
@@ -98,16 +97,17 @@ WATER_COLS_FRIENDLY = [
     "Water & Sewer: % Paying $1,000+/year",
 ]
 
+HHC_COLS_FRIENDLY = [
+    "Household Cost Score (2007\u20132011)",
+    "Household Cost Score (2019\u20132023)",
+    "Household Cost Score (2020\u20132024)",
+]
+
 OPTIONAL_COLS = ["Total Population", "Land Area (sq meters)"]
 
 METRIC_GROUP_CHOICES = {}
 
 def _grouped_select_html(input_id, groups, default=None):
-    """
-    Render a native <select> with <optgroup> sections and wire it to Shiny
-    via a hidden input so server code can call input.<input_id>() normally.
-    groups = list of (label, [col, ...])
-    """
     first_val = default
     opts = ""
     for grp_label, cols in groups:
@@ -137,7 +137,6 @@ def _grouped_select_html(input_id, groups, default=None):
     </script>
     """
     return ui.HTML(html)
-
 
 
 # =============================================================================
@@ -183,9 +182,10 @@ CENSUS_COLS  = _present(CENSUS_COLS_FRIENDLY)
 DC_COLS      = _present(DC_COLS_FRIENDLY)
 ELEC_COLS    = _present(ELEC_COLS_FRIENDLY)
 WATER_COLS   = _present(WATER_COLS_FRIENDLY)
+HHC_COLS     = _present(HHC_COLS_FRIENDLY)
 OPT_COLS     = _present(OPTIONAL_COLS)
 
-ALL_NUMERIC = ZILLOW_COLS + CENSUS_COLS + DC_COLS + ELEC_COLS + WATER_COLS + OPT_COLS
+ALL_NUMERIC = ZILLOW_COLS + CENSUS_COLS + DC_COLS + ELEC_COLS + WATER_COLS + HHC_COLS + OPT_COLS
 
 for col in ALL_NUMERIC:
     if col in cities_df.columns:
@@ -199,6 +199,7 @@ for c in CENSUS_COLS:  COL_GROUP[c] = "census"
 for c in DC_COLS:      COL_GROUP[c] = "centers"
 for c in ELEC_COLS:    COL_GROUP[c] = "electricity"
 for c in WATER_COLS:   COL_GROUP[c] = "water"
+for c in HHC_COLS:     COL_GROUP[c] = "hhc"
 for c in OPT_COLS:     COL_GROUP[c] = "census"
 
 GROUP_COLS = {
@@ -207,6 +208,7 @@ GROUP_COLS = {
     "centers":     DC_COLS,
     "electricity": ELEC_COLS,
     "water":       WATER_COLS,
+    "hhc":         HHC_COLS,
 }
 
 if ZILLOW_COLS:  METRIC_GROUP_CHOICES["zillow"]      = "🏠  Home Values"
@@ -214,6 +216,7 @@ if CENSUS_COLS:  METRIC_GROUP_CHOICES["census"]      = "👥  Demographics"
 if DC_COLS:      METRIC_GROUP_CHOICES["centers"]     = "🏢  Data Centers"
 if ELEC_COLS:    METRIC_GROUP_CHOICES["electricity"] = "⚡  Electricity"
 if WATER_COLS:   METRIC_GROUP_CHOICES["water"]       = "💧  Water & Sewer"
+if HHC_COLS:     METRIC_GROUP_CHOICES["hhc"]         = "🏘️  Housing Cost Burden"
 
 CITIES_GEOJSON = cities_gdf.__geo_interface__
 
@@ -230,9 +233,6 @@ chicago_gdf     = _load_boundary("chicagoproper.gpkg")
 ILLINOIS_GEOJSON    = illinois_gdf.__geo_interface__    if illinois_gdf    is not None else None
 COOK_COUNTY_GEOJSON = cook_county_gdf.__geo_interface__ if cook_county_gdf is not None else None
 CHICAGO_GEOJSON     = chicago_gdf.__geo_interface__     if chicago_gdf     is not None else None
-
-
-
 
 
 # =============================================================================
@@ -269,7 +269,6 @@ def fig_to_html(fig, dpi=180):
     return f'<img src="data:image/png;base64,{b64}" style="width:100%;border-radius:6px;">'
 
 def fig_to_svg(fig):
-    """Export as inline SVG — infinitely sharp at any zoom level."""
     buf = io.StringIO()
     fig.savefig(buf, format="svg", bbox_inches="tight",
                 facecolor=fig.get_facecolor())
@@ -497,7 +496,6 @@ aside.sidebar {{
   padding: 9px 16px !important; border-bottom: none !important;
   display: flex; align-items: center; gap: 8px;
 }}
-/* Full-screen expand button styling */
 .bslib-full-screen-enter {{
   color: rgba(255,255,255,0.55) !important;
   transition: color 0.15s;
@@ -568,7 +566,6 @@ app_ui = ui.page_navbar(
     ui.nav_panel(
         "Infrastructure Atlas",
         ui.div(
-            # ── Intro banner ──────────────────────────────────────────────────
             ui.HTML("""
 <div style="
   position:relative;overflow:hidden;
@@ -576,14 +573,12 @@ app_ui = ui.page_navbar(
   border:1px solid #30363d;border-radius:12px;
   padding:32px 36px 28px;margin-bottom:4px;">
 
-  <!-- Decorative background glyph -->
   <div style="
     position:absolute;right:-20px;top:-30px;
     font-size:220px;line-height:1;opacity:0.03;
     font-family:'DM Serif Display',serif;color:#fff;
     pointer-events:none;user-select:none;">⬡</div>
 
-  <!-- Eyebrow label -->
   <div style="
     font-family:'IBM Plex Mono',monospace;font-size:10px;
     letter-spacing:0.18em;text-transform:uppercase;
@@ -592,7 +587,6 @@ app_ui = ui.page_navbar(
     Research Question
   </div>
 
-  <!-- Main headline -->
   <div style="
     font-family:'DM Serif Display',serif;font-size:26px;
     color:#ffffff;margin-bottom:16px;line-height:1.25;
@@ -600,10 +594,8 @@ app_ui = ui.page_navbar(
     Do data centers change the<br>neighborhoods around them?
   </div>
 
-  <!-- Divider -->
   <div style="width:48px;height:2px;background:linear-gradient(90deg,#800000,transparent);margin-bottom:18px;"></div>
 
-  <!-- Body text -->
   <div style="
     font-family:'DM Sans',sans-serif;font-size:13.5px;
     color:#a1adb9;line-height:1.75;max-width:820px;margin-bottom:24px;">
@@ -618,7 +610,6 @@ app_ui = ui.page_navbar(
     a <span style="color:#f87171;font-weight:500;">negative score</span> suggests the opposite.
   </div>
 
-  <!-- Navigation guide pills -->
   <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
     <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;
                  letter-spacing:0.12em;text-transform:uppercase;color:#8b949e;
@@ -655,9 +646,7 @@ app_ui = ui.page_navbar(
 
 </div>
 """),
-            # KPI strip
             ui.output_ui("atlas_kpi_strip"),
-            # Main chart row
             ui.layout_columns(
                 ui.card(
                     ui.card_header("Housing Price Shift: Before vs. After Permit"),
@@ -862,7 +851,6 @@ def server(input, output, session):
     # ── INFRASTRUCTURE ATLAS ─────────────────────────────────────────────────
     @reactive.Calc
     def _atlas_df():
-        """Load and clean the impact CSV once."""
         if impact_df.empty:
             return pd.DataFrame()
         df = impact_df.copy()
@@ -935,7 +923,6 @@ def server(input, output, session):
         if plot_df.empty:
             return _empty_atlas()
 
-        plot_df = plot_df.copy()
         plot_df["_pct"] = (
             (plot_df["Housing_Avg_Price_After_Permit"] - plot_df["Housing_Avg_Price_Before_Permit"])
             / plot_df["Housing_Avg_Price_Before_Permit"].replace(0, np.nan) * 100
@@ -958,13 +945,10 @@ def server(input, output, session):
 
         pct_up = sum(1 for r in rows if r["after"] >= r["before"]) / len(rows) * 100
         ann_col = "#4ade80" if pct_up >= 50 else "#f87171"
-
         rows_json = _json.dumps(rows)
 
         html = f"""
 <div style="display:flex;flex-direction:column;height:100%;font-family:monospace;">
-
-  <!-- summary line -->
   <div style="font-size:11px;color:{ann_col};padding:4px 8px 6px;flex-shrink:0;">
     {pct_up:.0f}% of facilities saw housing prices rise after permit
     &nbsp;·&nbsp;
@@ -973,13 +957,9 @@ def server(input, output, session):
       <span style="color:#a3e635;">●</span> after &nbsp;·&nbsp; dot color = impact score
     </span>
   </div>
-
-  <!-- scrollable chart area -->
   <div style="flex:1;overflow-y:auto;min-height:0;" id="db-scroll">
     <svg id="db-svg" width="100%" style="display:block;"></svg>
   </div>
-
-  <!-- hover tooltip -->
   <div id="db-tip" style="display:none;position:fixed;pointer-events:none;z-index:9999;
     background:#1c2128;border:1px solid #30363d;border-radius:6px;
     padding:8px 12px;font-size:11px;color:#e6edf3;line-height:1.6;"></div>
@@ -992,34 +972,26 @@ def server(input, output, session):
   const BORDER = "#30363d";
   const TSEC  = "#8b949e";
   const TPRI  = "#e6edf3";
-
   const ROW_H  = 30;
   const PAD_L  = 210;
-  const PAD_R  = 60;   // space for Δ% label
+  const PAD_R  = 60;
   const PAD_T  = 8;
   const PAD_B  = 32;
-
   const svg  = document.getElementById("db-svg");
   const tip  = document.getElementById("db-tip");
-  const scrl = document.getElementById("db-scroll");
   const ns   = "http://www.w3.org/2000/svg";
-
   const n     = ROWS.length;
   const totalH = n * ROW_H + PAD_T + PAD_B;
   svg.setAttribute("height", totalH);
-
   const allVals = ROWS.flatMap(r => [r.before, r.after]);
   const dataMin = Math.min(...allVals);
   const dataMax = Math.max(...allVals);
   const dataSpan = dataMax - dataMin || 1;
-
   function W() {{ return svg.getBoundingClientRect().width || 600; }}
-
   function toX(v, w) {{
     const usable = w - PAD_L - PAD_R;
     return PAD_L + (v - dataMin) / dataSpan * usable;
   }}
-
   function impColor(imp) {{
     if (imp >= 0) {{
       const t = Math.min(imp / 2, 1);
@@ -1029,21 +1001,15 @@ def server(input, output, session):
       return `rgb(${{Math.round(220*t+35)}},${{Math.round(40*(1-t))}},${{Math.round(40*(1-t))}})`;
     }}
   }}
-
   function fmt(v) {{
     return "$" + (v >= 1000 ? (v/1000).toFixed(0)+"k" : v.toFixed(0));
   }}
-
   function render() {{
     const w = W();
     svg.innerHTML = "";
-
-    // bg
     const bg = document.createElementNS(ns,"rect");
     bg.setAttribute("width","100%"); bg.setAttribute("height", totalH);
     bg.setAttribute("fill", DARK); svg.appendChild(bg);
-
-    // x-axis gridlines + labels
     const nTicks = 5;
     for (let t = 0; t <= nTicks; t++) {{
       const v  = dataMin + (dataSpan * t / nTicks);
@@ -1053,37 +1019,29 @@ def server(input, output, session):
       gl.setAttribute("y1", PAD_T); gl.setAttribute("y2", totalH - PAD_B + 6);
       gl.setAttribute("stroke", BORDER); gl.setAttribute("stroke-width","0.5");
       gl.setAttribute("stroke-dasharray","3,3"); svg.appendChild(gl);
-
       const tl = document.createElementNS(ns,"text");
       tl.setAttribute("x", x); tl.setAttribute("y", totalH - PAD_B + 18);
       tl.setAttribute("fill", TSEC); tl.setAttribute("font-size","8.5");
       tl.setAttribute("font-family","monospace"); tl.setAttribute("text-anchor","middle");
       tl.textContent = fmt(v); svg.appendChild(tl);
     }}
-
-    // x-axis label
     const xl = document.createElementNS(ns,"text");
     xl.setAttribute("x", PAD_L + (w-PAD_L-PAD_R)/2);
     xl.setAttribute("y", totalH - 4);
     xl.setAttribute("fill", TSEC); xl.setAttribute("font-size","9");
     xl.setAttribute("font-family","monospace"); xl.setAttribute("text-anchor","middle");
     xl.textContent = "Average Housing Price"; svg.appendChild(xl);
-
     ROWS.forEach((row, i) => {{
       const cy  = PAD_T + i * ROW_H + ROW_H / 2;
       const bx  = toX(row.before, w);
       const ax  = toX(row.after,  w);
       const col = row.after >= row.before ? "#4ade80" : "#f87171";
       const icol = impColor(row.imp);
-
-      // alternating row bg
       const rbg = document.createElementNS(ns,"rect");
       rbg.setAttribute("x", 0); rbg.setAttribute("y", PAD_T + i*ROW_H);
       rbg.setAttribute("width","100%"); rbg.setAttribute("height", ROW_H);
       rbg.setAttribute("fill", i%2===0 ? "#161b22" : DARK);
       rbg.setAttribute("opacity","0.6"); svg.appendChild(rbg);
-
-      // label
       const lbl = document.createElementNS(ns,"text");
       lbl.setAttribute("x", PAD_L - 8); lbl.setAttribute("y", cy + 4);
       lbl.setAttribute("fill", TPRI); lbl.setAttribute("font-size","9");
@@ -1091,36 +1049,27 @@ def server(input, output, session):
       const maxC = Math.floor((PAD_L-12)/5.5);
       lbl.textContent = row.label.length > maxC ? row.label.slice(0,maxC-1)+"…" : row.label;
       svg.appendChild(lbl);
-
-      // connector
       const ln = document.createElementNS(ns,"line");
-      ln.setAttribute("x1", Math.min(bx,ax)); ln.setAttribute("x2", Math.max(bx,ax));
+      const x1 = Math.min(bx,ax), x2 = Math.max(bx,ax);
+      ln.setAttribute("x1", x1); ln.setAttribute("x2", x2);
       ln.setAttribute("y1", cy); ln.setAttribute("y2", cy);
       ln.setAttribute("stroke", col); ln.setAttribute("stroke-width","2.2");
       ln.setAttribute("stroke-opacity","0.6");
       ln.setAttribute("stroke-linecap","round"); svg.appendChild(ln);
-
-      // before dot (blue)
       const bd = document.createElementNS(ns,"circle");
       bd.setAttribute("cx", bx); bd.setAttribute("cy", cy); bd.setAttribute("r","5");
       bd.setAttribute("fill","#60a5fa"); bd.setAttribute("stroke", DARK);
       bd.setAttribute("stroke-width","0.8"); svg.appendChild(bd);
-
-      // after dot (impact colour)
       const ad = document.createElementNS(ns,"circle");
       ad.setAttribute("cx", ax); ad.setAttribute("cy", cy); ad.setAttribute("r","6");
       ad.setAttribute("fill", icol); ad.setAttribute("stroke", DARK);
       ad.setAttribute("stroke-width","0.8"); svg.appendChild(ad);
-
-      // Δ% label
       const pt = document.createElementNS(ns,"text");
       pt.setAttribute("x", Math.max(bx,ax) + 6); pt.setAttribute("y", cy+4);
       pt.setAttribute("fill", col); pt.setAttribute("font-size","8.5");
       pt.setAttribute("font-family","monospace");
       pt.textContent = (row.pct >= 0 ? "+" : "") + row.pct.toFixed(1) + "%";
       svg.appendChild(pt);
-
-      // invisible hover target
       const hit = document.createElementNS(ns,"rect");
       hit.setAttribute("x",0); hit.setAttribute("y", PAD_T+i*ROW_H);
       hit.setAttribute("width","100%"); hit.setAttribute("height",ROW_H);
@@ -1140,7 +1089,6 @@ def server(input, output, session):
       svg.appendChild(hit);
     }});
   }}
-
   render();
   new ResizeObserver(render).observe(svg);
 }})();
@@ -1159,7 +1107,6 @@ def server(input, output, session):
 
         plot_df = plot_df.sort_values("impact_z_score", ascending=False).reset_index(drop=True)
 
-        # Build row data as JSON for JS
         import json as _json
         rows = []
         for _, r in plot_df.iterrows():
@@ -1186,11 +1133,9 @@ def server(input, output, session):
       Invert
     </button>
   </div>
-
   <div style="overflow-y:auto;max-height:480px;" id="loli-scroll">
     <svg id="loli-svg" width="100%" style="display:block;"></svg>
   </div>
-
   <div id="loli-detail" style="margin-top:10px;min-height:28px;font-size:11px;
     color:#e6edf3;background:#1c2128;border:1px solid #30363d;border-radius:6px;
     padding:8px 12px;display:none;">
@@ -1205,35 +1150,26 @@ def server(input, output, session):
   const BORDER = "#30363d";
   const TSEC   = "#8b949e";
   const TPRI   = "#e6edf3";
-
   const ROW_H  = 28;
-  const PAD_L  = 220;   // left label area
+  const PAD_L  = 220;
   const PAD_R  = 32;
   const BAR_H  = 6;
-
   let selected = new Set();
-
   const svg   = document.getElementById("loli-svg");
   const scrl  = document.getElementById("loli-scroll");
   const detail= document.getElementById("loli-detail");
-
   const totalH = ROWS.length * ROW_H + 40;
   svg.setAttribute("height", totalH);
   const W = () => svg.getBoundingClientRect().width || 500;
-
   function zColor(z) {{
     if (z >= 0) {{
       const t = Math.min(z / 2, 1);
-      const r = Math.round(74  + (74  - 74 ) * t);
-      const g = Math.round(222 * t);
-      const b = Math.round(128 * t);
       return `rgb(${{Math.round(30+44*t)}},${{Math.round(200*t)}},${{Math.round(60+60*t)}})`;
     }} else {{
       const t = Math.min(-z / 2, 1);
       return `rgb(${{Math.round(200*t+55)}},${{Math.round(40*(1-t))}},${{Math.round(40*(1-t))}})`;
     }}
   }}
-
   function scaleX(z, w) {{
     const vals = ROWS.map(r => r.z);
     const mn = Math.min(...vals), mx = Math.max(...vals);
@@ -1241,53 +1177,34 @@ def server(input, output, session):
     const usable = w - PAD_L - PAD_R;
     return PAD_L + (z - mn) / span * usable;
   }}
-
-  function zeroX(w) {{
-    const vals = ROWS.map(r => r.z);
-    const mn = Math.min(...vals), mx = Math.max(...vals);
-    return scaleX(0, w);
-  }}
-
+  function zeroX(w) {{ return scaleX(0, w); }}
   function render() {{
     const w = W();
     svg.innerHTML = "";
-
     const ns = "http://www.w3.org/2000/svg";
-
-    // background
     const bg = document.createElementNS(ns, "rect");
     bg.setAttribute("width", "100%"); bg.setAttribute("height", totalH);
     bg.setAttribute("fill", DARK); svg.appendChild(bg);
-
-    // zero line
     const zx = zeroX(w);
     const zl = document.createElementNS(ns, "line");
     zl.setAttribute("x1", zx); zl.setAttribute("x2", zx);
     zl.setAttribute("y1", 16); zl.setAttribute("y2", totalH - 8);
     zl.setAttribute("stroke", BORDER); zl.setAttribute("stroke-width", 1);
     svg.appendChild(zl);
-
-    // ±1σ bands
     const sigma1x = scaleX(1, w);
     const sigmaM1x = scaleX(-1, w);
-
-    const vals = ROWS.map(r => r.z);
-    const mn = Math.min(...vals), mx = Math.max(...vals);
     const pRight = document.createElementNS(ns, "rect");
     pRight.setAttribute("x", sigma1x); pRight.setAttribute("y", 0);
     pRight.setAttribute("width", Math.max(0, w - sigma1x - PAD_R));
     pRight.setAttribute("height", totalH);
     pRight.setAttribute("fill", "#4ade80"); pRight.setAttribute("fill-opacity", 0.04);
     svg.appendChild(pRight);
-
     const pLeft = document.createElementNS(ns, "rect");
     pLeft.setAttribute("x", PAD_L); pLeft.setAttribute("y", 0);
     pLeft.setAttribute("width", Math.max(0, sigmaM1x - PAD_L));
     pLeft.setAttribute("height", totalH);
     pLeft.setAttribute("fill", "#f87171"); pLeft.setAttribute("fill-opacity", 0.04);
     svg.appendChild(pLeft);
-
-    // sigma labels
     [["\\u00b11\\u03c3", sigma1x, "#4ade80"], ["\\u22121\\u03c3", sigmaM1x, "#f87171"]].forEach(([txt, x, col]) => {{
       const t = document.createElementNS(ns, "text");
       t.setAttribute("x", x+3); t.setAttribute("y", 13);
@@ -1295,39 +1212,28 @@ def server(input, output, session):
       t.setAttribute("font-family", "monospace"); t.setAttribute("opacity", 0.55);
       t.textContent = txt; svg.appendChild(t);
     }});
-
     ROWS.forEach((row, i) => {{
       const cy   = 24 + i * ROW_H;
       const rx   = scaleX(row.z, w);
       const isSel = selected.has(i);
       const col  = zColor(row.z);
-
-      // Row hover background group
       const g = document.createElementNS(ns, "g");
       g.style.cursor = "pointer";
-
       const rowBg = document.createElementNS(ns, "rect");
       rowBg.setAttribute("x", 0); rowBg.setAttribute("y", cy - ROW_H/2 + 2);
       rowBg.setAttribute("width", "100%"); rowBg.setAttribute("height", ROW_H - 2);
       rowBg.setAttribute("fill", isSel ? "#2d333b" : "transparent");
       rowBg.setAttribute("rx", 3);
       g.appendChild(rowBg);
-
-      // Label
       const lbl = document.createElementNS(ns, "text");
       lbl.setAttribute("x", 8); lbl.setAttribute("y", cy + 4);
       lbl.setAttribute("fill", isSel ? TPRI : TSEC);
       lbl.setAttribute("font-size", isSel ? 10 : 9.5);
       lbl.setAttribute("font-family", "monospace");
       lbl.setAttribute("font-weight", isSel ? "bold" : "normal");
-      // truncate label to fit
       const maxChars = Math.floor((PAD_L - 16) / 6);
-      lbl.textContent = row.label.length > maxChars
-        ? row.label.slice(0, maxChars-1) + "…"
-        : row.label;
+      lbl.textContent = row.label.length > maxChars ? row.label.slice(0, maxChars-1) + "…" : row.label;
       g.appendChild(lbl);
-
-      // Connector line (zero → dot)
       const ln = document.createElementNS(ns, "line");
       const x1 = Math.min(zx, rx), x2 = Math.max(zx, rx);
       ln.setAttribute("x1", x1); ln.setAttribute("x2", x2);
@@ -1336,8 +1242,6 @@ def server(input, output, session):
       ln.setAttribute("stroke-width", isSel ? 3 : 2);
       ln.setAttribute("stroke-opacity", isSel ? 0.9 : 0.55);
       g.appendChild(ln);
-
-      // Dot
       const dot = document.createElementNS(ns, "circle");
       dot.setAttribute("cx", rx); dot.setAttribute("cy", cy);
       dot.setAttribute("r", isSel ? 7 : 5);
@@ -1345,8 +1249,6 @@ def server(input, output, session):
       dot.setAttribute("stroke", isSel ? TPRI : DARK);
       dot.setAttribute("stroke-width", isSel ? 2 : 0.8);
       g.appendChild(dot);
-
-      // Z-score value text
       const zt = document.createElementNS(ns, "text");
       zt.setAttribute("x", rx + (row.z >= 0 ? 10 : -10));
       zt.setAttribute("y", cy + 4);
@@ -1357,37 +1259,24 @@ def server(input, output, session):
       zt.setAttribute("opacity", isSel ? 1 : 0.7);
       zt.textContent = (row.z >= 0 ? "+" : "") + row.z.toFixed(2);
       g.appendChild(zt);
-
-      // click handler
       g.addEventListener("click", (e) => {{
         if (e.ctrlKey || e.metaKey) {{
           if (selected.has(i)) selected.delete(i); else selected.add(i);
         }} else if (e.shiftKey && selected.size > 0) {{
-          // range select
           const last = Math.max(...selected);
           const mn2 = Math.min(last, i), mx2 = Math.max(last, i);
           for (let j = mn2; j <= mx2; j++) selected.add(j);
         }} else {{
-          if (selected.has(i) && selected.size === 1) {{
-            selected.clear();
-          }} else {{
-            selected.clear();
-            selected.add(i);
-          }}
+          if (selected.has(i) && selected.size === 1) {{ selected.clear(); }}
+          else {{ selected.clear(); selected.add(i); }}
         }}
-        updateDetail();
-        render();
+        updateDetail(); render();
       }});
-
       svg.appendChild(g);
     }});
   }}
-
   function updateDetail() {{
-    if (selected.size === 0) {{
-      detail.style.display = "none";
-      return;
-    }}
+    if (selected.size === 0) {{ detail.style.display = "none"; return; }}
     const items = [...selected].sort((a,b)=>b-a).map(i => ROWS[i]);
     detail.style.display = "block";
     if (items.length === 1) {{
@@ -1404,15 +1293,12 @@ def server(input, output, session):
         + items.map(r=>`<span style="color:#8b949e;font-size:9px;">${{r.label.split("(")[0].trim()}}</span>`).join(" · ");
     }}
   }}
-
   window.clearSel   = () => {{ selected.clear(); updateDetail(); render(); }};
   window.invertSel  = () => {{
     const all = new Set(ROWS.map((_,i)=>i));
     selected = new Set([...all].filter(i=>!selected.has(i)));
     updateDetail(); render();
   }};
-
-  // initial render + resize
   render();
   new ResizeObserver(render).observe(svg);
 }})();
@@ -1426,7 +1312,6 @@ def server(input, output, session):
         if df.empty:
             return _empty_atlas()
 
-        # Desired columns in display order (DataCenter_Code dropped — not user-facing)
         WANT = [
             "Operator", "Address", "Zipcode", "CountyName",
             "First_Operation_Permit",
@@ -1435,8 +1320,6 @@ def server(input, output, session):
             "impact_score", "impact_z_score",
         ]
         display_cols = [c for c in WANT if c in df.columns]
-
-        # Fallback: show whatever columns exist if our preferred list is empty
         if not display_cols:
             display_cols = list(df.columns)
 
@@ -1504,7 +1387,7 @@ def server(input, output, session):
         if not rows_html:
             return ui.HTML(
                 f"<div style='padding:24px;color:{TEXT_SEC};font-family:monospace;font-size:12px;'>"
-                f"No rows to display — check that the CSV loaded correctly.</div>"
+                f"No rows to display.</div>"
             )
 
         html = f"""
@@ -1517,7 +1400,6 @@ def server(input, output, session):
         """
         return ui.HTML(html)
 
-
     @render.ui
     def metric_selector():
         group = input.metric_group()
@@ -1527,6 +1409,7 @@ def server(input, output, session):
             "centers":     DC_COLS,
             "electricity": ELEC_COLS,
             "water":       WATER_COLS,
+            "hhc":         HHC_COLS,
         }
         cols = col_map.get(group, [])
         if not cols:
@@ -1549,25 +1432,26 @@ def server(input, output, session):
     @render.ui
     def rel_x_selector():
         groups = [
-        ("🏠 Home Values",   ZILLOW_COLS),
-        ("👥 Demographics",  CENSUS_COLS),
-        ("🏢 Data Centers",  DC_COLS),
-        ("⚡ Electricity",   ELEC_COLS),
-        ("💧 Water & Sewer", WATER_COLS),
-    ]
+            ("🏠 Home Values",          ZILLOW_COLS),
+            ("👥 Demographics",          CENSUS_COLS),
+            ("🏢 Data Centers",          DC_COLS),
+            ("⚡ Electricity",           ELEC_COLS),
+            ("💧 Water & Sewer",         WATER_COLS),
+            ("🏘️ Housing Cost Burden",   HHC_COLS),
+        ]
         default = ZILLOW_COLS[0] if ZILLOW_COLS else (ALL_NUMERIC[0] if ALL_NUMERIC else None)
         return _grouped_select_html("x_var", groups, default=default)
 
     @render.ui
     def rel_y_selector():
         groups = [
-        ("🏠 Home Values",   ZILLOW_COLS),
-        ("👥 Demographics",  CENSUS_COLS),
-        ("🏢 Data Centers",  DC_COLS),
-        ("⚡ Electricity",   ELEC_COLS),
-        ("💧 Water & Sewer", WATER_COLS),
-    ]
-        # Default to second zillow col or first census col
+            ("🏠 Home Values",          ZILLOW_COLS),
+            ("👥 Demographics",          CENSUS_COLS),
+            ("🏢 Data Centers",          DC_COLS),
+            ("⚡ Electricity",           ELEC_COLS),
+            ("💧 Water & Sewer",         WATER_COLS),
+            ("🏘️ Housing Cost Burden",   HHC_COLS),
+        ]
         default = (ZILLOW_COLS[1] if len(ZILLOW_COLS) > 1
                    else CENSUS_COLS[0] if CENSUS_COLS
                    else (ALL_NUMERIC[1] if len(ALL_NUMERIC) > 1 else None))
@@ -1577,18 +1461,18 @@ def server(input, output, session):
     @render.ui
     def reg_y_selector():
         groups = [
-        ("🏠 Home Values",   ZILLOW_COLS),
-        ("👥 Demographics",  CENSUS_COLS),
-        ("🏢 Data Centers",  DC_COLS),
-        ("⚡ Electricity",   ELEC_COLS),
-        ("💧 Water & Sewer", WATER_COLS),
-    ]
+            ("🏠 Home Values",          ZILLOW_COLS),
+            ("👥 Demographics",          CENSUS_COLS),
+            ("🏢 Data Centers",          DC_COLS),
+            ("⚡ Electricity",           ELEC_COLS),
+            ("💧 Water & Sewer",         WATER_COLS),
+            ("🏘️ Housing Cost Burden",   HHC_COLS),
+        ]
         default = ZILLOW_COLS[0] if ZILLOW_COLS else (ALL_NUMERIC[0] if ALL_NUMERIC else None)
         return _grouped_select_html("reg_y", groups, default=default)
 
     @render.ui
     def reg_x_selector():
-        # Multi-select: use Shiny selectize with grouped choices dict
         grouped_choices = {}
         labels = {
             "zillow":      "🏠 Home Values",
@@ -1596,10 +1480,11 @@ def server(input, output, session):
             "centers":     "🏢 Data Centers",
             "electricity": "⚡ Electricity",
             "water":       "💧 Water & Sewer",
+            "hhc":         "🏘️ Housing Cost Burden",
         }
         for key, cols in [("zillow", ZILLOW_COLS), ("census", CENSUS_COLS),
                           ("centers", DC_COLS), ("electricity", ELEC_COLS),
-                          ("water", WATER_COLS)]:
+                          ("water", WATER_COLS), ("hhc", HHC_COLS)]:
             if cols:
                 grouped_choices[labels[key]] = {c: c for c in cols}
         default_x = CENSUS_COLS[0] if CENSUS_COLS else (ALL_NUMERIC[1] if len(ALL_NUMERIC)>1 else [])
@@ -1675,15 +1560,15 @@ def server(input, output, session):
         """))
         if input.show_illinois() and ILLINOIS_GEOJSON is not None:
             folium.GeoJson(ILLINOIS_GEOJSON,
-                style_function=lambda f: {"fillColor":"none","fillOpacity":0.0,"color":"#000000","weight":1},
+                style_function=lambda f: {"fillColor":"none","fillOpacity":0.0,"color":"#000000","weight":2},
                 interactive=False).add_to(m)
         if input.show_cook() and COOK_COUNTY_GEOJSON is not None:
             folium.GeoJson(COOK_COUNTY_GEOJSON,
-                style_function=lambda f: {"fillColor":"none","fillOpacity":0.0,"color":"#ffffff","weight":1},
+                style_function=lambda f: {"fillColor":"none","fillOpacity":0.0,"color":"#ffffff","weight":2},
                 interactive=False).add_to(m)
         if input.show_chicago() and CHICAGO_GEOJSON is not None:
             folium.GeoJson(CHICAGO_GEOJSON,
-                style_function=lambda f: {"fillColor":"none","fillOpacity":0.0,"color":"#ffffff","weight":1},
+                style_function=lambda f: {"fillColor":"none","fillOpacity":0.0,"color":"#ffffff","weight":2},
                 interactive=False).add_to(m)
         if input.show_centers():
             _build_dc_markers(m)
@@ -1732,7 +1617,6 @@ def server(input, output, session):
             cbar.set_label("# Data Centers", color=TEXT_SEC, fontsize=8)
             ax.legend(facecolor=CARD_BG, edgecolor=BORDER, labelcolor=TEXT_PRI,
                       fontsize=9, framealpha=0.92, loc="upper left")
-            # Label top DC ZIP codes
             if "Zip Code" in df.columns:
                 top_idx = np.argsort(dc_vals)[-5:]
                 for i in top_idx:
@@ -1741,7 +1625,6 @@ def server(input, output, session):
                             xy=(x[i], y[i]), xytext=(5, 3), textcoords="offset points",
                             fontsize=7, color=TEXT_ACC, fontfamily="monospace", alpha=0.85)
         else:
-            # Colour by density (2D histogram overlay using scatter colour)
             from scipy.stats import gaussian_kde
             try:
                 xy_stack = np.vstack([x, y])
@@ -1757,13 +1640,11 @@ def server(input, output, session):
                 ax.scatter(x, y, color="#4895ef", alpha=0.65,
                            edgecolors=DARK_BG, linewidths=0.3, s=52, zorder=3)
 
-        # Trend line with CI band
         try:
             coef = np.polyfit(x, y, 1)
             xl   = np.linspace(x.min(), x.max(), 200)
             yl   = np.poly1d(coef)(xl)
             ax.plot(xl, yl, color=TEXT_ACC, linewidth=2, linestyle="--", alpha=0.9, zorder=5)
-            # Simple ±1 SE band
             resid = y - np.poly1d(coef)(x)
             se    = resid.std()
             ax.fill_between(xl, yl - se, yl + se, color=TEXT_ACC, alpha=0.08, zorder=4)
@@ -1776,7 +1657,6 @@ def server(input, output, session):
                     color=corr_col, fontsize=11, fontfamily="monospace", fontweight="bold",
                     bbox=dict(boxstyle="round,pad=0.45", facecolor=DARK_BG, edgecolor=corr_col, alpha=0.92, linewidth=1.2))
 
-        # Truncate long axis labels
         def short_label(s, n=40): return s if len(s) <= n else s[:n-1]+"…"
         ax.set_xlabel(short_label(x_var), color=TEXT_SEC, fontsize=10, labelpad=10)
         ax.set_ylabel(short_label(y_var), color=TEXT_SEC, fontsize=10, labelpad=10)
@@ -1798,15 +1678,12 @@ def server(input, output, session):
             setup_ax(ax, fig)
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
-            # Histogram bars
             n_bins = min(28, max(10, len(vals)//4))
             counts, bins, patches = ax.hist(vals, bins=n_bins, color=fill_col,
                                             alpha=0.35, edgecolor=DARK_BG, linewidth=0.3)
-            # KDE overlay
             try:
                 xkde = np.linspace(vals.min(), vals.max(), 300)
                 ykde = _kde(vals)(xkde)
-                # Scale KDE to histogram height
                 scale = counts.max() / ykde.max() if ykde.max() > 0 else 1
                 ax.plot(xkde, ykde * scale, color=line_col, linewidth=2.2, zorder=5)
                 ax.fill_between(xkde, ykde * scale, alpha=0.12, color=line_col)
@@ -1838,7 +1715,6 @@ def server(input, output, session):
         corr = float(np.corrcoef(x, y)[0, 1])
         n    = len(df)
 
-        # ── Interpretation ───────────────────────────────────────────────────
         abs_r = abs(corr)
         if abs_r > 0.7:
             strength, strength_col = "strong", "#4ade80"
@@ -1867,9 +1743,8 @@ def server(input, output, session):
                       f"<b>{xn}</b> and <b>{yn}</b> across ZIP codes.")
 
         skew_x = float(((x - x.mean())**3).mean() / (x.std()**3 + 1e-9))
-        skew_y = float(((y - y.mean())**3).mean() / (y.std()**3 + 1e-9))
-        skew_note_x = " (right-skewed — a few very high ZIPs pull the mean up)" if skew_x > 1 else                       " (left-skewed)" if skew_x < -1 else ""
-        skew_note_y = " (right-skewed — a few very high ZIPs pull the mean up)" if skew_y > 1 else                       " (left-skewed)" if skew_y < -1 else ""
+        skew_note_x = " (right-skewed — a few very high ZIPs pull the mean up)" if skew_x > 1 else \
+                      " (left-skewed)" if skew_x < -1 else ""
 
         def row(label, xv, yv, highlight=False):
             bg = f"background:rgba(128,0,0,0.07);" if highlight else ""
@@ -1895,15 +1770,12 @@ def server(input, output, session):
             row("Max",    fmt(x.max()),          fmt(y.max())),
         ])
 
-        # Short axis label for table header
         def short(s, n=22):
             s = s.split("(")[0].strip()
             return s if len(s) <= n else s[:n-1]+"…"
 
         html = f"""
         <div style="padding:4px;font-family:'DM Sans',sans-serif;">
-
-          <!-- Correlation badge -->
           <div style="margin-bottom:14px;padding:16px 18px;
                       background:linear-gradient(135deg,{CARD_BG},{DARK_BG});
                       border-radius:10px;border-left:4px solid {strength_col};
@@ -1921,8 +1793,6 @@ def server(input, output, session):
               </span>
             </div>
           </div>
-
-          <!-- Plain-English interpretation -->
           <div style="margin-bottom:14px;padding:12px 16px;
                       background:rgba(240,165,0,0.06);
                       border:1px solid rgba(240,165,0,0.18);
@@ -1934,8 +1804,6 @@ def server(input, output, session):
             {interp}
             {'<br><span style="font-size:11px;color:'+TEXT_SEC+';">Distribution note: '+xn+skew_note_x+'.</span>' if skew_note_x else ''}
           </div>
-
-          <!-- Stats table -->
           <table style="width:100%;border-collapse:collapse;">
             <thead>
               <tr style="border-bottom:2px solid {MAROON};">
@@ -2050,22 +1918,18 @@ def server(input, output, session):
             ]
         ])
 
-        # ── Plain-English interpretation ─────────────────────────────────────
         r2_qual = ("strong — the model explains most variation in the outcome" if r2 > 0.6
                    else "moderate — the model captures some but not all variation" if r2 > 0.3
                    else "weak — the predictors explain little of the outcome's variation")
         r2_col2 = "#4ade80" if r2 > 0.6 else ("#facc15" if r2 > 0.3 else "#f87171")
-
         yn_short = y_var.split("(")[0].strip()
 
-        # Identify significant predictors
         sig_pos = [(x_vars[i-1] if coef_names[i]!="Intercept" else None, coefs[i], p[i])
                    for i, name in enumerate(coef_names)
                    if name != "Intercept" and not np.isnan(p[i]) and p[i] < 0.05 and coefs[i] > 0]
         sig_neg = [(x_vars[i-1] if coef_names[i]!="Intercept" else None, coefs[i], p[i])
                    for i, name in enumerate(coef_names)
                    if name != "Intercept" and not np.isnan(p[i]) and p[i] < 0.05 and coefs[i] < 0]
-        # Flatten — filter None
         sig_pos = [(n,c,p2) for n,c,p2 in sig_pos if n]
         sig_neg = [(n,c,p2) for n,c,p2 in sig_neg if n]
 
@@ -2079,16 +1943,11 @@ def server(input, output, session):
         if not sig_pos and not sig_neg:
             interp_lines.append("No predictors reach statistical significance at the 5% level.")
         interp_lines.append(f"The model uses {n} ZIP codes and explains <b>{r2*100:.1f}%</b> of variation in {yn_short}.")
-
         interp_html = "<br>".join(interp_lines)
 
         html = f"""
         <div style="padding:4px;font-family:'DM Sans',sans-serif;">
-
-          <!-- Fit stat cards -->
           <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">{stat_cards}</div>
-
-          <!-- Interpretation block -->
           <div style="margin-bottom:16px;padding:13px 16px;
                       background:rgba(240,165,0,0.06);
                       border:1px solid rgba(240,165,0,0.18);
@@ -2101,8 +1960,6 @@ def server(input, output, session):
             — fit quality is <em>{r2_qual}</em>.<br>
             {interp_html}
           </div>
-
-          <!-- Coefficient table -->
           <div style="overflow-x:auto;">
           <table style="width:100%;border-collapse:collapse;min-width:480px;">
             <thead>
@@ -2155,7 +2012,6 @@ def server(input, output, session):
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-        # Colour dots by residual magnitude
         res_abs  = np.abs(residuals)
         res_norm = mcolors.Normalize(vmin=0, vmax=np.percentile(res_abs, 95))
         sc = ax.scatter(y_hat, y, c=res_abs, cmap="YlOrRd", norm=res_norm,
@@ -2199,14 +2055,12 @@ def server(input, output, session):
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-        # Colour by sign of residual
         pos = residuals >= 0
         ax.scatter(y_hat[pos],  residuals[pos],  color="#4ade80", alpha=0.65,
                    edgecolors=DARK_BG, linewidths=0.3, s=44, zorder=3, label="Over-predicted")
         ax.scatter(y_hat[~pos], residuals[~pos], color="#f87171", alpha=0.65,
                    edgecolors=DARK_BG, linewidths=0.3, s=44, zorder=3, label="Under-predicted")
 
-        # LOWESS-style smoothed trend (simple rolling)
         try:
             sort_idx = np.argsort(y_hat)
             xsrt, rsrt = y_hat[sort_idx], residuals[sort_idx]
@@ -2218,7 +2072,6 @@ def server(input, output, session):
             pass
 
         ax.axhline(0, color=BORDER, linewidth=1.2, linestyle="-", alpha=0.7, zorder=4)
-        # ±1 SD bands
         sd = residuals.std()
         ax.axhline( sd, color=BORDER, linewidth=0.8, linestyle=":", alpha=0.5)
         ax.axhline(-sd, color=BORDER, linewidth=0.8, linestyle=":", alpha=0.5)
@@ -2233,7 +2086,6 @@ def server(input, output, session):
         ax.grid(color=BORDER, linewidth=0.35, linestyle="--", alpha=0.45)
         plt.tight_layout(pad=1.3)
         return ui.HTML(fig_to_html(fig))
-
 
     # ── PCA ───────────────────────────────────────────────────────────────────
     @reactive.Calc
@@ -2259,14 +2111,13 @@ def server(input, output, session):
             std[std == 0] = 1
             X = (X - mu) / std
 
-        # SVD-based PCA
         X_c = X - X.mean(axis=0)
         U, s, Vt = np.linalg.svd(X_c, full_matrices=False)
         n_comp     = min(len(cols), X_c.shape[0])
         eigenvals  = (s ** 2) / (X_c.shape[0] - 1)
         expl_var   = eigenvals / eigenvals.sum()
-        scores     = X_c @ Vt.T          # shape (n_samples, n_comp)
-        loadings   = Vt.T                # shape (n_vars, n_comp)
+        scores     = X_c @ Vt.T
+        loadings   = Vt.T
 
         return {
             "df":        df,
@@ -2318,12 +2169,10 @@ def server(input, output, session):
         ax.set_ylim(0, max(expl) * 100 * 1.25)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
-        ax2.spines["top"].set_visible(False)
         plt.tight_layout(pad=1.2)
 
         chart_html = fig_to_html(fig)
 
-        # Elbow note
         diffs = np.diff(expl)
         elbow = int(np.argmax(np.abs(diffs[1:]) < 0.02)) + 2 if len(diffs) > 1 else 1
         cumul_arr = np.cumsum(expl)
@@ -2377,7 +2226,6 @@ def server(input, output, session):
             short_cv = cvar if len(cvar) <= 28 else cvar[:27]+"…"
             cbar.set_label(short_cv, color=TEXT_SEC, fontsize=8)
         else:
-            # Colour by distance from origin = overall "extremeness"
             dist = np.sqrt(pc1**2 + pc2**2)
             sc = ax.scatter(pc1, pc2, c=dist, cmap="plasma",
                             alpha=0.72, edgecolors=DARK_BG, linewidths=0.3, s=52, zorder=3)
@@ -2386,7 +2234,6 @@ def server(input, output, session):
             cbar.outline.set_edgecolor(BORDER)
             cbar.set_label("Distance from origin", color=TEXT_SEC, fontsize=8)
 
-        # Label the most extreme ZIP codes
         if "Zip Code" in df.columns:
             dist  = np.sqrt(pc1**2 + pc2**2)
             top_n = min(6, len(dist))
@@ -2417,7 +2264,6 @@ def server(input, output, session):
         expl     = res["expl_var"]
         n_show   = min(2, loadings.shape[1])
 
-        # Shorten column names intelligently
         def shorten(s):
             replacements = {
                 "Median Home Value": "Home Value",
@@ -2431,6 +2277,7 @@ def server(input, output, session):
                 "Total Data Centers": "Total DCs",
                 "Unemployment Rate (%)": "Unemployment",
                 "Poverty Rate (%)": "Poverty Rate",
+                "Household Cost Score": "HHC Score",
             }
             for k, v in replacements.items():
                 s = s.replace(k, v)
@@ -2445,7 +2292,6 @@ def server(input, output, session):
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-        pc_colors = [MAROON_MID, "#4895ef"]
         for i in range(n_show):
             offset = (i - (n_show - 1) / 2) * width
             vals_i = loadings[:, i]
@@ -2456,7 +2302,6 @@ def server(input, output, session):
                            color=bar_colors, alpha=0.82,
                            edgecolor=DARK_BG, linewidth=0.3,
                            label=f"PC{i+1}  ({expl[i]*100:.1f}% var)")
-            # Value labels on bars
             for bar, v in zip(bars, vals_i):
                 if abs(v) > 0.15:
                     ax.text(v + (0.01 if v >= 0 else -0.01), bar.get_y() + bar.get_height()/2,
@@ -2487,8 +2332,7 @@ def server(input, output, session):
         n_show   = min(5, loadings.shape[1])
         short    = [c[:22] for c in cols]
 
-        # correlation of original vars with PCs = loading * sqrt(eigenval_ratio) — approximation via loadings
-        corr_mat = loadings[:, :n_show]   # vars x PCs
+        corr_mat = loadings[:, :n_show]
 
         fig, ax = plt.subplots(figsize=(max(4, n_show * 0.9), max(3.5, len(cols) * 0.45)))
         fig.patch.set_facecolor(DARK_BG)
@@ -2575,9 +2419,8 @@ def server(input, output, session):
                 f"</tr>"
             )
 
-        # ── Interpretation ────────────────────────────────────────────────────
         cumul    = np.cumsum(expl)
-        n80      = int(np.searchsorted(cumul, 0.80)) + 1  # PCs needed for 80%
+        n80      = int(np.searchsorted(cumul, 0.80)) + 1
         n60      = int(np.searchsorted(cumul, 0.60)) + 1
         top_var  = expl[0] * 100
         top2_var = expl[:2].sum() * 100 if len(expl) >= 2 else top_var
@@ -2591,8 +2434,6 @@ def server(input, output, session):
 
         html = f"""
         <div style="padding:4px;font-family:'DM Sans',sans-serif;">
-
-          <!-- Interpretation -->
           <div style="margin-bottom:14px;padding:13px 16px;
                       background:rgba(240,165,0,0.06);
                       border:1px solid rgba(240,165,0,0.18);
@@ -2606,8 +2447,6 @@ def server(input, output, session):
             and <b>{n80} component{'s' if n80>1 else ''}</b> for 80%.
             Components beyond that add diminishing information.
           </div>
-
-          <!-- Table -->
           <div style="overflow-x:auto;">
           <table style="width:100%;border-collapse:collapse;min-width:380px;">
             <thead>{header}</thead>
