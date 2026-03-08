@@ -37,11 +37,7 @@ def dumbbell_plot(
     plot = df[[dc_code, operator_var, address_var, before_var, 
                after_var, change_var]].copy()
 
-    # Segmenting data for the connecting lines:
-    line = plot.rename(columns={
-            before_var: "before_value",
-            after_var: "after_value",
-            change_var: "change_value"})
+    line = plot
 
     # Reshaping data to long format:
     points = plot.melt(
