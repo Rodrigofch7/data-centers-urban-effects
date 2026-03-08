@@ -1417,7 +1417,7 @@ def server(input, output, session):
       const x1 = Math.min(bx,ax), x2 = Math.max(bx,ax);
       ln.setAttribute("x1", x1); ln.setAttribute("x2", x2);
       ln.setAttribute("y1", cy); ln.setAttribute("y2", cy);
-      ln.setAttribute("stroke", col); ln.setAttribute("stroke-width","2.2");
+      ln.setAttribute("stroke", TACC); ln.setAttribute("stroke-width","2.2");
       ln.setAttribute("stroke-opacity","0.6");
       ln.setAttribute("stroke-linecap","round"); svg.appendChild(ln);
       const bd = document.createElementNS(ns,"circle");
@@ -1592,7 +1592,7 @@ def server(input, output, session):
       g.appendChild(rowBg);
       const lbl = document.createElementNS(ns, "text");
       lbl.setAttribute("x", 8); lbl.setAttribute("y", cy + 4);
-      lbl.setAttribute("fill", isSel ? TPRI : TSEC);
+      lbl.setAttribute("fill", TPRI);
       lbl.setAttribute("font-size", isSel ? 10 : 9.5);
       lbl.setAttribute("font-family", "monospace");
       lbl.setAttribute("font-weight", isSel ? "bold" : "normal");
@@ -1617,11 +1617,11 @@ def server(input, output, session):
       const zt = document.createElementNS(ns, "text");
       zt.setAttribute("x", rx + (row.z >= 0 ? 10 : -10));
       zt.setAttribute("y", cy + 4);
-      zt.setAttribute("fill", col);
+      zt.setAttribute("fill", TPRI);
       zt.setAttribute("font-size", 8.5);
       zt.setAttribute("font-family", "monospace");
       zt.setAttribute("text-anchor", row.z >= 0 ? "start" : "end");
-      zt.setAttribute("opacity", isSel ? 1 : 0.7);
+      zt.setAttribute("opacity", "1");
       zt.textContent = (row.z >= 0 ? "+" : "") + row.z.toFixed(2);
       g.appendChild(zt);
       g.addEventListener("click", (e) => {{
