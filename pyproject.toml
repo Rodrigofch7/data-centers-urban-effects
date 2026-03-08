@@ -1,13 +1,54 @@
 [project]
 name = "project-datacenter-urban-effects"
 version = "0.1.0"
-description = "Add your description here"
+description = "Analyzing the impact of data centers on urban metrics across the Chicago metro area"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "altair>=6.0.0",
-    "faker>=40.5.1",
+    # Core data
     "pandas>=2.3.3",
+    "numpy>=2.0.0",
+    "geopandas>=1.0.0",
+    "shapely>=2.0.0",
+    "pyarrow>=15.0.0",
+
+    # Census & geolocation
+    "census>=0.8.19",
+    "pgeocode>=0.4.0",
+
+    # Machine learning / imputation
+    "scikit-learn>=1.5.0",
+
+    # Visualization & dashboard
+    "shiny>=1.0.0",
+    "folium>=0.17.0",
+    "matplotlib>=3.9.0",
+    "altair>=6.0.0",
+
+    # Utilities
+    "python-dotenv>=1.0.0",
+    "requests>=2.32.0",
+
+    # Dev / testing
     "pytest>=9.0.2",
     "ruff>=0.14.10",
+    "faker>=40.5.1",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.14.10",
+    "faker>=40.5.1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -14,7 +14,8 @@ import matplotlib.ticker as mticker
 import io, base64
 from scipy import stats as scipy_stats
 
-# To run: shiny run --reload app.py
+# To run: # cd shiny_app -> shiny run --reload app.py
+# To deploy # cd shiny_app -> rsconnect deploy shiny .
 
 # =============================================================================
 # BRAND & DESIGN TOKENS
