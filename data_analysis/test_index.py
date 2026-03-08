@@ -136,4 +136,3 @@ def test_index_score_70_30_comp():
     assert dummy_set.iloc[2]["impact_score"] == pytest.approx(4.4,abs=1e-6)
     assert dummy_set.iloc[10]["impact_score"] == pytest.approx(3.7,abs=1e-6)
     assert dummy_set.iloc[16]["impact_score"] == pytest.approx(2,abs=1e-6)
-
