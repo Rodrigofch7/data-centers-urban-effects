@@ -13,6 +13,7 @@ import matplotlib.colors as mcolors
 import matplotlib.ticker as mticker
 import io, base64
 from scipy import stats as scipy_stats
+import altair as alt
 
 # To run: # cd shiny_app -> shiny run --reload app.py
 # To deploy # cd shiny_app -> rsconnect deploy shiny .
@@ -846,24 +847,26 @@ app_ui = ui.page_navbar(
             ui.output_ui("atlas_kpi_strip"),
             ui.layout_columns(
                 ui.card(
-                    ui.card_header("Housing Price Shift: Before vs. After Permit"),
-                    ui.output_ui("atlas_before_after"),
+                    ui.card_header("Data Centers Over Time"),
+                    ui.output_ui("atlas_timeseries"),
                     full_screen=True,
                 ),
-                ui.layout_columns(
-                    ui.card(
-                        ui.card_header("Facilities by Impact Z-Score"),
-                        ui.output_ui("atlas_lollipop"),
-                        full_screen=True,
-                    ),
-                    ui.card(
-                        ui.card_header("Facility Impact Directory"),
-                        ui.output_ui("atlas_directory"),
-                        full_screen=True,
-                    ),
-                    col_widths=(6, 6),
+                ui.card(
+                    ui.card_header("Facilities by Impact Z-Score"),
+                    ui.output_ui("atlas_lollipop"),
+                    full_screen=True,
                 ),
-                col_widths=(5, 7),
+                ui.card(
+                    ui.card_header("Facility Impact Directory"),
+                    ui.output_ui("atlas_directory"),
+                    full_screen=True,
+                ),
+                col_widths=(5, 3, 4),
+            ),
+            ui.card(
+                ui.card_header("Housing Price Shift: Before vs. After Permit"),
+                ui.output_ui("atlas_before_after"),
+                full_screen=True,
             ),
             style="display:flex; flex-direction:column; gap:16px; padding:16px 12px;",
         ),
@@ -1140,6 +1143,131 @@ def server(input, output, session):
         return ui.HTML(
             f"<div style='display:flex;gap:16px;padding:4px 4px 0;'>{cards}</div>"
         )
+
+    @render.ui
+    def atlas_timeseries():
+        df = _atlas_df()
+        ts_df = None
+        if not df.empty and "First_Operation_Permit" in df.columns:
+            ts_df = df[["First_Operation_Permit"]].copy()
+            ts_df["year"] = pd.to_numeric(ts_df["First_Operation_Permit"], errors="coerce")
+        elif not centers_gdf.empty:
+            for col in centers_gdf.columns:
+                if any(k in col.lower() for k in ["permit", "operation", "year", "opened"]):
+                    ts_df = pd.DataFrame({"year": pd.to_numeric(centers_gdf[col], errors="coerce")})
+                    break
+
+        if ts_df is None or ts_df["year"].dropna().empty:
+            return _empty_state("No permit year data found", "Add First_Operation_Permit to impact CSV")
+
+        ts_df = ts_df.dropna(subset=["year"])
+        ts_df["year"] = ts_df["year"].astype(int)
+        by_year = (ts_df["year"].value_counts()
+                   .sort_index()
+                   .cumsum()
+                   .reset_index())
+        by_year.columns = ["year", "count"]
+
+        import json as _json
+        pts = [{"year": int(r["year"]), "count": int(r["count"])} for _, r in by_year.iterrows()]
+        pts_json = _json.dumps(pts)
+        total = int(by_year["count"].max())
+
+        html = f"""
+<div style="font-family:monospace;padding:8px 4px;height:100%;">
+  <div style="font-size:10px;color:{TEXT_SEC};margin-bottom:6px;padding:0 4px;">
+    Cumulative facilities · first operation permit year
+  </div>
+  <svg id="ts-svg" width="100%" style="display:block;"></svg>
+</div>
+<script>
+(function(){{
+  const PTS={pts_json}, TOTAL={total};
+  const DARK="{DARK_BG}",BORDER="{BORDER}",TSEC="{TEXT_SEC}",TACC="{TEXT_ACC}",MAR="{MAROON}";
+  const PAD={{t:14,r:14,b:34,l:38}};
+  const svg=document.getElementById("ts-svg");
+  const ns="http://www.w3.org/2000/svg";
+  const tip=document.createElement("div");
+  tip.style.cssText="display:none;position:fixed;pointer-events:none;z-index:9999;"+
+    "background:#1c2128;border:1px solid #30363d;border-radius:6px;"+
+    "padding:6px 10px;font-size:11px;color:#e6edf3;font-family:monospace;"+
+    "box-shadow:0 4px 16px rgba(0,0,0,0.6);";
+  document.body.appendChild(tip);
+  function render(){{
+    const W=svg.getBoundingClientRect().width||280, H=500;
+    svg.setAttribute("height",H); svg.innerHTML="";
+    const cw=W-PAD.l-PAD.r, ch=H-PAD.t-PAD.b;
+    const minX=PTS[0].year, maxX=PTS[PTS.length-1].year, spanX=maxX-minX||1;
+    function px(yr){{return PAD.l+(yr-minX)/spanX*cw;}}
+    function py(v) {{return PAD.t+ch-(v/TOTAL)*ch;}}
+    const bg=document.createElementNS(ns,"rect");
+    bg.setAttribute("width","100%");bg.setAttribute("height",H);
+    bg.setAttribute("fill",DARK);svg.appendChild(bg);
+    [0,0.25,0.5,0.75,1].forEach(f=>{{
+      const v=Math.round(TOTAL*f), y=py(v);
+      const gl=document.createElementNS(ns,"line");
+      gl.setAttribute("x1",PAD.l);gl.setAttribute("x2",PAD.l+cw);
+      gl.setAttribute("y1",y);gl.setAttribute("y2",y);
+      gl.setAttribute("stroke",BORDER);gl.setAttribute("stroke-width","0.5");
+      gl.setAttribute("stroke-dasharray","3,3");svg.appendChild(gl);
+      const tl=document.createElementNS(ns,"text");
+      tl.setAttribute("x",PAD.l-4);tl.setAttribute("y",y+3.5);
+      tl.setAttribute("fill",TSEC);tl.setAttribute("font-size","7.5");
+      tl.setAttribute("font-family","monospace");tl.setAttribute("text-anchor","end");
+      tl.textContent=v;svg.appendChild(tl);
+    }});
+    let ap=`M ${{px(PTS[0].year)}} ${{py(0)}} L ${{px(PTS[0].year)}} ${{py(PTS[0].count)}}`;
+    PTS.forEach((p,i)=>{{if(i>0)ap+=` L ${{px(p.year)}} ${{py(p.count)}}`;}});
+    ap+=` L ${{px(PTS[PTS.length-1].year)}} ${{py(0)}} Z`;
+    const area=document.createElementNS(ns,"path");
+    area.setAttribute("d",ap);area.setAttribute("fill",MAR);
+    area.setAttribute("fill-opacity","0.2");svg.appendChild(area);
+    let lp=`M ${{px(PTS[0].year)}} ${{py(PTS[0].count)}}`;
+    PTS.forEach((p,i)=>{{if(i>0)lp+=` L ${{px(p.year)}} ${{py(p.count)}}`;}});
+    const ln=document.createElementNS(ns,"path");
+    ln.setAttribute("d",lp);ln.setAttribute("fill","none");
+    ln.setAttribute("stroke",MAR);ln.setAttribute("stroke-width","2.2");
+    ln.setAttribute("stroke-linejoin","round");ln.setAttribute("stroke-linecap","round");
+    svg.appendChild(ln);
+    const step=Math.max(1,Math.floor(spanX/4));
+    for(let yr=minX;yr<=maxX;yr+=step){{
+      const tl=document.createElementNS(ns,"text");
+      tl.setAttribute("x",px(yr));tl.setAttribute("y",H-PAD.b+14);
+      tl.setAttribute("fill",TSEC);tl.setAttribute("font-size","7.5");
+      tl.setAttribute("font-family","monospace");tl.setAttribute("text-anchor","middle");
+      tl.textContent=yr;svg.appendChild(tl);
+    }}
+    PTS.forEach(p=>{{
+      const cx=px(p.year),cy=py(p.count);
+      const dot=document.createElementNS(ns,"circle");
+      dot.setAttribute("cx",cx);dot.setAttribute("cy",cy);dot.setAttribute("r","3");
+      dot.setAttribute("fill",TACC);dot.setAttribute("stroke",DARK);
+      dot.setAttribute("stroke-width","1");svg.appendChild(dot);
+      const hit=document.createElementNS(ns,"circle");
+      hit.setAttribute("cx",cx);hit.setAttribute("cy",cy);hit.setAttribute("r","9");
+      hit.setAttribute("fill","transparent");hit.style.cursor="default";
+      hit.addEventListener("mousemove",e=>{{
+        tip.style.display="block";
+        tip.style.left=(e.clientX+14)+"px";tip.style.top=(e.clientY-10)+"px";
+        tip.innerHTML=`<b style="color:${{TACC}}">${{p.year}}</b><br>`+
+          `<span style="color:#8b949e">Cumulative: </span>${{p.count}} facilities`;
+      }});
+      hit.addEventListener("mouseleave",()=>{{tip.style.display="none";}});
+      svg.appendChild(hit);
+    }});
+    const last=PTS[PTS.length-1];
+    const ann=document.createElementNS(ns,"text");
+    ann.setAttribute("x",px(last.year)-5);ann.setAttribute("y",py(last.count)-8);
+    ann.setAttribute("fill",TACC);ann.setAttribute("font-size","9");
+    ann.setAttribute("font-family","monospace");ann.setAttribute("text-anchor","end");
+    ann.setAttribute("font-weight","bold");ann.textContent=TOTAL+" total";
+    svg.appendChild(ann);
+  }}
+  render();
+  new ResizeObserver(render).observe(svg);
+}})();
+</script>"""
+        return ui.HTML(html)
 
     @render.ui
     def atlas_before_after():
