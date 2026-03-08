@@ -51,24 +51,26 @@ def dumbbell_plot(
         {before_var: before_lab, after_var: after_lab})
 
     # Sorting data centers by change:
-    sort = line.sort_values("change_value", ascending=False)[dc_code].tolist()
+    sort = plot.sort_values(change_var, ascending=False)[dc_code].tolist()
 
     # Connecting lines between before and after:
-    lines = (alt.Chart(line).mark_rule(color="lightgray", strokeWidth=2)
+    lines = (
+        alt.Chart(plot)
+        .mark_rule(color="gray", strokeWidth=3)
         .encode(
             y=alt.Y(f"{dc_code}:N", sort=sort, title="Data Center"),
-            x=alt.X("before_value:Q", title=value_lab),
-            x2="after_value:Q",
-            tooltip=
-                [alt.Tooltip(f"{dc_code}:N", title="Data Center"),
+            x=alt.X(f"{before_var}:Q", title=value_lab),
+            x2=f"{after_var}:Q",
+            tooltip=[
+                alt.Tooltip(f"{dc_code}:N", title="Data Center"),
                 alt.Tooltip(f"{operator_var}:N", title="Operator"),
                 alt.Tooltip(f"{address_var}:N", title="Address"),
-                alt.Tooltip("before_value:Q", title=before_lab, format=",.2f"),
-                alt.Tooltip("after_value:Q", title=after_lab, format=",.2f"),
-                alt.Tooltip("change_value:Q", title="Change", format=",.2f")]))
+                alt.Tooltip(f"{before_var}:Q", title=before_lab, format=",.2f"),
+                alt.Tooltip(f"{after_var}:Q", title=after_lab, format=",.2f"),
+                alt.Tooltip(f"{change_var}:Q", title="Change", format=",.2f"),]))
 
     # Creating endpoints for before and after:
-    dots = (alt.Chart(points).mark_point(size=90, filled=True)
+    dots = (alt.Chart(points).mark_point(size=70, filled=True)
         .encode(
             y=alt.Y(f"{dc_code}:N", sort=sort, title="Data Center"),
             x=alt.X("value:Q", title=value_lab),
@@ -85,7 +87,8 @@ def dumbbell_plot(
                 alt.Tooltip(f"{change_var}:Q", title="Change", format=",.2f")]))
     
     chart = ((lines + dots).properties(title=title,
-                                         width=800,
-                                         height=max(300, len(plot) * 18)))
+                                         width=1200,
+                                         height=min(800, 
+                                                    max(300, len(plot) * 25))))
 
     return chart
