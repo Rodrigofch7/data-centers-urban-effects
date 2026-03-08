@@ -1417,7 +1417,7 @@ def server(input, output, session):
       const x1 = Math.min(bx,ax), x2 = Math.max(bx,ax);
       ln.setAttribute("x1", x1); ln.setAttribute("x2", x2);
       ln.setAttribute("y1", cy); ln.setAttribute("y2", cy);
-      ln.setAttribute("stroke", TACC); ln.setAttribute("stroke-width","2.2");
+      ln.setAttribute("stroke", col); ln.setAttribute("stroke-width","2.2");
       ln.setAttribute("stroke-opacity","0.6");
       ln.setAttribute("stroke-linecap","round"); svg.appendChild(ln);
       const bd = document.createElementNS(ns,"circle");
