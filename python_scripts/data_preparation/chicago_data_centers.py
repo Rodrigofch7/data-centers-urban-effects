@@ -34,7 +34,6 @@ def standard_street(address):
 
     return "_".join(clean_tokens)
 
-# Clean scraped data center dataset:
 def clean_scraped_datacenters():
     
     chicago_datacenters:  pd.DataFrame = pd.read_csv("data/housing_and_data_centers_data/top_us_cities_datacenters.csv")
@@ -56,7 +55,6 @@ def clean_scraped_datacenters():
 
     return chicago_datacenters
 
-# Function to cleand datacenter merged dataset:
 def clean_datacenter_housing_data():
 
     # Loading merged dataset:
@@ -83,14 +81,31 @@ def clean_datacenter_housing_data():
                             "hval_yrafter": "Housing_Avg_Price_After_Permit"})
 
     # Creating DataCenter_Code column:
-    chicago_datacenters_2.insert(0, "DataCenter_Code", ["DC" + str(i).zfill(2) for i in range(1, len(chicago_datacenters_2) + 1)])
+    codes = []
+
+    # Looping over the number of rows in the dataframe:
+    for i in range(1, len(chicago_datacenters_2) + 1):
+
+        # Convert the number to string:
+        number = str(i)
+
+        # Add leading zero if needed:
+        zero_number = number.zfill(2)
+
+        # Build the data center code:
+        code = "DC" + zero_number
+
+        # Add the code to the list:
+        codes.append(code)
+
+        # Insert the new column as the first column:
+        chicago_datacenters_2.insert(0, "DataCenter_Code", codes)
 
     # Saving cleaned dataset:
     chicago_datacenters_2.to_csv("data/chicago_data_centers_2.csv", index=False)
 
     return chicago_datacenters_2
 
-# Function to clean household costs dataset:
 def clean_monthHHC():
     # Loading dataset:
     housing_cost_data = pd.read_csv("data/sinans_data/monthHHC_cleaned.csv")
@@ -100,10 +115,10 @@ def clean_monthHHC():
                      60131, 60143, 60148, 60164, 60191, 60502, 60523, 60532, 
                      60605, 60607, 60608, 60616, 60617, 60632]
 
-    # Keeping only rows with those ZIPs
+    # Keeping only rows with those zipcodes:
     housing_cost_data  = housing_cost_data [housing_cost_data ["ZCTA5A"].isin(zipcodes)].copy()
 
-    # Keep only the needed columns:
+    # Keeping only the needed columns:
     housing_cost_data  =  housing_cost_data[["ZCTA5A", "HHCScore", "start_year", "end_year"]].copy()
 
     # Renaming columns:
@@ -116,7 +131,6 @@ def clean_monthHHC():
 
     return housing_cost_data
 
-# Function to add housing cost scores to the datacenter dataset:
 def add_housing_cost_scores():
     # Loading files:
     dc = pd.read_csv("data/chicago_data_centers_2.csv")
