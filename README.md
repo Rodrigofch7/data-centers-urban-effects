@@ -139,11 +139,11 @@ This will:
 
 Navigate to the dashboard directory:
 ```bash
-cd shini_app
+cd shiny_app
 ```
 Then run:
 ```bash
-python app.py
+cd shiny_app -> shiny run --reload app.py
 ```
 
 This launches the interactive visualization environment, including:
@@ -196,10 +196,7 @@ project-datacenter-urban-effects/
 │   ├── DataMethodology.md
 │   └── index.py
 │
-├── R Code/                                  # Spatial boundary extraction
-│   └── fetch_city_zctas.r
-│
-├── shini_app/                               # Interactive dashboard
+├── shiny_app/                               # Interactive dashboard
 │   ├── app.py
 │   ├── Data/
 │   └── requirements.txt

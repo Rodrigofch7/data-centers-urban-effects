@@ -16,3 +16,4 @@ pyarrow
 shapely
 fiona
 scipy
+altair

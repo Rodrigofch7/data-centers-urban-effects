@@ -2,6 +2,7 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 import os
+from dotenv import load_dotenv
 from sklearn.impute import KNNImputer
 from sklearn.preprocessing import StandardScaler
 from census import Census
@@ -12,14 +13,18 @@ import pgeocode
 import warnings
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-API_KEY = "fda60e79b0da81a8ac6472ff4250f47daa8c527b"
+load_dotenv('/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/.env')
+API_KEY = os.environ.get("CENSUS_API_KEY")
+if not API_KEY:
+    raise ValueError("CENSUS_API_KEY not found. Make sure your .env file exists and contains CENSUS_API_KEY=...")
+
 ACS_YEAR = 2022
 
 INPUT_PATH        = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/housing_and_data_centers_data/zillow_yearly_estimates_chicago_metro.csv'
 MAP_PATH          = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/spatial_data/cities/ChicagoMetroArea.parquet'
 DC_INPUT_PATH     = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/spatial_data/centers/DataCentersChicagoMetroArea.parquet'
 ENERGY_WATER_PATH = 'data/energy and water data/nhgis_energy_water_wide.csv'
-HHC_PATH = 'data/sinans_data/pivoted_HHCScores.csv'
+HHC_PATH          = 'data/sinans_data/pivoted_HHCScores.csv'
 OUTPUT_CITIES     = 'shiny_app/Data/Chicago.gpkg'
 OUTPUT_CENTERS    = 'shiny_app/Data/ChicagoDataCenters.gpkg'
 
@@ -96,7 +101,7 @@ FRIENDLY_NAMES = {
     'latitude':   'Latitude',
     'longitude':  'Longitude',
 
-    # Housing Costs Monthly Housing Costs ; Universe:    Occupied housing units; Source code: B25104
+    # Housing Costs
     'HHC Score (2007-2011)': 'Household Cost Score (2007–2011)',
     'HHC Score (2019-2023)': 'Household Cost Score (2019–2023)',
     'HHC Score (2020-2024)': 'Household Cost Score (2020–2024)',
@@ -270,7 +275,6 @@ print("STEP 4.5: Merging Household Cost Scores...")
 hhc_df = pd.read_csv(HHC_PATH, dtype={'ZCTA5A': str})
 hhc_df['ZCTA5A'] = hhc_df['ZCTA5A'].astype(str).str.zfill(5)
 
-# Keep earliest, a mid-point, and latest snapshot for trend context
 hhc_keep_cols = ['2007-2011', '2019-2023', '2020-2024']
 available_hhc = [c for c in hhc_keep_cols if c in hhc_df.columns]
 hhc_df = hhc_df[['ZCTA5A'] + available_hhc].rename(
@@ -282,7 +286,6 @@ for col in hhc_df.columns[1:]:
 gdf = gdf.merge(hhc_df, left_on='ZCTA5CE20', right_on='ZCTA5A', how='left')
 gdf = gdf.drop(columns=['ZCTA5A'], errors='ignore')
 print(f"  -> HHC score columns added: {[c for c in gdf.columns if 'HHC' in c]}")
-
 
 # =============================================================================
 # STEP 5 — Census Data
@@ -374,11 +377,9 @@ restored = scaler.inverse_transform(imputed)
 
 result_df = pd.DataFrame(restored, columns=numeric_cols, index=gdf.index)
 
-# Clip each column to [0, observed_max] — no column should go negative
-# and none should exceed the real observed maximum
 for col in numeric_cols:
-    observed_min = impute_df[col].dropna().quantile(0.01)  # 1st percentile as floor
-    observed_max = impute_df[col].dropna().quantile(0.99)  # 99th percentile as ceiling
+    observed_min = impute_df[col].dropna().quantile(0.01)
+    observed_max = impute_df[col].dropna().quantile(0.99)
     result_df[col] = result_df[col].clip(lower=max(0, observed_min), upper=observed_max)
 
 gdf[numeric_cols] = result_df
@@ -386,12 +387,10 @@ gdf[numeric_cols] = result_df
 after_missing = gdf[numeric_cols].isna().sum().sum()
 print(f"  -> {after_missing:,} missing values after imputation")
 
-# Sanity check
 print("  -> Post-imputation value ranges:")
 for col in numeric_cols:
     print(f"     {col:<45} min={gdf[col].min():>12.2f}  max={gdf[col].max():>12.2f}")
 
-    
 # =============================================================================
 # STEP 8 — Validate
 # =============================================================================
