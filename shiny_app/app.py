@@ -949,78 +949,7 @@ app_ui = ui.page_navbar(
         ),
     ),
 
-    # ── REGRESSIONS ───────────────────────────────────────────────────────────
-    ui.nav_panel(
-        "OLS Model",
-        ui.page_sidebar(
-            ui.sidebar(
-                ui.h4("Regression"),
-                ui.div("DEPENDENT VARIABLE (Y)", class_="sidebar-section-title"),
-                ui.output_ui("reg_y_selector"),
-                ui.div("REGRESSORS (X)", class_="sidebar-section-title"),
-                ui.output_ui("reg_x_selector"),
-                ui.hr(),
-                ui.input_checkbox("reg_intercept", "Include intercept", value=True),
-                ui.hr(),
-                ui.div(
-                    "OLS regression across all ZIP codes. "
-                    "Select one or more regressors.",
-                    class_="source-note"
-                ),
-                style=f"background:{PANEL_BG}; min-width:225px;",
-            ),
-            ui.card(ui.card_header("Regression Results"),  ui.output_ui("reg_summary")),
-            ui.layout_columns(
-                ui.card(ui.card_header("Fitted vs Actual"), ui.output_ui("reg_fit_plot"),   full_screen=True),
-                ui.card(ui.card_header("Residuals"),        ui.output_ui("reg_resid_plot"), full_screen=True),
-                col_widths=(6, 6),
-            ),
-        ),
-    ),
 
-    # ── PCA ───────────────────────────────────────────────────────────────────
-    ui.nav_panel(
-        "PCA Analysis",
-        ui.page_sidebar(
-            ui.sidebar(
-                ui.h4("PCA"),
-                ui.div("VARIABLES", class_="sidebar-section-title"),
-                ui.input_selectize(
-                    "pca_vars", None,
-                    choices={c: c for c in ALL_NUMERIC},
-                    selected=ALL_NUMERIC[:6] if len(ALL_NUMERIC) >= 6 else ALL_NUMERIC,
-                    multiple=True,
-                ),
-                ui.hr(),
-                ui.div("COLOUR POINTS BY", class_="sidebar-section-title"),
-                ui.input_select(
-                    "pca_color_var", None,
-                    choices={"none": "— None —", **{c: c for c in ALL_NUMERIC}},
-                    selected="none",
-                ),
-                ui.hr(),
-                ui.input_checkbox("pca_scale", "Standardise variables (recommended)", value=True),
-                ui.hr(),
-                ui.div(
-                    "PCA via numpy SVD. Each point = one ZIP code. "
-                    "Select ≥ 2 variables to run.",
-                    class_="source-note"
-                ),
-                style=f"background:{PANEL_BG}; min-width:225px;",
-            ),
-            ui.layout_columns(
-                ui.card(ui.card_header("Scree Plot — Explained Variance"),   ui.output_ui("pca_scree")),
-                ui.card(ui.card_header("PC1 vs PC2 — ZIP Code Scores"),      ui.output_ui("pca_scores")),
-                col_widths=(5, 7),
-            ),
-            ui.layout_columns(
-                ui.card(ui.card_header("Loadings — PC1 & PC2"),              ui.output_ui("pca_loadings")),
-                ui.card(ui.card_header("Correlation: Variables vs PCs"),     ui.output_ui("pca_corr_heat")),
-                col_widths=(6, 6),
-            ),
-            ui.card(ui.card_header("Component Summary Table"),               ui.output_ui("pca_table")),
-        ),
-    ),
 
     ui.nav_spacer(),
     ui.nav_control(ui.tags.img(src="uchicago_logo.png", class_="uchicago-logo-nav")),
