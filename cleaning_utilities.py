@@ -3,7 +3,6 @@ import numpy as np
 from pathlib import Path
 import re
 
-
 def rename_dfcols(col, prefix_map: dict, code_map: dict, match_pattern):
     """
     Based on given mappings, renames column of dataframe for colnames in this format:\n
@@ -23,19 +22,15 @@ def cleaning_elec_water():
     Cleaning electricity and water/sewage data by zip code from IPUMS NGHIS.\n
     Raw Data: counts of people that fall into price buckets (e.g. 0-50$, $50-100, etc.)\n
     Output: Cleaned csv of electricity/water price score for each zip code in each 5 year 
-    period between 2017-2021 to 2020-2024.
+    period between 2017-2021 to 2020-2024.\n
+    Raw data needs to be renamed since it contains variable names that can only be 
+    understood with the codebook that IPUMS NHGIS provides
     """
-    # Importing data
-    d2017t2021_path = Path("elec_water_data/nhgis0003_ds255_20215_zcta.csv")
-    d2018t2022_path = Path("elec_water_data/nhgis0003_ds263_20225_zcta.csv")
-    d2019t2023_path = Path("elec_water_data/nhgis0003_ds268_20235_zcta.csv")
-    d2020t2024_path = Path("elec_water_data/nhgis0003_ds273_20245_zcta.csv")
-
-    # Loading data
-    d2017t2021 = pd.read_csv(d2017t2021_path)
-    d2018t2022 = pd.read_csv(d2018t2022_path)
-    d2019t2023 = pd.read_csv(d2019t2023_path)
-    d2020t2024 = pd.read_csv(d2020t2024_path)
+    # Importing and loading data
+    d2017t2021 = pd.read_csv(Path("elec_water_data/nhgis0003_ds255_20215_zcta.csv"),dtype={'ZCTA5A': str})
+    d2018t2022 = pd.read_csv(Path("elec_water_data/nhgis0003_ds263_20225_zcta.csv"),dtype={'ZCTA5A': str})
+    d2019t2023 = pd.read_csv(Path("elec_water_data/nhgis0003_ds268_20235_zcta.csv"),dtype={'ZCTA5A': str})
+    d2020t2024 = pd.read_csv(Path("elec_water_data/nhgis0003_ds273_20245_zcta.csv"),dtype={'ZCTA5A': str})
 
     # Mappings for renaming
     prefix_map = {
@@ -141,9 +136,7 @@ def cleaning_elec_water():
         d2019t2023[common_cols],
         d2020t2024[common_cols],
     ]
-    # Ensuring zip codes stay as strings
-    for df in dfs:
-        df["ZCTA5A"] = df["ZCTA5A"].astype(str).str.zfill(5)
+
     combined_df = pd.concat(dfs, axis=0, ignore_index=True)
     # Eliminating extraneous vars
     combined_df = combined_df[
@@ -169,8 +162,11 @@ def cleaning_elec_water():
             "waterScore",
         ]
     ]
+    #Dropping rows with 11717 and 11798 zip codes, since they only have 2 rows associated, not 4
+    combined_df = combined_df[(combined_df["ZCTA5A"] != "11717") & (combined_df["ZCTA5A"] != "11798")]
 
-    # Finally, splitting up year into beginning and final year for period
+
+    # Finally, splitting up year into beginning and final year variables
     combined_df[["start_year", "end_year"]] = (
         combined_df["YEAR"].str.split("-", expand=True).astype(int)
     )
@@ -184,37 +180,22 @@ def cleaning_hhcosts():
     Output: Cleaned csv of household cost score for each zip code in each 5 year period between
     2007-2011 to 2020-2024.
     """
-    # Importing data for household costs (hhc)
-    hhc2007t2011_path = Path("monthly_hhc/nhgis0007_ds185_20115_zcta.csv")
-    hhc2008t2012_path = Path("monthly_hhc/nhgis0007_ds192_20125_zcta.csv")
-    hhc2009t2013_path = Path("monthly_hhc/nhgis0007_ds202_20135_zcta.csv")
-    hhc2010t2014_path = Path("monthly_hhc/nhgis0007_ds207_20145_zcta.csv")
-    hhc2011t2015_path = Path("monthly_hhc/nhgis0007_ds216_20155_zcta.csv")
-    hhc2012t2016_path = Path("monthly_hhc/nhgis0007_ds226_20165_zcta.csv")
-    hhc2013t2017_path = Path("monthly_hhc/nhgis0007_ds234_20175_zcta.csv")
-    hhc2014t2018_path = Path("monthly_hhc/nhgis0007_ds240_20185_zcta.csv")
-    hhc2015t2019_path = Path("monthly_hhc/nhgis0007_ds245_20195_zcta.csv")
-    hhc2016t2020_path = Path("monthly_hhc/nhgis0007_ds250_20205_zcta.csv")
-    hhc2017t2021_path = Path("monthly_hhc/nhgis0007_ds255_20215_zcta.csv")
-    hhc2018t2022_path = Path("monthly_hhc/nhgis0007_ds263_20225_zcta.csv")
-    hhc2019t2023_path = Path("monthly_hhc/nhgis0007_ds268_20235_zcta.csv")
-    hhc2020t2024_path = Path("monthly_hhc/nhgis0007_ds273_20245_zcta.csv")
 
-    # Loading data
-    hhc2007t2011 = pd.read_csv(hhc2007t2011_path)
-    hhc2008t2012 = pd.read_csv(hhc2008t2012_path)
-    hhc2009t2013 = pd.read_csv(hhc2009t2013_path)
-    hhc2010t2014 = pd.read_csv(hhc2010t2014_path)
-    hhc2011t2015 = pd.read_csv(hhc2011t2015_path)
-    hhc2012t2016 = pd.read_csv(hhc2012t2016_path)
-    hhc2013t2017 = pd.read_csv(hhc2013t2017_path)
-    hhc2014t2018 = pd.read_csv(hhc2014t2018_path)
-    hhc2015t2019 = pd.read_csv(hhc2015t2019_path)
-    hhc2016t2020 = pd.read_csv(hhc2016t2020_path)
-    hhc2017t2021 = pd.read_csv(hhc2017t2021_path)
-    hhc2018t2022 = pd.read_csv(hhc2018t2022_path)
-    hhc2019t2023 = pd.read_csv(hhc2019t2023_path)
-    hhc2020t2024 = pd.read_csv(hhc2020t2024_path)
+    # Importing data for household costs (hhc) 
+    hhc2007t2011 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds185_20115_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2008t2012 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds192_20125_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2009t2013 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds202_20135_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2010t2014 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds207_20145_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2011t2015 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds216_20155_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2012t2016 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds226_20165_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2013t2017 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds234_20175_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2014t2018 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds240_20185_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2015t2019 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds245_20195_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2016t2020 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds250_20205_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2017t2021 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds255_20215_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2018t2022 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds263_20225_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2019t2023 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds268_20235_zcta.csv"),dtype={'ZCTA5A': str})
+    hhc2020t2024 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds273_20245_zcta.csv"),dtype={'ZCTA5A': str})
 
     prefix_map = {}
 
@@ -342,8 +323,8 @@ def cleaning_hhcosts():
     common_cols = list(common_cols)
     dfs = [df1[common_cols] for df1 in dflst]
     # Ensuring zip codes stay as strings
-    for df in dfs:
-        df["ZCTA5A"] = df["ZCTA5A"].astype(str).str.zfill(5)
+    # for df in dfs:
+    #     df["ZCTA5A"] = df["ZCTA5A"].astype(str).str.zfill(5)
     combined_df = pd.concat(dfs, axis=0, ignore_index=True)
     # Eliminating extraneous vars
     combined_df = combined_df[
@@ -368,9 +349,40 @@ def cleaning_hhcosts():
             "HHCScore",
         ]
     ]
+
+    #Getting rid of zip codes that don't have at least 10 years of data
+    #combined_df = combined_df[combined_df.groupby("ZCTA5A")["ZCTA5A"].transform("size") >= 9]
     # Finally, splitting up year into beginning and final year for period
     combined_df[["start_year", "end_year"]] = (
         combined_df["YEAR"].str.split("-", expand=True).astype(int)
     )
 
     combined_df.to_csv("monthHHC_cleaned.csv", index=False)
+
+def filter_and_pivot():
+    """
+    Takes household cost data, filters for Chicago metro area zip codes,
+    and converts it into wide format for dashboard visualization
+    """
+    all_us_df = pd.read_csv(Path("monthHHC_cleaned.csv"),dtype={"ZCTA5A": str})
+    #String of Chicago Metro Area Zip codes, split this into list
+    chicago_metro_zips = pd.read_csv("chicago_metro_zips.csv", 
+                                     dtype={"unique(chicagometro_housing$ZCTA5CE20)": str})
+    
+    #Filtering for U.S. zip codes in chicago_metro_zips
+    chicago_metro_df = chicago_metro_df = all_us_df.merge(
+    chicago_metro_zips,
+    left_on="ZCTA5A",
+    right_on="unique(chicagometro_housing$ZCTA5CE20)",
+    how="inner"
+    )
+    #Pivoting HHC score to wide format 
+    chicago_pivoted = chicago_metro_df.pivot(index = "ZCTA5A",
+                                             columns="YEAR", 
+                                             values="HHCScore")
+
+    chicago_pivoted.to_csv("pivoted_HHCScores.csv")
+
+if __name__ == "__main__":
+    cleaning_elec_water()
+    cleaning_hhcosts()

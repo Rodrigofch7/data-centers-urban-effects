@@ -1,4 +1,4 @@
-City_x,Operator,Address,Zipcode,GEOID20,CLASSFP20,MTFCC20,FUNCSTAT20,ALAND20,AWATER20,INTPTLAT20,INTPTLON20,RegionID,SizeRank,RegionType,State,City_y,Metro,CountyName,year,hval,hval_yrbefore,hval_yrafter
+giCity_x,Operator,Address,Zipcode,GEOID20,CLASSFP20,MTFCC20,FUNCSTAT20,ALAND20,AWATER20,INTPTLAT20,INTPTLON20,RegionID,SizeRank,RegionType,State,City_y,Metro,CountyName,year,hval,hval_yrbefore,hval_yrafter
 Chicago,CoreWeave,301 Digital Xrds Dr,46320,46320.0,B5,G6350,S,12061282.0,0.0,41.6089223,-87.4975543,78091.0,7456.0,zip,IN,Hammond,"Chicago-Naperville-Elgin, IL-IN-WI",Lake County,2020,74521.8154231375,63764.155966667146,93321.20979480924
 Chicago,Lumen / CloudHQ,"1305 E. Algonquin Avenue,",60005,60005.0,B5,G6350,S,17015370.0,96647.0,42.0644715,-87.9866902,84274.0,3799.0,zip,IL,Arlington Heights,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2015,258203.52958949,247819.71667958456,269157.7464232647
 Chicago,Aligned Data Centers,150 NW Point Blvd,60007,60007.0,B5,G6350,S,46899245.0,1012393.0,42.023977,-87.9997785,84276.0,2946.0,zip,IL,Elk Grove Village,"Chicago-Naperville-Elgin, IL-IN-WI",Cook County,2011,190226.7597212483,209682.7353344324,181101.884320637

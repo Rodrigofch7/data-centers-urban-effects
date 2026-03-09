@@ -1,0 +1,11 @@
+[project]
+name = "project-datacenter-urban-effects"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "altair>=6.0.0",
+    "pandas>=3.0.1",
+    "pytest>=9.0.2",
+]
