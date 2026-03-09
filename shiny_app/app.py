@@ -6,13 +6,10 @@ import fiona
 import pandas as pd
 import numpy as np
 import os
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-import matplotlib.ticker as mticker
 import io, base64
-from scipy import stats as scipy_stats
+import json
 
 # To run:    cd shiny_app -> shiny run --reload app.py
 # To deploy: cd shiny_app -> rsconnect deploy shiny .
@@ -305,15 +302,6 @@ def encode_matplotlib_figure_as_html_img(fig, dpi: int = 150) -> str:
     return f'<img src="data:image/png;base64,{base64_png}" style="width:100%;border-radius:6px;">'
 
 
-def apply_dark_theme_to_axes(ax, fig):
-    """Apply the dashboard's dark theme styling to a matplotlib Axes and Figure."""
-    fig.patch.set_facecolor(COLOR_DARK_BACKGROUND)
-    ax.set_facecolor(COLOR_CARD_BACKGROUND)
-    ax.tick_params(colors=COLOR_TEXT_SECONDARY, labelsize=9)
-    for spine in ax.spines.values():
-        spine.set_edgecolor(COLOR_BORDER)
-    ax.grid(True, color=COLOR_BORDER, linewidth=0.4, linestyle="--", alpha=0.6)
-
 
 def add_data_center_markers_to_map(folium_map: folium.Map):
     """Add a styled marker pin for every data center in data_centers_gdf."""
@@ -588,6 +576,18 @@ app_ui = ui.page_navbar(
     became more expensive <em>and</em> housing-cost burden increased after the facility opened;
     a <span style="color:#f87171;font-weight:500;">negative score</span> suggests the opposite.
   </div>
+  <div style="font-family:'DM Sans',sans-serif;font-size:12.5px;color:#8b949e;line-height:1.75;
+    max-width:820px;margin-bottom:24px;border-top:1px solid #30363d;padding-top:16px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.15em;
+      text-transform:uppercase;color:#800000;display:block;margin-bottom:6px;">Background</span>
+    Data Centers are facilities with IT infrastructure that enables companies and users to build,
+    run, and deliver applications and services. As AI becomes an increasingly integral part of
+    digital products and services, new data centers are built at an unprecedented rate. However, data
+    centers have been subject to controversy among many communities for how they have affected
+    costs of living. In <span style="color:#e6edf3;font-weight:500;">Data Centers Next Door</span>,
+    we aim to see if communities in the Chicagoland area have seen similar rising costs due to
+    the building of data centers in their community.
+  </div>
   <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
     <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;
       text-transform:uppercase;color:#8b949e;margin-right:4px;">Explore →</span>
@@ -609,11 +609,27 @@ app_ui = ui.page_navbar(
                 ui.card(
                     ui.card_header("Data Centers Over Time"),
                     ui.output_ui("atlas_timeseries_chart"),
+                    ui.p(
+                        "The first data center in Chicagoland started operating early on in 2000, after which for "
+                        "the next seven years, only one other data center started operating. However, starting in "
+                        "2008, the rate at which new data centers were built grew dramatically. For example, between "
+                        "just 2014 and 2015, 8 new data centers started operating. We anticipate that this dramatic "
+                        "rate of growth will continue in the upcoming years, especially as AI usage proliferates.",
+                        style=f"font-family:'DM Sans',sans-serif;font-size:12px;color:{COLOR_TEXT_SECONDARY};"
+                              "line-height:1.7;padding:4px 8px 8px;margin:0;",
+                    ),
                     full_screen=True,
                 ),
                 ui.card(
                     ui.card_header("Data Centers by Company"),
                     ui.output_ui("atlas_company_bar_chart"),
+                    ui.p(
+                        "The company with the most data centers (5) is Digital Reality. There are 25 companies "
+                        "with one datacenter each. It should be noted that some companies may be owned by the same "
+                        "parent companies (e.g., Aligned Data Centers is owned by BlackRock and its financial partners).",
+                        style=f"font-family:'DM Sans',sans-serif;font-size:12px;color:{COLOR_TEXT_SECONDARY};"
+                              "line-height:1.7;padding:4px 8px 8px;margin:0;",
+                    ),
                     full_screen=True,
                 ),
                 col_widths=(6, 6),
@@ -639,6 +655,16 @@ app_ui = ui.page_navbar(
         ),
                 ui.card(
                     ui.card_header("Facility Impact Directory"),
+                    ui.p(
+                        "The Facility Impact Directory shows the impact scores for each data center. "
+                        "A small number of facilities have the highest scores, suggesting larger combined changes in "
+                        "housing prices and housing cost indicators. Most data centers fall within a middle range, "
+                        "indicating moderate impact, while several on the right show lower scores and smaller changes. "
+                        "Overall, the distribution highlights variation in the potential local effects associated "
+                        "with different data center developments.",
+                        style=f"font-family:'DM Sans',sans-serif;font-size:12px;color:{COLOR_TEXT_SECONDARY};"
+                              "line-height:1.7;padding:8px 16px 4px;margin:0;",
+                    ),
                     ui.output_ui("atlas_facility_directory_table"),
                     full_screen=True,
             ),
@@ -863,9 +889,8 @@ def server(input, output, session):
         cumulative_by_year = permit_year_series["year"].value_counts().sort_index().cumsum().reset_index()
         cumulative_by_year.columns = ["year", "cumulative_count"]
 
-        import json as _json
         chart_data_points = [{"year": int(r["year"]), "count": int(r["cumulative_count"])} for _, r in cumulative_by_year.iterrows()]
-        chart_data_json   = _json.dumps(chart_data_points)
+        chart_data_json   = json.dumps(chart_data_points)
         total_facilities  = int(cumulative_by_year["cumulative_count"].max())
 
         html = f"""
@@ -886,7 +911,7 @@ def server(input, output, session):
   tip.style.cssText="display:none;position:fixed;pointer-events:none;z-index:9999;background:#1c2128;border:1px solid #30363d;border-radius:6px;padding:6px 10px;font-size:11px;color:#e6edf3;font-family:monospace;box-shadow:0 4px 16px rgba(0,0,0,0.6);";
   document.body.appendChild(tip);
   function draw(){{
-    const W=svg.getBoundingClientRect().width||280,H=500;
+    const W=svg.getBoundingClientRect().width||280,H=935;
     svg.setAttribute("height",H); svg.innerHTML="";
     const cw=W-PAD.l-PAD.r, ch=H-PAD.t-PAD.b;
     const minX=CHART_POINTS[0].year, maxX=CHART_POINTS[CHART_POINTS.length-1].year, spanX=maxX-minX||1;
@@ -947,12 +972,11 @@ def server(input, output, session):
             .sort_values("Data Center Count", ascending=False)  # ascending so largest bar ends up at top
         )
 
-        import json as _json
         chart_rows = [
             {"operator": str(row["Operator"]), "count": int(row["Data Center Count"])}
             for _, row in unique_dc_count_by_operator.iterrows()
         ]
-        chart_rows_json = _json.dumps(chart_rows)
+        chart_rows_json = json.dumps(chart_rows)
         max_count = max(r["count"] for r in chart_rows) if chart_rows else 1
 
         html = f"""
@@ -1021,11 +1045,28 @@ def server(input, output, session):
             after_col   = "Housing_Avg_Price_After_Permit"
             x_axis_label = "Average Housing Price"
             is_currency  = True
+            chart_description = (
+                "The dumbbell plots compares average housing prices and housing costs around each data center before and "
+                "after the first permit was issued. "
+                "Each line connects the price in the year before the permit (blue) and the year after "
+                "(red), allowing a visual comparison of price changes at each site. "
+                "In most cases, the red point appears to the right of the blue point, indicating that "
+                "housing prices increased after permitting. While the magnitude of these changes varies across "
+                "locations, the overall pattern suggests a general upward trend."
+            )
         else:
             before_col  = "HC_Score_Before"
             after_col   = "HC_Score_After"
             x_axis_label = "Housing Cost Score"
             is_currency  = False
+            chart_description = (
+                "The dumbbell plot compares housing cost scores around each data center before and after "
+                "the first permit was issued. "
+                "Each line connects the score in the year before the permit (blue) and the year after "
+                "(red). In many cases, the red point appears slightly to the right of the blue point, "
+                "suggesting an increase in housing cost scores after permitting, while in other cases "
+                "the change is slightly or even far negative."
+            )
 
         required_columns = {before_col, after_col, "impact_score"}
         if df.empty or not required_columns.issubset(df.columns):
@@ -1038,7 +1079,6 @@ def server(input, output, session):
         sort_col = "Housing_Change" if metric_choice == "price" else "HC_Score_Change"
         plot_df = plot_df.dropna(subset=[sort_col]).sort_values(sort_col, ascending=False).reset_index(drop=True)
 
-        import json as _json
         chart_rows = []
         for _, row in plot_df.iterrows():
             op    = str(row.get("Operator", "Unknown"))[:26]
@@ -1060,10 +1100,14 @@ def server(input, output, session):
 
         pct_up   = sum(1 for r in chart_rows if r["after"] >= r["before"]) / len(chart_rows) * 100
         ann_col  = "#4ade80" if pct_up >= 50 else "#f87171"
-        rows_json = _json.dumps(chart_rows)
+        rows_json = json.dumps(chart_rows)
 
         html = f"""
     <div style="display:flex;flex-direction:column;height:100%;font-family:monospace;">
+    <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:{COLOR_TEXT_SECONDARY};
+        line-height:1.7;padding:6px 8px 4px;flex-shrink:0;">
+        {chart_description}
+    </div>
     <div style="font-size:11px;color:{ann_col};padding:4px 8px 6px;flex-shrink:0;">
         {pct_up:.0f}% of facilities saw {x_axis_label.lower()} rise after permit
         &nbsp;·&nbsp;
@@ -1075,9 +1119,7 @@ def server(input, output, session):
     <div style="flex:1;overflow-y:auto;min-height:0;">
         <svg id="dumbbell-svg" width="100%" style="display:block;"></svg>
     </div>
-    <div id="dumbbell-tip" style="display:none;position:fixed;pointer-events:none;z-index:9999;
-        background:#1c2128;border:1px solid #30363d;border-radius:6px;padding:8px 12px;
-        font-size:11px;color:#e6edf3;line-height:1.6;box-shadow:0 4px 16px rgba(0,0,0,0.6);"></div>
+
     </div>
     <script>
     (function(){{
@@ -1086,7 +1128,9 @@ def server(input, output, session):
     const C_DARK="#0d1117",C_BDR="#30363d",C_SEC="#8b949e",C_PRI="#e6edf3";
     const ROW_H=30,LBL_W=210,PAD_R=60,PAD_T=8,PAD_B=32;
     const svg=document.getElementById("dumbbell-svg");
-    const tip=document.getElementById("dumbbell-tip");
+    const tip=document.createElement("div");
+    tip.style.cssText="display:none;position:fixed;pointer-events:none;z-index:9999;background:#1c2128;border:1px solid #30363d;border-radius:6px;padding:8px 12px;font-size:11px;color:#e6edf3;line-height:1.6;font-family:monospace;box-shadow:0 4px 16px rgba(0,0,0,0.6);";
+    document.body.appendChild(tip);
     const NS="http://www.w3.org/2000/svg";
     const totalH=ROWS.length*ROW_H+PAD_T+PAD_B;
     svg.setAttribute("height",totalH);
