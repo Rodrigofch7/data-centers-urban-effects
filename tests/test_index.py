@@ -3,11 +3,9 @@ import random
 import pytest
 from pathlib import Path
 from faker import Faker
-from index import scoring,index
+from python_scripts.data_analysis.index import scoring,index
 
-OUTPATH = Path(__file__).parent / "tests_index_dummy_data.csv"
 SEED = 2006
-
 
 # Setting fixture dataset
 def make_data(n):
