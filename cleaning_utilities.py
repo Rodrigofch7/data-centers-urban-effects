@@ -1,12 +1,15 @@
 import pandas as pd
-import numpy as np
 from pathlib import Path
 import re
 
+#--Helper Functions--
 def rename_dfcols(col, prefix_map: dict, code_map: dict, match_pattern):
     """
-    Based on given mappings, renames column of dataframe for colnames in this format:\n
-            {prefix}{code} -> {Elec/Water}{range} (e.g. APCXE004 -> Elec 0-50)
+    Renames column of dataframe for column names in this format:\n
+        {prefix}{code} -> {Elec/Water}{range}\n 
+        (e.g. APCXE004 -> Elec 0-50)\n
+    Variables given in IPUMS are poorly coded (e.g. APCXE004 represents Elec 0-50 column).
+    This function is necessary to recode them to be understandable.
     """
     match = re.match(match_pattern, col)
     if match:
@@ -16,7 +19,87 @@ def rename_dfcols(col, prefix_map: dict, code_map: dict, match_pattern):
             return f"{mapped_prefix} {code_map[code]}"
     return col
 
+def calculate_elecScore(df):
+    """
+    Constructs score by factorizing each electricity price range into 1-6, and 
+    multiplying each of those categories by their proportion of respondents 
+    (effectively a weighted average).
+    """
+    eleclst = df[
+        [
+        "Elec 0-50",
+        "Elec 50-99",
+        "Elec 100-149",
+        "Elec 150-199",
+        "Elec 200-249",
+        "Elec 250+",
+        ]]
+    denom = df["totalElec"].replace(0, pd.NA)
+    return eleclst.mul([1, 2, 3, 4, 5, 6], axis=1).sum(axis=1) / denom
 
+def calculate_waterScore(df):
+    """
+    Constructs score by factorizing each water/sewage price range into 1-6, and 
+    multiplying each of those categories by their proportion of respondents 
+    (effectively a weighted average).
+    """
+    waterlst = df[
+    [
+        "Water 0-125",
+        "Water 125-249",
+        "Water 250-499",
+        "Water 500-749",
+        "Water 750-999",
+        "Water 1000+",
+    ]]
+    denom = df["totalWater"].replace(0, pd.NA)
+    return waterlst.mul([1, 2, 3, 4, 5, 6], axis=1).sum(axis=1) / denom
+
+def calculate_hhcscore(df):
+    """
+    Constructs score by factorizing each household cost price range into 1-13, and 
+    multiplying each of those categories by their proportion of respondents 
+    (effectively a weighted average).
+    """
+    hhclst = df[
+            [
+                "HHC 0-100",
+                "HHC 100-200",
+                "HHC 200-300",
+                "HHC 300-400",
+                "HHC 400-500",
+                "HHC 500-600",
+                "HHC 600-700",
+                "HHC 700-800",
+                "HHC 800-900",
+                "HHC 900-1000",
+                "HHC 1000-1500",
+                "HHC 1500-2000",
+                "HHC 2000+",
+            ]
+        ]
+    denom = df["HHC Total"].replace(0, pd.NA)
+    return  (hhclst.mul([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], axis=1).sum(axis=1)
+            / denom)
+
+def consolidate_hhc_2000_plus(df):
+    """
+    Combines high-end HHC bucket columns into a single 'HHC 2000+' column.
+    Handles inconsistency across ACS survey years where the 2000+ range is split
+    differently (e.g. 2000-2500, 2500-3000, 3000+ in some years).
+    """
+    cols_to_combine = []
+    for col in df.columns:
+        match = re.match(r"^HHC\s([\d\-\+]+)", col)
+        if match:
+            code = match.group(1)
+            if re.match(r"^(2|3)\d{3}-(2|3)\d{3}", code) or re.match(r"^(2|3)\d{3}\+", code):
+                cols_to_combine.append(col)
+    df["HHC 2000+"] = df[cols_to_combine].sum(axis=1)
+    return df
+
+
+#--Main functions (cleaning the data)--
 def cleaning_elec_water():
     """
     Cleaning electricity and water/sewage data by zip code from IPUMS NGHIS.\n
@@ -99,32 +182,12 @@ def cleaning_elec_water():
             + df["Water 1000+"]
         )
         # Creating scores
-        eleclst = df[
-            [
-                "Elec 0-50",
-                "Elec 50-99",
-                "Elec 100-149",
-                "Elec 150-199",
-                "Elec 200-249",
-                "Elec 250+",
-            ]
-        ]
-        waterlst = df[
-            [
-                "Water 0-125",
-                "Water 125-249",
-                "Water 250-499",
-                "Water 500-749",
-                "Water 750-999",
-                "Water 1000+",
-            ]
-        ]
-        denom = df["totalElec"].replace(0, pd.NA)
-        denom2 = df["totalWater"].replace(0, pd.NA)
-        df["elecScore"] = eleclst.mul([1, 2, 3, 4, 5, 6], axis=1).sum(axis=1) / denom
-        df["waterScore"] = waterlst.mul([1, 2, 3, 4, 5, 6], axis=1).sum(axis=1) / denom2
+        df["elecScore"] = calculate_elecScore(df)
+        df["waterScore"] = calculate_waterScore(df)
+        
 
-    # Merging dataframes by isolating the columns they have in common, merging off of that
+    # Merging dataframes by isolating the columns they have in common, merging (by rowstacking)
+    # off of that
     common_cols = set(d2017t2021.columns)
     for df in [d2018t2022, d2019t2023, d2020t2024]:
         common_cols = common_cols.intersection(df.columns)
@@ -162,9 +225,6 @@ def cleaning_elec_water():
             "waterScore",
         ]
     ]
-    #Dropping rows with 11717 and 11798 zip codes, since they only have 2 rows associated, not 4
-    combined_df = combined_df[(combined_df["ZCTA5A"] != "11717") & (combined_df["ZCTA5A"] != "11798")]
-
 
     # Finally, splitting up year into beginning and final year variables
     combined_df[["start_year", "end_year"]] = (
@@ -197,6 +257,7 @@ def cleaning_hhcosts():
     hhc2019t2023 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds268_20235_zcta.csv"),dtype={'ZCTA5A': str})
     hhc2020t2024 = pd.read_csv(Path("monthly_hhc/nhgis0007_ds273_20245_zcta.csv"),dtype={'ZCTA5A': str})
 
+    #Defining maps for renaming column names
     prefix_map = {}
 
     suffix_map = {
@@ -251,41 +312,16 @@ def cleaning_hhcosts():
         ]
 
         # Combining 2000+ columns into one column for consistency between dataframes
-        df["HHC 2000+"] = 0
-        for col in df.columns:
-            match = re.match(r"^(HHC)\s([\d\-]+)", col)
-            if match:
-                prefix, code = match.groups()
-                if re.match(r"^(2|3)\d{3}-(2|3)\d{3}", code):
-                    df["HHC 2000+"] += df[col]
+        consolidate_hhc_2000_plus(df)
         # Getting column totals
-        df["HHC Total"] = df.filter(regex="^HHC\s[\w\d\+\-]+").sum(axis=1)
+        df["HHC Total"] = df.filter(regex=r"^HHC\s[\w\d\+\-]+").sum(axis=1)
         # Making household cost score
-        hhclst = df[
-            [
-                "HHC 0-100",
-                "HHC 100-200",
-                "HHC 200-300",
-                "HHC 300-400",
-                "HHC 400-500",
-                "HHC 500-600",
-                "HHC 600-700",
-                "HHC 700-800",
-                "HHC 800-900",
-                "HHC 900-1000",
-                "HHC 1000-1500",
-                "HHC 1500-2000",
-                "HHC 2000+",
-            ]
-        ]
+        
+        df["HHCScore"] = calculate_hhcscore(df)
 
-        denom = df["HHC Total"].replace(0, pd.NA)
-        df["HHCScore"] = (
-            hhclst.mul([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], axis=1).sum(axis=1)
-            / denom
-        )
 
-    # Merging dataframes by isolating the columns they have in common, merging off of that
+    # Merging dataframes by isolating the columns they have in common, merging (by rowstacking)
+    # off of that
     common_cols = set(hhc2007t2011.columns)
     dflst = [
         hhc2007t2011,
@@ -322,10 +358,8 @@ def cleaning_hhcosts():
         common_cols = common_cols.intersection(df.columns)
     common_cols = list(common_cols)
     dfs = [df1[common_cols] for df1 in dflst]
-    # Ensuring zip codes stay as strings
-    # for df in dfs:
-    #     df["ZCTA5A"] = df["ZCTA5A"].astype(str).str.zfill(5)
     combined_df = pd.concat(dfs, axis=0, ignore_index=True)
+
     # Eliminating extraneous vars
     combined_df = combined_df[
         [
@@ -350,8 +384,6 @@ def cleaning_hhcosts():
         ]
     ]
 
-    #Getting rid of zip codes that don't have at least 10 years of data
-    #combined_df = combined_df[combined_df.groupby("ZCTA5A")["ZCTA5A"].transform("size") >= 9]
     # Finally, splitting up year into beginning and final year for period
     combined_df[["start_year", "end_year"]] = (
         combined_df["YEAR"].str.split("-", expand=True).astype(int)
@@ -370,7 +402,7 @@ def filter_and_pivot():
                                      dtype={"unique(chicagometro_housing$ZCTA5CE20)": str})
     
     #Filtering for U.S. zip codes in chicago_metro_zips
-    chicago_metro_df = chicago_metro_df = all_us_df.merge(
+    chicago_metro_df = all_us_df.merge(
     chicago_metro_zips,
     left_on="ZCTA5A",
     right_on="unique(chicagometro_housing$ZCTA5CE20)",
@@ -386,3 +418,4 @@ def filter_and_pivot():
 if __name__ == "__main__":
     cleaning_elec_water()
     cleaning_hhcosts()
+    filter_and_pivot()
