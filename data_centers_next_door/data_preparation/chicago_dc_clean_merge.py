@@ -98,8 +98,8 @@ def clean_datacenter_housing_data():
         # Add the code to the list:
         codes.append(code)
 
-        # Insert the new column as the first column:
-        chicago_datacenters_2.insert(0, "DataCenter_Code", codes)
+    # Insert the new column as the first column:
+    chicago_datacenters_2.insert(0, "DataCenter_Code", codes)
 
     # Saving cleaned dataset:
     chicago_datacenters_2.to_csv("data/chicago_data_centers_2.csv", index=False)
