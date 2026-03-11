@@ -2,8 +2,8 @@ import pandas as pd
 from pathlib import Path
 from index import scoring, index
 
-FILEPATH = Path(__file__).parent / "chicago_data_centers_final.csv"
-OUTPATH = Path(__file__).parent / "chicag_data_centers_impact_scores.csv"
+FILEPATH = Path(__file__).parent.parent.parent / "data" / "chicago_data_centers_final_w_changes.csv"
+OUTPATH = Path(__file__).parent.parent.parent / "data" / "chicago_data_centers_impact_scores.csv"
 
 variables = ["Housing_Change", "HC_Score_Change"]
 
