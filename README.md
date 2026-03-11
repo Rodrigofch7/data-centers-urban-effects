@@ -138,21 +138,11 @@ This will:
 
 **Run the Dashboard**
 
-Navigate to the dashboard directory:
+From the repo root:
 ```bash
-cd shiny_app
+uv run shiny run shiny_app.app.py
 ```
-Then run:
-```bash
-cd shiny_app -> shiny run --reload app.py
-```
-
-This launches the interactive visualization environment, including:
-1. Data center heat map
-2. Housing price trends (2000–2025)
-3. ZIP-level spatial overlays
-4. Composite index scoring
-
+This launches the interactive visualization environment.
 ---
 
 ## Project Structure
