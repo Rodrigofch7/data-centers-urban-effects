@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    #vis.vega-embed {
+      width: 100%;
+      display: flex;
+    }
+
+    #vis.vega-embed details,
+    #vis.vega-embed details summary {
+      position: relative;
+    }
+  </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-lite@6.1.0"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
+</head>
+<body>
+  <div id="vis"></div>
+  <script>
+    (function(vegaEmbed) {
+      var spec = {"config": {"view": {"continuousWidth": 300, "continuousHeight": 300}}, "data": {"name": "data-3b37cb7c714226459fbe965f05cb061c"}, "mark": {"type": "line", "interpolate": "step-after"}, "encoding": {"x": {"axis": {"title": "Year"}, "field": "First_Operation_Permit", "type": "temporal"}, "y": {"axis": {"title": "Total Data Centers"}, "field": "count", "type": "quantitative"}}, "title": "Number of Data Centers in Chicagoland", "$schema": "https://vega.github.io/schema/vega-lite/v6.1.0.json", "datasets": {"data-3b37cb7c714226459fbe965f05cb061c": [{"First_Operation_Permit": "2000-01-01T00:00:00", "count": 1}, {"First_Operation_Permit": "2007-01-01T00:00:00", "count": 2}, {"First_Operation_Permit": "2008-01-01T00:00:00", "count": 3}, {"First_Operation_Permit": "2010-01-01T00:00:00", "count": 5}, {"First_Operation_Permit": "2011-01-01T00:00:00", "count": 8}, {"First_Operation_Permit": "2013-01-01T00:00:00", "count": 11}, {"First_Operation_Permit": "2014-01-01T00:00:00", "count": 16}, {"First_Operation_Permit": "2015-01-01T00:00:00", "count": 22}, {"First_Operation_Permit": "2016-01-01T00:00:00", "count": 26}, {"First_Operation_Permit": "2017-01-01T00:00:00", "count": 28}, {"First_Operation_Permit": "2018-01-01T00:00:00", "count": 31}, {"First_Operation_Permit": "2020-01-01T00:00:00", "count": 36}, {"First_Operation_Permit": "2021-01-01T00:00:00", "count": 39}, {"First_Operation_Permit": "2022-01-01T00:00:00", "count": 41}, {"First_Operation_Permit": "2023-01-01T00:00:00", "count": 44}, {"First_Operation_Permit": "2024-01-01T00:00:00", "count": 45}]}};
+      var embedOpt = {"mode": "vega-lite"};
+
+      function showError(el, error){
+          el.innerHTML = ('<div style="color:red;">'
+                          + '<p>JavaScript Error: ' + error.message + '</p>'
+                          + "<p>This usually means there's a typo in your chart specification. "
+                          + "See the javascript console for the full traceback.</p>"
+                          + '</div>');
+          throw error;
+      }
+      const el = document.getElementById('vis');
+      vegaEmbed("#vis", spec, embedOpt)
+        .catch(error => showError(el, error));
+    })(vegaEmbed);
+
+  </script>
+</body>
+</html>

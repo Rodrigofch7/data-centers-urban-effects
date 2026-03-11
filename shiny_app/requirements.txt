@@ -15,3 +15,5 @@ census
 pyarrow
 shapely
 fiona
+scipy
+altair

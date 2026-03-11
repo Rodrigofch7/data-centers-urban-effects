@@ -1,94 +1,125 @@
-scraped_city,state,facility,operator,street,zip_code,city_in_desc,first_permit
-Chicago,IL,Hostway Boeing Data Center,"Hostway Services, Inc",100 North Riverside Plaza,60606,Chicago,
-Chicago,IL,Lumen Chicago,Lumen,111 N Canal St,60606,Chicago,
-Chicago,IL,Equinix CH7,Equinix,111 Plaza Drive,60559,Westmont,
-Chicago,IL,T5 Data Centers - T5@Chicago lll,T5 Data Centers,11650 W Grand Ave,60164,Northlake,
-Chicago,IL,CloudHQ ORD Campus,CloudHQ,1200 E Algonquin Rd,60016,Des Plaines,
-Chicago,IL,GDC - Chicago CH4 Data Center,"NTT DATA, Inc.",1200 N Arlington Heights Rd,60143,Itasca,
-Chicago,IL,STACK Infrastructure CHI01B,STACK INFRASTRUCTURE,1301 Touhy Ave,60007,Elk Grove Village,
-Chicago,IL,Lumen Arlington Heights 1,Lumen,"1305 E. Algonquin Avenue,",60005,Arlington Heights,
-Chicago,IL,Apotech Data Center,Apotech,1331 E Business Center Dr,60056,Mt Prospect,
-Chicago,IL,1400 East Devon Avenue (CH3),Digital Realty,1400 East Devon Avenue,60007,Elk Grove Village,
-Chicago,IL,FDCservers.net,FDCservers.net LLC,141 West Jackson Blvd.,60604,Chicago,
-Chicago,IL,CoreSite Chicago (CH2),CoreSite,1432 S Clinton St.,60607,Chicago,
-Chicago,IL,CDW Elk Grove Data Center,CDW Corporation,1441 Touhy Ave,60007,Elk Grove Village,
-Chicago,IL,Aligned ORD-04,Aligned Data Centers,150 NW Point Blvd,60007,Elk Grove Village,
-Chicago,IL,Prime Chicago - Building 1,Prime Data Centers,"1500 E Higgins Rd, Elk Grove Village, IL 60007, USA",60007,Elk Grove Village,
-Chicago,IL,Meta DeKalb - Building 6,Meta,1550 Metaverse Wy,60115,DeKalb,
-Chicago,IL,Prime Chicago - Building 2,Prime Data Centers,1600 Oakton St,60007,Elk Grove Village,
-Chicago,IL,Iron Mountain Data Centers CHI-1,Iron Mountain Data Centers,1680 Touhy Avenue,60018,Des Plaines,
-Chicago,IL,Prime Chicago Data Center Campus,Prime Data Centers,1701 Midway Ct,60007,Elk Grove Village,
-Chicago,IL,NetSource Naperville 2,"NetSource Communications, Inc.",1717 Park St.,60563,Naperville,
-Chicago,IL,EdgeConneX Chicago - EDCCHI01,EdgeConneX,1800 Nicholas Blvd,60007,Elk Grove Village,
-Chicago,IL,DataBank ORD4 - Chicago Tri-State,DataBank,1808 Swift Dr,60523,Oak Brook,
-Chicago,IL,STACK Infrastructure CHI02,STACK INFRASTRUCTURE,1830 Jarvis Ave,60007,Elk Grove Village,
-Chicago,IL,WOWaccess Data Center,WOWaccess,184 Shuman Blvd,60563,Naperville,
-Chicago,IL,CyrusOne CHI5 - Lombard,CyrusOne Data Centers,1850 Springers Drive,60148,Lombard,
-Chicago,IL,Equinix CH3,Equinix,1905 Lunt Avenue,60007,Elk Grove Village,
-Chicago,IL,Stream DC Chicago II,Stream Data Centers,1925 Busse Road,60007,Elk Grove Village,
-Chicago,IL,Naperville Data Center,KARIS Critical,1940 Lucent Ln,60563,Naperville,
-Chicago,IL,Metro Edge IMD1,Metro Edge,1951 W Hastings St,60608,Chicago,
-Chicago,IL,Lumen South Holland 1,Lumen,200 E 166th St,60473,South Holland,
-Chicago,IL,T5 Data Centers - T5@Chicago,T5 Data Centers,200 Innovation Dr,60007,Elk Grove Village,
-Chicago,IL,Lumen Chicago 3,Lumen,200 N LaSalle St,60601,Chicago,
-Chicago,IL,Stream DC Chicago III,Stream Data Centers,2000 Landmeier Rd,60007,Elk Grove Village,
-Chicago,IL,Equinix CH5,Equinix,2001 Lunt Ave,60007,Elk Grove Village,
-Chicago,IL,Lumen Broadview 1,Lumen,2101 Roberts Drive,60155,Broadview,
-Chicago,IL,Cogent Data Center - Chicago 2,"Cogent Communications, Inc.",216 W. Jackson Blvd,60606,Chicago,
-Chicago,IL,2200 Busse Road (CH1),Digital Realty,2200 Busse Road,60007,Elk Grove Village,
-Chicago,IL,NetSource Naperville 1,"NetSource Communications, Inc.",2368 Corporate Lane,60563,Naperville,
-Chicago,IL,Centersquare - Chicago ORD2-A,Csquare,2425 Busse Road,60007,Elk Grove Village,
-Chicago,IL,2425-2553 Edgington Street (ORD22),Digital Realty,2425-2553 Edgington St,60131,Franklin Park,
-Chicago,IL,Connect Chicago,Connect Data Centers by Oppidan,245 Kehoe Blvd,60188,Carol Stream,
-Chicago,IL,HydraVault Data Center,HydraVault,2538 S Wabash Ave,60616,Chicago,
-Chicago,IL,GDC - Chicago CH1 Data Center,"NTT DATA, Inc.",255 Pierce Road,60143,Itasca,
-Chicago,IL,Edged Chicago ORD3,Edged Energy,2725 Bilter Rd,60502,Aurora,
-Chicago,IL,GDC - Chicago CH2 Data Center,"NTT DATA, Inc.",275 Pierce Rd,60143,Itasca,
-Chicago,IL,QTS Chicago 1 DC1,QTS Data Centers,2800 S. Ashland Ave,60608,Chicago,
-Chicago,IL,CyrusOne CHI2 - Aurora,CyrusOne Data Centers,2805 Diehl Rd,60502,Aurora,
-Chicago,IL,Chirisa Chirisa Volo Technology Park YLO-01,Chirisa,300 South Fish Lake Rd,60073,Volo,
-Chicago,IL,CoreWeave Hammond,CoreWeave,301 Digital Xrds Dr,46320,Hammond,
-Chicago,IL,XNet Critical Computing Facility,"XNet Information Systems, Inc.",3080 Ogden Ave,60532,Lisle,
-Chicago,IL,T5 Data Centers - T5@Grayslake Campus,T5 Data Centers,30907 N Alleghany Rd,60030,Grayslake,
-Chicago,IL,Compass Hoffman Estates,Compass Datacenters,3333 Beverly Rd,60179,Hoffman Estates,
-Chicago,IL,Element Critical Chicago Two,Element Critical,341 Haynes Dr,60191,Wood Dale,
-Chicago,IL,Lumen 350 E Cermak,Lumen,350 E Cermark Road,60616,Chicago,
-Chicago,IL,Digital Fortress Chicago,Digital Fortress,360 E 22nd St.,60148,Lombard,
-Chicago,IL,Midway Technology Center,1547 Critical Systems Realty,40 E Garfield Blvd,60615,Chicago,
-Chicago,IL,Legacy - Chicago Byte Exchange,Legacy Investing,400 S LaSalle St,60605,Chicago,
-Chicago,IL,Cogent Data Center - Chicago 3,"Cogent Communications, Inc.",4200 W 40th St,60632,Chicago,
-Chicago,IL,Centersquare - Chicago ORD4-A,Csquare,4513 Western Ave,60532,Lisle,
-Chicago,IL,Aligned ORD-03,Aligned Data Centers,50 NW Point Blvd,60007,Elk Grove Village,
-Chicago,IL,505 N. Railroad Avenue (ORD23),Digital Realty,505 North Railroad Avenue,60164,Northlake,
-Chicago,IL,Aligned ORD-01,Aligned Data Centers,505 Northwest Avenue,60164,Northlake,
-Chicago,IL,GigeNET Chicago,Gigenet,545 E. Algonquin Rd.,60005,Arlington Heights,
-Chicago,IL,CBTS Lombard Data Center II,CBTS,564 Winter Lane,60148,Lombard,
-Chicago,IL,Lumen Chicago 5,Lumen,600 S. Federal,60605,Chicago,
-Chicago,IL,600 S. Federal St. (ORD11),Digital Realty,600 South Federal Street,60605,Chicago,
-Chicago,IL,Lumen Chicago 4,Lumen,600 West Chicago Ave.,60610,Chicago,
-Chicago,IL,TierPoint Chicago - Polk,TierPoint,601 W. Polk St.,60607,Chicago,
-Chicago,IL,Microsoft Northlake,Microsoft,601-605 Northwest Ave,60164,Northlake,
-Chicago,IL,SBA Edge Chicago,SBA Edge,603 Discovery Drive,60185,West Chicago,
-Chicago,IL,Axon Datacenter,Axon Datacenters,7093 Barry St,60018,Rosemont,
-Chicago,IL,Element Critical Chicago One,Element Critical,711 N. Edgewood Ave.,60191,Wood Dale,
-Chicago,IL,711 Ogden Avenue,CloudCenters,711 Ogden Ave,60532,Lisle,
-Chicago,IL,Sinch Data Center,Sinch,717 S Wells St,60607,Chicago,
-Chicago,IL,725 S. Wells,1547 Critical Systems Realty,725 S Wells,60607,Chicago,
-Chicago,IL,DataBank ORD3 - Mount Prospect,DataBank,800 E Business Center Dr,60056,Mt. Prospect,
-Chicago,IL,Skybox Chicago I,Skybox Datacenters,800 E Devon Ave,60007,Elk Grove Village,
-Chicago,IL,NaviSite Oak Brook,"NaviSite, Inc.",800 Jorie Blvd,60523,Oak Brook,
-Chicago,IL,8080 S DuSable Lake Shore Drive,Related Digital,8080 S DuSable Lake Shore Dr,60617,Chicago,
-Chicago,IL,US Signal Chicago IL01,"US Signal Company, LLC",810 Jorie Blvd,60523,Oak Brook,
-Chicago,IL,Serverfarm Chicago Data Center CH1,Serverfarm,840 S. Canal Street,60607,Chicago,
-Chicago,IL,Lumen Chicago 2,Lumen,900 N. Kingsbury Street,60610,Chicago,
-Chicago,IL,TierPoint Chicago - West,TierPoint,9333 West Grand Ave.,60131,Franklin Park,
-Chicago,IL,DLS Internet LITH,DLS Internet Services,950 E. Oak Street,60156,Lake in the Hills,
-Chicago,IL,CyrusOne CHI6 - Wood Dale,CyrusOne Data Centers,Bryn Mawr Ave & Pine Ave,60106,Wood Dale,
-Chicago,IL,Microsoft Plano (IL),Microsoft,Eldamain Rd & Corneils Rd,60545,Plano,
-Chicago,IL,Microsoft Elk Grove Campus,Microsoft,"Elk Grove Technology Park, Innovation Dr & Oakton St",60007,Elk Grove Village,
-Chicago,IL,KARIS DeKalb Campus,KARIS Critical,Gurler Rd & Peace Rd,60115,DeKalb,
-Chicago,IL,KARIS Hoffman Estates,KARIS Critical,Higgins Rd & Illinois Rte 59,60010,Hoffman Estates,
-Chicago,IL,Microsoft Hoffman Estates Campus,Microsoft,Lakewood Blvd,60192,Hoffman Estates,
-Chicago,IL,HW Technology Park,Hillwood Development Company,Millsdale Rd / Schweitzer Rd,60421,Joliet,
-Chicago,IL,Morris Technology Park,Tract,US-6 & County Rd 2000 E,60450,Morris,
-Chicago,IL,WHP Braidwood Campus,Western Hospitality Partners,W Kennedy Rd,60408,Braidwood,
+scraped_city,state,facility,operator,street,zip_code,city_in_desc,first_permit,street_standard,address_count
+Chicago,IL,,,,,,,,3
+Chicago,IL,350 East Cermak Road (ORD10),Digital Realty,350 East Cermak Road,60616,Chicago,,350_e_cermak_rd,24
+Chicago,IL,600 S. Federal St. (ORD11),Digital Realty,600 South Federal Street,60605,Chicago,,600_s_federal_st,4
+Chicago,IL,2200 Busse Road (CH1),Digital Realty,2200 Busse Road,60007,Elk Grove Village,,2200_busse_rd,8
+Chicago,IL,505 N. Railroad Avenue (ORD23),Digital Realty,505 North Railroad Avenue,60164,Northlake,,505_n_railroad_ave,4
+Chicago,IL,9333 Grand Avenue (ORD12),Digital Realty,9333 Grand Avenue,60131,Franklin Park,,9333_grand_ave,2
+Chicago,IL,9355 Grand Ave (ORD13),Digital Realty,9355 Grand Ave,60131,Franklin Park,,9355_grand_ave,2
+Chicago,IL,9377 Grand Ave (ORD14),Digital Realty,9377 Grand Ave,60131,Franklin Park,,9377_grand_ave,2
+Chicago,IL,1400 East Devon Avenue (CH3),Digital Realty,1400 East Devon Avenue,60007,Elk Grove Village,,1400_e_devon_ave,2
+Chicago,IL,2425-2553 Edgington Street (ORD22),Digital Realty,2425-2553 Edgington St,60131,Franklin Park,,2425_2553_edgington_st,2
+Chicago,IL,2299 Busse Road (CH2),Digital Realty,2299 Busse Road,60007,Elk Grove Village,,2299_busse_rd,2
+Chicago,IL,9401 West Grand Avenue (ORD15),Digital Realty,9401 W Grand Ave,60131,Franklin Park,,9401_w_grand_ave,2
+Chicago,IL,CyrusOne CHI5 - Lombard,CyrusOne Data Centers,1850 Springers Drive,60148,Lombard,,1850_springers_dr,2
+Chicago,IL,GDC - Chicago CH1 Data Center,"NTT DATA, Inc.",255 Pierce Road,60143,Itasca,,255_pierce_rd,4
+Chicago,IL,CyrusOne CHI2 - Aurora,CyrusOne Data Centers,2805 Diehl Rd,60502,Aurora,,2805_diehl_rd,2
+Chicago,IL,Netrality - 717 South Wells Chicago Data Center,Netrality,"717 South Wells Street, Chicago, IL, USA",60607,Chicago,,717_s_wells_st_chicago_il_usa,2
+Chicago,IL,Centersquare - Chicago ORD4-A,Csquare,4513 Western Ave,60532,Lisle,,4513_western_ave,2
+Chicago,IL,T5 Data Centers - T5@Chicago,T5 Data Centers,200 Innovation Dr,60007,Elk Grove Village,,200_innovation_dr,2
+Chicago,IL,Serverfarm Chicago Data Center CH1,Serverfarm,840 S. Canal Street,60607,Chicago,,840_s_canal_st,4
+Chicago,IL,Prime Chicago - Building 1,Prime Data Centers,"1500 E Higgins Rd, Elk Grove Village, IL 60007, USA",60007,Elk Grove Village,,1500_e_higgins_rd_elk_grove_village_il_60007_usa,2
+Chicago,IL,Prime Chicago Data Center Campus,Prime Data Centers,1701 Midway Ct,60007,Elk Grove Village,,1701_midway_ct,4
+Chicago,IL,Iron Mountain Data Centers CHI-1,Iron Mountain Data Centers,1680 Touhy Avenue,60018,Des Plaines,,1680_touhy_ave,2
+Chicago,IL,CyrusOne CHI1 - Aurora,CyrusOne Data Centers,2905 Diehl Rd.,60148,Lombard,,2905_diehl_rd,2
+Chicago,IL,Legacy - Chicago Byte Exchange,Legacy Investing,400 S LaSalle St,60605,Chicago,,400_s_lasalle_st,2
+Chicago,IL,Prime Chicago - Building 2,Prime Data Centers,1600 Oakton St,60007,Elk Grove Village,,1600_oakton_st,2
+Chicago,IL,Apotech Data Center,Apotech,1331 E Business Center Dr,60056,Mt Prospect,,1331_e_business_center_dr,2
+Chicago,IL,Element Critical Chicago One,Element Critical,711 N. Edgewood Ave.,60191,Wood Dale,,711_n_edgewood_ave,2
+Chicago,IL,Skybox Chicago I,Skybox Datacenters,800 E Devon Ave,60007,Elk Grove Village,,800_e_devon_ave,2
+Chicago,IL,DataBank ORD4 - Chicago Tri-State,DataBank,1808 Swift Dr,60523,Oak Brook,,1808_swift_dr,8
+Chicago,IL,DataBank ORD3 - Mount Prospect,DataBank,800 E Business Center Dr,60056,Mt. Prospect,,800_e_business_center_dr,2
+Chicago,IL,Element Critical Chicago Two,Element Critical,341 Haynes Dr,60191,Wood Dale,,341_haynes_dr,2
+Chicago,IL,Cogent Data Center - Chicago 2,"Cogent Communications, Inc.",216 W. Jackson Blvd,60606,Chicago,,216_w_jackson_blvd,6
+Chicago,IL,Cogent Data Center - Chicago 1,"Cogent Communications, Inc.",427 LaSalle St,60606,Chicago,,427_lasalle_st,2
+Chicago,IL,GigeNET Chicago,GigeNET,545 E Algonquin Rd,60005,Arlington Heights,,545_e_algonquin_rd,2
+Chicago,IL,Equinix CH7,Equinix,111 Plaza Drive,60559,Westmont,,111_plaza_dr,2
+Chicago,IL,TierPoint Chicago - West,TierPoint,9333 West Grand Ave.,60131,Franklin Park,,9333_w_grand_ave,2
+Chicago,IL,US Signal Chicago IL01,"US Signal Company, LLC",810 Jorie Blvd,60523,Oak Brook,,810_jorie_blvd,2
+Chicago,IL,STACK Infrastructure CHI01B,STACK INFRASTRUCTURE,1301 Touhy Ave,60007,Elk Grove Village,,1301_touhy_ave,2
+Chicago,IL,TierPoint Chicago - Polk,TierPoint,601 W. Polk St.,60607,Chicago,,601_w_polk_st,6
+Chicago,IL,Stream DC Chicago I,Stream Data Centers,2080 Lunt Avenue,60007,Elk Grove Village,,2080_lunt_ave,2
+Chicago,IL,EdgeConneX Chicago - EDCCHI02,EdgeConneX,2021 Lunt Ave,60007,Elk Grove Village,,2021_lunt_ave,2
+Chicago,IL,HydraVault Data Center,HydraVault,2538 S Wabash Ave,60616,Chicago,,2538_s_wabash_ave,2
+Chicago,IL,Centersquare - Chicago ORD1-A,Csquare,350 East Cermak,60616,Chicago,,350_e_cermak,6
+Chicago,IL,SBA Edge Chicago,SBA Edge,603 Discovery Drive,60185,West Chicago,,603_discovery_dr,2
+Chicago,IL,CoreSite Chicago (CH1),CoreSite,427 South LaSalle,60605,Chicago,,427_s_lasalle,2
+Chicago,IL,QTS Chicago 1 DC1,QTS Data Centers,2800 S. Ashland Ave,60608,Chicago,,2800_s_ashland_ave,2
+Chicago,IL,Metro Edge IMD1,Metro Edge,1951 W Hastings St,60608,Chicago,,1951_w_hastings_st,4
+Chicago,IL,Stream DC Chicago II,Stream Data Centers,1925 Busse Road,60007,Elk Grove Village,,1925_busse_rd,2
+Chicago,IL,725 S. Wells,1547 Critical Systems Realty,725 S Wells,60607,Chicago,,725_s_wells,4
+Chicago,IL,CDW Elk Grove Data Center,CDW Corporation,1441 Touhy Ave,60007,Elk Grove Village,,1441_touhy_ave,4
+Chicago,IL,Digital Fortress Chicago,Digital Fortress,360 E 22nd St.,60148,Lombard,,360_e_22nd_st,6
+Chicago,IL,GDC - Chicago CH2 Data Center,"NTT DATA, Inc.",275 Pierce Rd,60143,Itasca,,275_pierce_rd,2
+Chicago,IL,Cogent Data Center - Chicago 3,"Cogent Communications, Inc.",4200 W 40th St,60632,Chicago,,4200_w_40th_st,2
+Chicago,IL,365 Data Centers - Chicago 1,365 Data Centers,427 S La Salle St,60605,Chicago,,427_s_la_salle_st,2
+Chicago,IL,Aligned ORD-01,Aligned Data Centers,505 Northwest Avenue,60164,Northlake,,505_northwest_ave,6
+Chicago,IL,XNet Critical Computing Facility,"XNet Information Systems, Inc.",3080 Ogden Ave,60532,Lisle,,3080_ogden_ave,2
+Chicago,IL,Microsoft Northlake,Microsoft,601-605 Northwest Ave,60164,Northlake,,601_605_northwest_ave,2
+Chicago,IL,711 Ogden Avenue,CloudCenters,711 Ogden Ave,60532,Lisle,,711_ogden_ave,2
+Chicago,IL,Centersquare - Chicago ORD2-A,Csquare,2425 Busse Road,60007,Elk Grove Village,,2425_busse_rd,2
+Chicago,IL,CloudHQ ORD Campus,CloudHQ,1200 E Algonquin Rd,60016,Des Plaines,,1200_e_algonquin_rd,8
+Chicago,IL,CoreSite Chicago (CH2),CoreSite,1432 S Clinton St.,60607,Chicago,,1432_s_clinton_st,2
+Chicago,IL,Equinix CH3,Equinix,1905 Lunt Avenue,60007,Elk Grove Village,,1905_lunt_ave,2
+Chicago,IL,STACK Infrastructure CHI02,STACK INFRASTRUCTURE,1830 Jarvis Ave,60007,Elk Grove Village,,1830_jarvis_ave,2
+Chicago,IL,CoreWeave Hammond,CoreWeave,301 Digital Xrds Dr,46320,Hammond,,301_digital_xrds_dr,2
+Chicago,IL,CyrusOne CHI6 - Wood Dale,CyrusOne Data Centers,Bryn Mawr Ave & Pine Ave,60106,Wood Dale,,bryn_mawr_ave_pine_ave,2
+Chicago,IL,Chirisa Chirisa Volo Technology Park YLO-02,Chirisa,300 South Fish Lake Rd,60073,Volo,,300_s_fish_lake_rd,6
+Chicago,IL,Chicago Board of Trade Building,"Apollo Global Management, Inc.",141 West Jackson,60604,Chicago,,141_w_jackson,2
+Chicago,IL,Midway Technology Center,1547 Critical Systems Realty,40 E Garfield Blvd,60615,Chicago,,40_e_garfield_blvd,2
+Chicago,IL,NetSource Naperville 1,"NetSource Communications, Inc.",2368 Corporate Lane,60563,Naperville,,2368_corporate_ln,2
+Chicago,IL,T5 Data Centers - T5@Chicago V,T5 Data Centers,within,Elk Grove Village,TBA,,within,2
+Chicago,IL,Stream DC Chicago III,Stream Data Centers,2000 Landmeier Rd,60007,Elk Grove Village,,2000_landmeier_rd,2
+Chicago,IL,Microsoft Hoffman Estates - Building 2,Microsoft,Lakewood Blvd,60192,Hoffman Estates,,lakewood_blvd,10
+Chicago,IL,Aligned ORD-03,Aligned Data Centers,50 NW Point Blvd,60007,Elk Grove Village,,50_nw_point_blvd,2
+Chicago,IL,Naperville Data Center,KARIS Critical,1940 Lucent Ln,60563,Naperville,,1940_lucent_ln,2
+Chicago,IL,T5 Data Centers - T5@Chicago lll,T5 Data Centers,11650 W Grand Ave,60164,Northlake,,11650_w_grand_ave,2
+Chicago,IL,Aligned ORD-04,Aligned Data Centers,150 NW Point Blvd,60007,Elk Grove Village,,150_nw_point_blvd,2
+Chicago,IL,Microsoft Elk Grove Campus,Microsoft,"Elk Grove Technology Park, Innovation Dr & Oakton St",60007,Elk Grove Village,,elk_grove_technology_park_innovation_dr_oakton_st,8
+Chicago,IL,T5 Data Centers - T5@Grayslake Campus,T5 Data Centers,30907 N Alleghany Rd,60030,Grayslake,,30907_n_alleghany_rd,2
+Chicago,IL,ColoHouse Chicago Wells,ColoHouse,725 S Wells Street,60607,Chicago,,725_s_wells_st,2
+Chicago,IL,EdgeConneX Chicago - EDCCHI01,EdgeConneX,1800 Nicholas Blvd,60007,Elk Grove Village,,1800_nicholas_blvd,2
+Chicago,IL,HW Technology Park,Hillwood Development Company,Millsdale Rd / Schweitzer Rd,60421,Joliet,,millsdale_rd_schweitzer_rd,2
+Chicago,IL,Equinix CH5,Equinix,2001 Lunt Ave,60007,Elk Grove Village,,2001_lunt_ave,2
+Chicago,IL,CDC - Chicago CH5 Data Center,"NTT DATA, Inc.",1250 N Arlington Heights Rd,60143,Itasca,,1250_n_arlington_heights_rd,2
+Chicago,IL,FDCservers.net,FDCservers.net LLC,141 West Jackson Blvd.,60604,Chicago,,141_w_jackson_blvd,2
+Chicago,IL,Edged Chicago ORD2,Edged Energy,2835 Bilter Rd,60502,Aurora,,2835_bilter_rd,2
+Chicago,IL,Connect Chicago,Connect Data Centers by Oppidan,245 Kehoe Blvd,60188,Carol Stream,,245_kehoe_blvd,2
+Chicago,IL,Edged Chicago ORD3,Edged Energy,2725 Bilter Rd,60502,Aurora,,2725_bilter_rd,8
+Chicago,IL,8080 S DuSable Lake Shore Drive,Related Digital,8080 S DuSable Lake Shore Dr,60617,Chicago,,8080_s_dusable_lake_shore_dr,2
+Chicago,IL,Edged Chicago ORD1,Edged Energy,2815 Bilter Rd,60502,Aurora,,2815_bilter_rd,2
+Chicago,IL,GDC - Chicago CH4 Data Center,"NTT DATA, Inc.",1200 N Arlington Heights Rd,60143,Itasca,,1200_n_arlington_heights_rd,2
+Chicago,IL,Edged Chicago Campus,Edged Energy,2725-2815 Bilter Rd,60502,Aurora,,2725_2815_bilter_rd,2
+Chicago,IL,Lumen Chicago 3,Lumen,200 N LaSalle St,60601,Chicago,,200_n_lasalle_st,2
+Chicago,IL,Meta DeKalb Campus,Meta,1550-2050 Metaverse Wy,60115,DeKalb,,1550_2050_metaverse_wy,2
+Chicago,IL,Microsoft Plano (IL),Microsoft,Eldamain Rd & Corneils Rd,60545,Plano,,eldamain_rd_corneils_rd,2
+Chicago,IL,NTT Chicago Campus,"NTT DATA, Inc.",255-275 Pierce Rd,60143,Itasca,,255_275_pierce_rd,2
+Chicago,IL,KARIS DeKalb Campus,KARIS Critical,Gurler Rd & Peace Rd,60115,DeKalb,,gurler_rd_peace_rd,2
+Chicago,IL,Morris Technology Park,Tract,US-6 & County Rd 2000 E,60450,Morris,,us_6_county_rd_2000_e,2
+Chicago,IL,KARIS Hoffman Estates,KARIS Critical,Higgins Rd & Illinois Rte 59,60010,Hoffman Estates,,higgins_rd_illinois_rte_59,2
+Chicago,IL,WOWaccess Data Center,WOWaccess,184 Shuman Blvd,60563,Naperville,,184_shuman_blvd,2
+Chicago,IL,Compass Hoffman Estates,Compass Datacenters,3333 Beverly Rd,60179,Hoffman Estates,,3333_beverly_rd,2
+Chicago,IL,Axon Datacenter,Axon Datacenters,7093 Barry St,60018,Rosemont,,7093_barry_st,2
+Chicago,IL,DLS Internet LITH,DLS Internet Services,950 E. Oak Street,60156,Lake in the Hills,,950_e_oak_st,2
+Chicago,IL,Lumen South Holland 1,Lumen,200 E 166th St,60473,South Holland,,200_e_166th_st,2
+Chicago,IL,CBTS Lombard Data Center I,CBTS,1850 W Springer,60148,Lombard,,1850_w_springer,2
+Chicago,IL,WHP Braidwood Campus,Western Hospitality Partners,W Kennedy Rd,60408,Braidwood,,w_kennedy_rd,18
+Chicago,IL,Hostrunway Lombard,Hostrunway,1850 Springer Dr,60148,Lombard,,1850_springer_dr,2
+Chicago,IL,NetSource Naperville 2,"NetSource Communications, Inc.",1717 Park St.,60563,Naperville,,1717_park_st,2
+Chicago,IL,NaviSite Oak Brook,"NaviSite, Inc.",800 Jorie Blvd,60523,Oak Brook,,800_jorie_blvd,2
+Chicago,IL,427 LaSalle,CoreSite,427 South LaSalle Street,60605,Chicago,,427_s_lasalle_st,2
+Chicago,IL,Sinch Data Center,Sinch,717 S Wells St,60607,Chicago,,717_s_wells_st,2
+Chicago,IL,Lumen Chicago,Lumen,111 N Canal St,60606,Chicago,,111_n_canal_st,2
+Chicago,IL,Lumen 350 E Cermak,Lumen,350 E Cermark Road,60616,Chicago,,350_e_cermark_rd,2
+Chicago,IL,Meta DeKalb - Building 5,Meta,1550 Metaverse Wy,60115,DeKalb,,1550_metaverse_wy,4
+Chicago,IL,Lumen Chicago 4,Lumen,600 West Chicago Ave.,60610,Chicago,,600_w_chicago_ave,2
+Chicago,IL,Lumen Chicago 5,Lumen,600 S. Federal,60605,Chicago,,600_s_federal,2
+Chicago,IL,Meta DeKalb - Building 4,Meta,1750 Metaverse Wy,60115,DeKalb,,1750_metaverse_wy,4
+Chicago,IL,Meta DeKalb - Building 2,Meta,2050 Metaverse Wy,60115,DeKalb,,2050_metaverse_wy,4
+Chicago,IL,Lumen Arlington Heights 1,Lumen,"1305 E. Algonquin Avenue,",60005,Arlington Heights,,1305_e_algonquin_ave,2
+Chicago,IL,Lumen Broadview 1,Lumen,2101 Roberts Drive,60155,Broadview,,2101_roberts_dr,2
+Chicago,IL,Hostway Boeing Data Center,"Hostway Services, Inc",100 North Riverside Plaza,60606,Chicago,,100_n_riverside_plaza,2
+Chicago,IL,CBTS Lombard Data Center II,CBTS,564 Winter Lane,60148,Lombard,,564_winter_ln,2
+Chicago,IL,Lumen Chicago 2,Lumen,900 N. Kingsbury Street,60610,Chicago,,900_n_kingsbury_st,2
+Chicago,IL,T5 Data Centers - T5@Chicago V,T5 Data Centers,within Elk Grove Village,TBA,Elk Grove Village,,within_elk_grove_village,1
+Chicago,IL,Colovore ORD01,Colovore,"within Aurora, 41 miles from Chicago",TBA,Aurora,,within_aurora_41_miles_from_chicago,1
