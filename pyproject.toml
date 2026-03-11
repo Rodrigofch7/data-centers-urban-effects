@@ -8,4 +8,6 @@ dependencies = [
     "altair>=6.0.0",
     "pandas>=3.0.1",
     "pytest>=9.0.2",
+    "faker>=40.5.1",
+    "ruff>=0.14.10",
 ]

@@ -1,0 +1,17 @@
+shiny
+shinywidgets
+plotly
+pandas
+numpy
+statsmodels
+scipy
+patsy
+geopandas
+folium
+branca
+matplotlib
+scikit-learn
+census
+pyarrow
+shapely
+fiona
