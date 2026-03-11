@@ -108,7 +108,7 @@ def clean_datacenter_housing_data():
 
 def clean_monthHHC():
     # Loading dataset:
-    housing_cost_data = pd.read_csv("data/sinans_data/monthHHC_cleaned.csv")
+    housing_cost_data = pd.read_csv("data/clean_elecwater_hc_scores/monthHHC_cleaned.csv")
 
     # Keeping Chicago datacenters zipcodes:
     zipcodes = [ 46320, 60005, 60007, 60010, 60016, 60018, 60056, 60115, 
