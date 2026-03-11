@@ -1,3 +1,6 @@
+# To test run: python -m pytest tests/test_webscrapping.py
+
+
 import pytest
 # Reference: folder_name.file_name
 from data_centers_next_door.webscrapping.webscrapping_data_centers import (

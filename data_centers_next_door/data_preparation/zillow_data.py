@@ -1,3 +1,5 @@
+# To test run: python -m pytest tests/test_zillow.py
+
 import pandas as pd
 import numpy as np
 import geopandas as gpd

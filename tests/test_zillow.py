@@ -1,3 +1,5 @@
+# To test run: python -m pytest tests/test_zillow.py
+
 import pytest
 import pandas as pd
 # Import from: folder_name.file_name

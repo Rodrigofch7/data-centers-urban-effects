@@ -24,7 +24,7 @@ INPUT_PATH        = 'data/housing_and_data_centers_data/zillow_yearly_estimates_
 MAP_PATH          = 'data/spatial_data/cities/ChicagoMetroArea.parquet'
 DC_INPUT_PATH     = 'data/spatial_data/centers/DataCentersChicagoMetroArea.parquet'
 ENERGY_WATER_PATH = 'data/energy and water data/nhgis_energy_water_wide.csv'
-HHC_PATH          = 'data/sinans_data/pivoted_HHCScores.csv'
+HHC_PATH          = 'data/clean_elecwater_hc_scores/pivoted_HHCScores.csv'
 OUTPUT_CITIES     = 'shiny_app/Data/Chicago.gpkg'
 OUTPUT_CENTERS    = 'shiny_app/Data/ChicagoDataCenters.gpkg'
 
