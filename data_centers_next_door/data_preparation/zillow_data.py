@@ -26,14 +26,14 @@ def process_zillow_yearly(df):
 
 
 # 1. Load the parquet to get the full ZIP anchor
-parquet_path = "/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/spatial_data/cities/ChicagoMetroArea.parquet"
+parquet_path = "data/spatial_data/cities/ChicagoMetroArea.parquet"
 gdf = gpd.read_parquet(parquet_path)
 gdf["ZCTA5CE20"] = gdf["ZCTA5CE20"].astype(str)
 anchor = gdf[["ZCTA5CE20"]].drop_duplicates().copy()
 print(f"Parquet anchor: {len(anchor):,} unique ZIP codes")
 
 # 2. Load and process the Zillow data
-file_path = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/zillow_chicago_metro_region.csv'
+file_path = 'data/housing_and_data_centers_data/zillow_chicago_metro_region.csv'
 df = pd.read_csv(file_path)
 processed_df = process_zillow_yearly(df)
 
@@ -56,6 +56,6 @@ if missing:
     print(f"  {missing}")
 
 # 5. Save
-output_path = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/zillow_yearly_estimates_chicago_metro.csv'
+output_path = 'data/zillow_yearly_estimates_chicago_metro.csv'
 merged.to_csv(output_path, index=False)
 print(f"\nFile successfully saved to: {output_path}")
