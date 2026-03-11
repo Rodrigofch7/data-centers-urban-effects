@@ -11,7 +11,7 @@ import matplotlib.colors as mcolors
 import io, base64
 import json
 
-# To run: uv run shiny run shiny_app/app.py  
+# To run: uv run shiny run shiny_app.app.py or uv run shiny run shiny_app/app.py  
 # To deploy: uv run rsconnect deploy shiny shiny_app/
 
 # =============================================================================
