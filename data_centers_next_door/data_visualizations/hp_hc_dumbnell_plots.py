@@ -129,18 +129,17 @@ def main():
     """
 
     # Loading dataset:
-    df = pd.read_csv("data_analysis/chicago_data_centers_final.csv")
+    df = pd.read_csv("data/chicago_data_centers_final.csv")
 
     # Creating charts:
     housing_price_chart = housing_price_dumbbell(df)
     housing_cost_chart = housing_costs_dumbbell(df)
 
     # Saving them:
-    housing_price_chart.save("data/housing_price_dumbbell.html")
-    housing_cost_chart.save("data/housing_cost_dumbbell.html")
+    housing_price_chart.save("data/Visualizations/housing_price_dumbbell.html")
+    housing_cost_chart.save("data/Visualizations/housing_cost_dumbbell.html")
 
     print("Dumbnell plots saved in data folder.")
-
 
 if __name__ == "__main__":
     main()
