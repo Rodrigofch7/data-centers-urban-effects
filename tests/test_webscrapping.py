@@ -1,6 +1,6 @@
 import pytest
 # Reference: folder_name.file_name
-from python_scripts.webscrapping_data_centers import (
+from data_centers_next_door.webscrapping.webscrapping_data_centers import (
     parse_datacenter_html, 
     CITIES, 
     CITY_TO_STATE

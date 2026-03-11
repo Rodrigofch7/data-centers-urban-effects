@@ -1,11 +1,11 @@
 import pytest
 import pandas as pd
 from pathlib import Path
-from cleaning_utilities import rename_dfcols,calculate_elecScore,consolidate_hhc_2000_plus
+from data_centers_next_door.hc_and_utility_scores.cleaning_utilities import rename_dfcols,calculate_elecScore,consolidate_hhc_2000_plus
 @pytest.fixture
 def loading_data():
-    elec_water = pd.read_csv(Path("elec_water_cleaned.csv"), dtype={'ZCTA5A': str})
-    monthHHC = pd.read_csv(Path("monthHHC_cleaned.csv"), dtype={'ZCTA5A': str})
+    elec_water = pd.read_csv(Path("data/clean_elecwater_hc_scores/elec_water_cleaned.csv"), dtype={'ZCTA5A': str})
+    monthHHC = pd.read_csv(Path("data/clean_elecwater_hc_scores/monthHHC_cleaned.csv"), dtype={'ZCTA5A': str})
     return {
         "elec_water": elec_water,
         "monthHHC": monthHHC,

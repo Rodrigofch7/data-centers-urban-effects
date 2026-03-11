@@ -3,7 +3,7 @@ import random
 import pytest
 from pathlib import Path
 from faker import Faker
-from python_scripts.data_analysis.index import scoring,index
+from data_centers_next_door.data_analysis.index import scoring,index
 
 SEED = 2006
 
