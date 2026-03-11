@@ -2,7 +2,7 @@ import pandas as pd
 import altair as alt
 from pathlib import Path
 
-FILENAME = Path("datacenters_housing_merged.csv")
+FILENAME = Path("data/housing_and_data_centers_data/datacenters_housing_merged.csv")
 #Color palette
 MAROON      = "#800000"
 MAROON_DARK = "#5a0000"
@@ -43,7 +43,7 @@ def datacenters_vis_zipcode():
     anchor="start"
     ).interactive()
     
-    chart.save("datacenters_vis_zipcode.html")
+    chart.save("data/Visualizations/datacenters_vis_zipcode.html")
 
 def datacenters_vis_company():
     """
@@ -73,7 +73,7 @@ def datacenters_vis_company():
     anchor="start"
     ).interactive()
     
-    chart.save("datacenters_vis_company.html")
+    chart.save("data/Visualizations/datacenters_vis_company.html")
 
 if __name__ == "__main__":
     datacenters_vis_zipcode()
