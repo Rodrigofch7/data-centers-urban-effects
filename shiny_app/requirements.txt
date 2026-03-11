@@ -1,19 +1,29 @@
-shiny
-shinywidgets
-plotly
+# Core data
 pandas
 numpy
-statsmodels
-scipy
-patsy
-geopandas
-folium
-branca
-matplotlib
-scikit-learn
-census
 pyarrow
+
+# Geospatial
+geopandas
 shapely
 fiona
-scipy
+folium
+branca
+
+# Visualization
+matplotlib
+plotly
 altair
+
+# Statistics & ML
+scipy
+statsmodels
+scikit-learn
+patsy
+
+# Dashboard
+shiny
+shinywidgets
+
+# Census & utilities
+census

@@ -11,8 +11,8 @@ import matplotlib.colors as mcolors
 import io, base64
 import json
 
-# To run:    cd shiny_app -> shiny run --reload app.py
-# To deploy: cd shiny_app -> rsconnect deploy shiny .
+# To run: uv run shiny run shiny_app.app.py or uv run shiny run shiny_app/app.py  
+# To deploy: uv run rsconnect deploy shiny shiny_app/
 
 # =============================================================================
 # BRAND & DESIGN TOKENS
