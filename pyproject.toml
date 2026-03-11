@@ -11,6 +11,7 @@ dependencies = [
     "geopandas>=1.0.0",
     "shapely>=2.0.0",
     "pyarrow>=15.0.0",
+    "beautifulsoup4>=4.12.0",
 
     # Census & geolocation
     "census>=0.8.19",
