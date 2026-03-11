@@ -1,11 +1,11 @@
 [project]
-name = "project-datacenter-urban-effects"
+name = "python_scripts"
 version = "0.1.0"
 description = "Analyzing the impact of data centers on urban metrics across the Chicago metro area"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    # Core data
+    "altair>=6.0.0",
     "pandas>=2.3.3",
     "numpy>=2.0.0",
     "geopandas>=1.0.0",
@@ -52,3 +52,7 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -4,7 +4,7 @@ import webbrowser
 from pathlib import Path
 
 # Importing chicago data centers as pandas dataframe
-FILEPATH = Path(__file__).parent.parent.parent / "data_analysis" / "chicago_data_centers_final.csv"
+FILEPATH = Path(__file__).parent.parent.parent / "data" / "chicago_data_centers_impact_scores.csv"
 
 chicago_data_centers = pd.read_csv(FILEPATH)
 
