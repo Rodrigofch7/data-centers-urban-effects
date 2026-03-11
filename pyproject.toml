@@ -1,5 +1,5 @@
 [project]
-name = "python_scripts"
+name = "data_centers_next_door"
 version = "0.1.0"
 description = "Analyzing the impact of data centers on urban metrics across the Chicago metro area"
 readme = "README.md"
