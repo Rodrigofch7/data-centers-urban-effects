@@ -1,7 +1,7 @@
 import pandas as pd
 import altair as alt
 
-def impactscore_barchart(path = "data_analysis/chicag_data_centers_impact_scores.csv"
+def impactscore_barchart(path = "data/chicago_data_centers_impact_scores.csv"
                          ) -> alt.Chart:
     """
     This function creates a bar chart of each data center impact score.

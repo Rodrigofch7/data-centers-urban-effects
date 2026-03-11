@@ -5,7 +5,6 @@ def dumbbell_plot(
     df: pd.DataFrame,
     before_var: str,
     after_var: str,
-    change_var: str,
     value_lab: str,
     title: str,
     before_lab: str = "Before Permit",
@@ -22,7 +21,6 @@ def dumbbell_plot(
         df: DataFrame containing the required columns.
         before_var: Column name for the "before" value.
         after_var: Column name for the "after" value.
-        change_var: Column name for the change value for the tooltip.
         value_lab: Readable label for the metric.
         title: Chart title.
         before_lab: Label for the before period in legend.
@@ -35,11 +33,11 @@ def dumbbell_plot(
         The dumbbell plot.
     """
     plot = df[[dc_code, operator_var, address_var, before_var, 
-               after_var, change_var]].copy()
+               after_var]].copy()
 
     # Reshaping data to long format:
     points = plot.melt(
-        id_vars=[dc_code, operator_var, address_var, change_var],
+        id_vars=[dc_code, operator_var, address_var],
         value_vars=[before_var, after_var],
         var_name="period",
         value_name="value")
@@ -48,15 +46,12 @@ def dumbbell_plot(
     points["period"] = points["period"].map(
         {before_var: before_lab, after_var: after_lab})
 
-    # Sorting data centers by change:
-    sort = plot.sort_values(change_var, ascending=False)[dc_code].tolist()
-
     # Connecting lines between before and after:
     lines = (
         alt.Chart(plot)
         .mark_rule(color="gray", strokeWidth=3)
         .encode(
-            y=alt.Y(f"{dc_code}:N", sort=sort, title="Data Center"),
+            y=alt.Y(f"{dc_code}:N", title="Data Center"),
             x=alt.X(f"{before_var}:Q", title=value_lab, scale=alt.Scale(zero=False)),
             x2=f"{after_var}:Q",
             tooltip=[
@@ -64,13 +59,12 @@ def dumbbell_plot(
                 alt.Tooltip(f"{operator_var}:N", title="Operator"),
                 alt.Tooltip(f"{address_var}:N", title="Address"),
                 alt.Tooltip(f"{before_var}:Q", title=before_lab, format=",.2f"),
-                alt.Tooltip(f"{after_var}:Q", title=after_lab, format=",.2f"),
-                alt.Tooltip(f"{change_var}:Q", title="Change", format=",.2f"),]))
+                alt.Tooltip(f"{after_var}:Q", title=after_lab, format=",.2f")]))
 
     # Creating endpoints for before and after:
     dots = (alt.Chart(points).mark_point(size=70, filled=True)
         .encode(
-            y=alt.Y(f"{dc_code}:N", sort=sort, title="Data Center"),
+            y=alt.Y(f"{dc_code}:N", title="Data Center"),
             x=alt.X("value:Q", title=value_lab, scale=alt.Scale(zero=False)),
             color=alt.Color(
                 "period:N", title="Period", 
@@ -81,8 +75,7 @@ def dumbbell_plot(
                 alt.Tooltip(f"{operator_var}:N", title="Operator"),
                 alt.Tooltip(f"{address_var}:N", title="Address"),
                 alt.Tooltip("period:N", title="Period"),
-                alt.Tooltip("value:Q", title=value_lab, format=",.2f"),
-                alt.Tooltip(f"{change_var}:Q", title="Change", format=",.2f")]))
+                alt.Tooltip("value:Q", title=value_lab, format=",.2f")]))
     
     chart = ((lines + dots).properties(title=title,
                                          width=1200,
@@ -100,7 +93,6 @@ def housing_price_dumbbell(df: pd.DataFrame) -> alt.Chart:
         df=df,
         before_var="Housing_Avg_Price_Before_Permit",
         after_var="Housing_Avg_Price_After_Permit",
-        change_var="Housing_Change",
         value_lab="Average Housing Price",
         title="Housing Prices Before and After Data Center Permit",
         before_lab="Before Permit",
@@ -116,7 +108,6 @@ def housing_costs_dumbbell(df: pd.DataFrame) -> alt.Chart:
         df=df,
         before_var="HC_Score_Before",
         after_var="HC_Score_After",
-        change_var="HC_Score_Change",
         value_lab="Housing Cost Score",
         title="Housing Cost Scores Before and After Data Center Permit",
         before_lab="Before Permit",
