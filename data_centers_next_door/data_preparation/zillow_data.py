@@ -56,6 +56,7 @@ if missing:
     print(f"  {missing}")
 
 # 5. Save
-output_path = 'data/zillow_yearly_estimates_chicago_metro.csv'
+output_path = 'data/housing_and_data_centers_data/zillow_yearly_estimates_chicago_metro.csv'
 merged.to_csv(output_path, index=False)
 print(f"\nFile successfully saved to: {output_path}")
+
