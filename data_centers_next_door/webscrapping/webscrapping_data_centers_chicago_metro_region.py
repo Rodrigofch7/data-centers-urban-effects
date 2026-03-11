@@ -1,46 +1,54 @@
+# To test run: python -m pytest tests/test_webscrapping_data_centers_chicago_metro_region.py
+# To run:      uv run python -m data_centers_next_door.webscrapping.webscrapping_data_centers_chicago_metro_region
+
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
+from pathlib import Path
 import time
 
-# --- Configuration & Metadata ---
+# To run
+#   uv run python -m data_centers_next_door.webscrapping.webscrapping_data_centers_chicago_metro_region
+ROOT = Path(__file__).resolve().parents[2]
+
+OUTPUT_PATH = ROOT / "data/housing_and_data_centers_data/il_in_wi_datacenters.csv"
+
+# ── Configuration & Metadata ──────────────────────────────────────────────────
 # Source: datacentermap.com verified city listings for IL, IN, WI
 
 CITIES = [
     # Illinois (137+55+2+2+2+6+1+4 = 209 total)
-    ("Chicago",         "illinois/chicago"),
-    ("Aurora",          "illinois/aurora"),
-    ("Bloomington",     "illinois/bloomington"),
-    ("Peoria",          "illinois/peoria"),
-    ("Champaign",       "illinois/champaign"),
-    ("Springfield",     "illinois/springfield"),
-    ("Rockford",        "illinois/rockford"),
-    ("Edwardsville",    "illinois/edwardsville"),
-    ("Rantoul",         "illinois/rantoul"),
-
+    ("Chicago",          "illinois/chicago"),
+    ("Aurora",           "illinois/aurora"),
+    ("Bloomington",      "illinois/bloomington"),
+    ("Peoria",           "illinois/peoria"),
+    ("Champaign",        "illinois/champaign"),
+    ("Springfield",      "illinois/springfield"),
+    ("Rockford",         "illinois/rockford"),
+    ("Edwardsville",     "illinois/edwardsville"),
+    ("Rantoul",          "illinois/rantoul"),
     # Indiana (1+1+45+13+15+7+2+1+1+1+1 = 88 total)
-    ("Columbus",        "indiana/columbus"),
-    ("Hammond",         "indiana/hammond"),
-    ("Indianapolis",    "indiana/indianapolis"),
-    ("South Bend",      "indiana/south-bend"),
-    ("Fort Wayne",      "indiana/fort-wayne"),
-    ("Gary",            "indiana/gary"),
-    ("Evansville",      "indiana/evansville"),
-    ("La Porte",        "indiana/la-porte"),
-    ("Jeffersonville",  "indiana/jeffersonville"),
-    ("Noblesville",     "indiana/noblesville"),
-    ("Portage",         "indiana/portage"),
-
+    ("Columbus",         "indiana/columbus"),
+    ("Hammond",          "indiana/hammond"),
+    ("Indianapolis",     "indiana/indianapolis"),
+    ("South Bend",       "indiana/south-bend"),
+    ("Fort Wayne",       "indiana/fort-wayne"),
+    ("Gary",             "indiana/gary"),
+    ("Evansville",       "indiana/evansville"),
+    ("La Porte",         "indiana/la-porte"),
+    ("Jeffersonville",   "indiana/jeffersonville"),
+    ("Noblesville",      "indiana/noblesville"),
+    ("Portage",          "indiana/portage"),
     # Wisconsin (3+2+2+12+12+1+16+1+2 = 51 total)
-    ("Appleton",        "wisconsin/appleton"),
-    ("Eau Claire",      "wisconsin/eau-claire"),
-    ("Green Bay",       "wisconsin/green-bay"),
-    ("Kenosha",         "wisconsin/kenosha"),
-    ("Madison",         "wisconsin/madison"),
-    ("Marshfield",      "wisconsin/marshfield"),
-    ("Milwaukee",       "wisconsin/milwaukee"),
-    ("Wausau",          "wisconsin/wausau"),
-    ("Wisconsin Rapids","wisconsin/wisconsin-rapids"),
+    ("Appleton",         "wisconsin/appleton"),
+    ("Eau Claire",       "wisconsin/eau-claire"),
+    ("Green Bay",        "wisconsin/green-bay"),
+    ("Kenosha",          "wisconsin/kenosha"),
+    ("Madison",          "wisconsin/madison"),
+    ("Marshfield",       "wisconsin/marshfield"),
+    ("Milwaukee",        "wisconsin/milwaukee"),
+    ("Wausau",           "wisconsin/wausau"),
+    ("Wisconsin Rapids", "wisconsin/wisconsin-rapids"),
 ]
 
 CITY_TO_STATE = {
@@ -66,7 +74,8 @@ HEADERS = {
                   "(KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 }
 
-# --- Core Logic ---
+
+# ── Core Logic (module-level so importable for tests) ─────────────────────────
 
 def parse_datacenter_html(html_content, city_name):
     """
@@ -91,13 +100,13 @@ def parse_datacenter_html(html_content, city_name):
             continue
 
         record = {
-            "scraped_city": city_name,
-            "state": state,
-            "facility": facility_name,
-            "operator": details[0] if len(details) > 0 else "N/A",
-            "street":   details[1] if len(details) > 1 else "N/A",
-            "zip_code": details[2] if len(details) > 2 else "N/A",
-            "city_in_desc": details[3] if len(details) > 3 else "N/A",
+            "scraped_city":  city_name,
+            "state":         state,
+            "facility":      facility_name,
+            "operator":      details[0] if len(details) > 0 else "N/A",
+            "street":        details[1] if len(details) > 1 else "N/A",
+            "zip_code":      details[2] if len(details) > 2 else "N/A",
+            "city_in_desc":  details[3] if len(details) > 3 else "N/A",
         }
         records.append(record)
 
@@ -129,9 +138,9 @@ def run_scraper():
     if not df.empty:
         df = df.sort_values(["state", "scraped_city"]).reset_index(drop=True)
 
-    output_path = "data/housing_and_data_centers_data/il_in_wi_datacenters.csv"
-    df.to_csv(output_path, index=False)
-    print(f"\nDone! {len(df)} total records saved to '{output_path}'")
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(OUTPUT_PATH, index=False)
+    print(f"\nDone! {len(df)} total records saved to '{OUTPUT_PATH}'")
     return df
 
 

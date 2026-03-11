@@ -4,116 +4,122 @@ from geopy.geocoders import Nominatim, ArcGIS
 from geopy.extra.rate_limiter import RateLimiter
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from tqdm.auto import tqdm
-import os
+from pathlib import Path
 import time
 import re
 
-# --- 1. Load and Filter Data ---
-df = pd.read_csv('data/housing_and_data_centers_data/top_us_cities_datacenters.csv')
+# To run:
+#   uv run python -m data_centers_next_door.geocoding.geocoding
+ROOT = Path(__file__).resolve().parents[2]
 
-cities = [
+INPUT_PATH  = ROOT / "data/housing_and_data_centers_data/top_us_cities_datacenters.csv"
+OUTPUT_PATH = ROOT / "data/spatial_data/centers/DataCenters.shp"
+
+CITIES = [
     "New York", "Los Angeles", "Chicago", "Houston", "Phoenix",
     "Philadelphia", "San Antonio", "San Diego", "Dallas", "Jacksonville",
     "Miami", "Boston", "Atlanta", "Santa Clara", "Denver",
 ]
 
-df = df[df["city_in_desc"].isin(cities)].copy()
 
-# --- 2. Initialize Geocoders ---
-# Nominatim (OSM) - Strict but free
-geolocator = Nominatim(user_agent="datacenters_geocoder_v2")
-_geocode_osm = RateLimiter(geolocator.geocode, min_delay_seconds=1.1)
-
-# ArcGIS - More "fuzzy" and forgiving
-arcgis_geolocator = ArcGIS()
-_geocode_arcgis = RateLimiter(arcgis_geolocator.geocode, min_delay_seconds=0.2)
-
-# --- 3. Helper Functions ---
+# ── Helper functions (module-level so they are importable for tests) ──────────
 def clean_address(street):
     """Removes Suite, Floor, and extra noise that confuses Nominatim."""
-    if not street or pd.isna(street): return ""
-    # Split by common delimiters and take the first part
+    if not street or pd.isna(street):
+        return ""
     s = re.split(r'#|Suite|Ste|Floor|Fl|Unit|,', street, flags=re.IGNORECASE)[0]
     return s.strip()
 
-def geocode_robust(street, city, state, max_retries=3):
+
+def geocode_robust(street, city, state, geocode_osm, geocode_arcgis, max_retries=3):
     """
-    Waterfall Logic:
-    1. OSM (Structured)
-    2. OSM (Cleaned Street)
-    3. ArcGIS (High Reliability Fallback)
-    4. OSM (Street Only - Last Resort)
+    Waterfall logic:
+    1. OSM Structured (strict)
+    2. OSM Cleaned Street
+    3. ArcGIS Fallback
+    4. OSM Street Only (last resort)
     """
-    full_query = {"street": street, "city": city, "state": state, "country": "USA"}
+    full_query     = {"street": street, "city": city, "state": state, "country": "USA"}
     cleaned_street = clean_address(street)
-    
+
     for attempt in range(max_retries):
         try:
             # Tier 1: Nominatim Strict
-            loc = _geocode_osm(full_query)
-            if loc: return loc, "osm_strict"
+            loc = geocode_osm(full_query)
+            if loc:
+                return loc, "osm_strict"
 
             # Tier 2: Nominatim Cleaned
             if cleaned_street != street:
-                loc = _geocode_osm({"street": cleaned_street, "city": city, "state": state, "country": "USA"})
-                if loc: return loc, "osm_cleaned"
+                loc = geocode_osm({"street": cleaned_street, "city": city, "state": state, "country": "USA"})
+                if loc:
+                    return loc, "osm_cleaned"
 
-            # Tier 3: ArcGIS Fallback (Great at handling messy strings)
-            # We use a single string here as ArcGIS handles it better
+            # Tier 3: ArcGIS Fallback
             arcgis_query = f"{cleaned_street}, {city}, {state}, USA"
-            loc = _geocode_arcgis(arcgis_query)
-            if loc: return loc, "arcgis_fallback"
+            loc = geocode_arcgis(arcgis_query)
+            if loc:
+                return loc, "arcgis_fallback"
 
             # Tier 4: Street Only (OSM)
             street_only = ' '.join(cleaned_street.split()[1:]) if len(cleaned_street.split()) > 1 else None
             if street_only:
-                loc = _geocode_osm({"street": street_only, "city": city, "state": state, "country": "USA"})
-                if loc: return loc, "osm_street_only"
+                loc = geocode_osm({"street": street_only, "city": city, "state": state, "country": "USA"})
+                if loc:
+                    return loc, "osm_street_only"
 
             return None, "failed"
 
         except (GeocoderTimedOut, GeocoderUnavailable):
             time.sleep(2 ** attempt)
-            
+
     return None, "timeout"
 
-# --- 4. Execution ---
-print("Starting robust geocoding...")
 
-results_list = []
-for _, row in tqdm(df.iterrows(), total=len(df)):
-    loc, method = geocode_robust(row['street'], row['city_in_desc'], row['state'])
-    results_list.append({
-        'location_obj': loc, 
-        'match_method': method,
-        'latitude': loc.latitude if loc else None,
-        'longitude': loc.longitude if loc else None
-    })
+def main():
+    # 1. Load and filter
+    df = pd.read_csv(INPUT_PATH)
+    df = df[df["city_in_desc"].isin(CITIES)].copy()
+    print(f"Loaded {len(df)} records for top US cities")
 
-# Merge results back to main dataframe
-results_df = pd.DataFrame(results_list)
-df = pd.concat([df.reset_index(drop=True), results_df], axis=1)
+    # 2. Initialize geocoders
+    _geocode_osm    = RateLimiter(Nominatim(user_agent="datacenters_geocoder_v2").geocode, min_delay_seconds=1.1)
+    _geocode_arcgis = RateLimiter(ArcGIS().geocode, min_delay_seconds=0.2)
 
-# used_fallback is True if it didn't match on the first try (osm_strict)
-df["used_fallback"] = df["match_method"].apply(lambda x: x not in ["osm_strict", "failed"])
+    # 3. Geocode
+    print("Starting robust geocoding...")
+    results_list = []
+    for _, row in tqdm(df.iterrows(), total=len(df)):
+        loc, method = geocode_robust(
+            row["street"], row["city_in_desc"], row["state"],
+            _geocode_osm, _geocode_arcgis
+        )
+        results_list.append({
+            "location_obj": loc,
+            "match_method": method,
+            "latitude":     loc.latitude  if loc else None,
+            "longitude":    loc.longitude if loc else None,
+        })
 
-# Clean up
-df.drop(columns=["location_obj"], inplace=True)
+    results_df = pd.DataFrame(results_list)
+    df = pd.concat([df.reset_index(drop=True), results_df], axis=1)
+    df["used_fallback"] = df["match_method"].apply(lambda x: x not in ["osm_strict", "failed"])
+    df.drop(columns=["location_obj"], inplace=True)
 
-# --- 5. Save Results ---
-# Remove rows that failed completely before making GeoDataFrame
-df_clean = df.dropna(subset=["latitude", "longitude"]).copy()
+    # 4. Save
+    df_clean = df.dropna(subset=["latitude", "longitude"]).copy()
+    gdf = gpd.GeoDataFrame(
+        df_clean,
+        geometry=gpd.points_from_xy(df_clean.longitude, df_clean.latitude),
+        crs="EPSG:4326"
+    )
 
-gdf = gpd.GeoDataFrame(
-    df_clean, 
-    geometry=gpd.points_from_xy(df_clean.longitude, df_clean.latitude), 
-    crs="EPSG:4326"
-)
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    gdf.to_file(OUTPUT_PATH, driver="ESRI Shapefile")
 
-if not os.path.exists("spatial_data/centers"):
-    os.makedirs("spatial_data/centers")
+    print(f"\nFinished! Successfully geocoded {len(df_clean)} of {len(df)} records.")
+    print(df["match_method"].value_counts())
 
-gdf.to_file("spatial_data/centers/DataCenters.shp", driver="ESRI Shapefile")
 
-print(f"Finished! Successfully geocoded {len(df_clean)} of {len(df)} records.")
-print(df["match_method"].value_counts())
+if __name__ == "__main__":
+    main()
