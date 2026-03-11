@@ -129,7 +129,7 @@ def run_scraper():
     if not df.empty:
         df = df.sort_values(["state", "scraped_city"]).reset_index(drop=True)
 
-    output_path = "data/il_in_wi_datacenters.csv"
+    output_path = "data/housing_and_data_centers_data/il_in_wi_datacenters.csv"
     df.to_csv(output_path, index=False)
     print(f"\nDone! {len(df)} total records saved to '{output_path}'")
     return df

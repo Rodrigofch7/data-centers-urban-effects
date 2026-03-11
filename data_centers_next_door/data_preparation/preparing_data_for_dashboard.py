@@ -20,9 +20,9 @@ if not API_KEY:
 
 ACS_YEAR = 2022
 
-INPUT_PATH        = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/housing_and_data_centers_data/zillow_yearly_estimates_chicago_metro.csv'
-MAP_PATH          = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/spatial_data/cities/ChicagoMetroArea.parquet'
-DC_INPUT_PATH     = '/home/rodrigofrancachaves/capp30122/group_project/project-datacenter-urban-effects/data/spatial_data/centers/DataCentersChicagoMetroArea.parquet'
+INPUT_PATH        = 'data/housing_and_data_centers_data/zillow_yearly_estimates_chicago_metro.csv'
+MAP_PATH          = 'data/spatial_data/cities/ChicagoMetroArea.parquet'
+DC_INPUT_PATH     = 'data/spatial_data/centers/DataCentersChicagoMetroArea.parquet'
 ENERGY_WATER_PATH = 'data/energy and water data/nhgis_energy_water_wide.csv'
 HHC_PATH          = 'data/sinans_data/pivoted_HHCScores.csv'
 OUTPUT_CITIES     = 'shiny_app/Data/Chicago.gpkg'

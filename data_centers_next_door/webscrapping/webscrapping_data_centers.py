@@ -83,7 +83,7 @@ def run_scraper():
             print(f"Could not scrape {city_name}: {e}")
     
     df = pd.DataFrame(all_data)
-    df.to_csv("data/top_us_cities_datacenters.csv", index=False)
+    df.to_csv("data/housing_and_data_centers_data/top_us_cities_datacenters.csv", index=False)
     return df
 
 
