@@ -44,12 +44,13 @@ The project combines data cleaning, record linkage, and geospatial visualization
 ---
 
 ## Data Sources
-
 | Source | Description |
 |---|---|
 | [Data Center Map](https://www.datacentermap.com/usa/illinois/chicago/) | A publicly accessible directory of data center facilities in the Chicago metropolitan area, listing sites with basic location and provider information. The database aggregates facility listings from operators and external sources to provide insight into the presence and distribution of data infrastructure in Chicago. |
 | [Zillow](https://www.zillow.com/research/data/) | A comprehensive public repository from Zillow that provides historical and current data on U.S. housing markets. The site offers downloadable datasets such as the Zillow Home Value Index (ZHVI), which tracks home prices across regions and over time, making it useful for analyzing housing price trends. |
-
+| [NHGIS](https://www.nhgis.org/) | The National Historical Geographic Information System, maintained by IPUMS, provides free online access to summary statistics and GIS boundary files for U.S. census data across time. Used here to obtain geographic and demographic data at the ZIP code and tract level for the Chicago metro area. |
+| [U.S. Census Bureau API](https://www.census.gov/data/developers/data-sets.html) | The official Census Bureau developer API, used to retrieve American Community Survey (ACS) estimates including demographic, economic, and housing characteristics at the ZIP code tabulation area (ZCTA) level. |
+| [TIGRIS (R package)](https://github.com/walkerke/tigris) | An R package that provides programmatic access to U.S. Census Bureau TIGER/Line shapefiles, including boundaries for ZIP code tabulation areas, counties, and other geographies. Used to retrieve spatial boundary files for mapping and spatial joins. |
 ---
 
 ## Data Processing & Reconciliation
