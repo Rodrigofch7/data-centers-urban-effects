@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    #vis.vega-embed {
+      width: 100%;
+      display: flex;
+    }
+
+    #vis.vega-embed details,
+    #vis.vega-embed details summary {
+      position: relative;
+    }
+  </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-lite@6.1.0"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
+</head>
+<body>
+  <div id="vis"></div>
+  <script>
+    (function(vegaEmbed) {
+      var spec = {"config": {"view": {"continuousWidth": 300, "continuousHeight": 300}, "axis": {"labelColor": "#8b949e", "titleColor": "#e6edf3"}, "title": {"anchor": "start", "font": "Helvetica"}}, "data": {"name": "data-ee5f5d129e8742965b9831840e1a98ce"}, "mark": {"type": "bar", "color": "#800000", "stroke": "#f0a500", "strokeWidth": 0.5}, "background": "#0d1117", "encoding": {"tooltip": [{"field": "Data Center Count", "type": "quantitative"}], "x": {"axis": {"tickMinStep": 1}, "field": "Data Center Count", "title": "Number of Data Centers", "type": "quantitative"}, "y": {"field": "Zipcode", "sort": "-x", "title": "ZIP Code", "type": "nominal"}}, "params": [{"name": "param_1e9efca18e7a2868", "select": {"type": "interval", "encodings": ["x", "y"]}, "bind": "scales"}], "title": {"text": "Number of Data Centers in Each Zip Code", "color": "#e6edf3"}, "$schema": "https://vega.github.io/schema/vega-lite/v6.1.0.json", "datasets": {"data-ee5f5d129e8742965b9831840e1a98ce": [{"Zipcode": "46320", "Data Center Count": 1}, {"Zipcode": "60005", "Data Center Count": 1}, {"Zipcode": "60007", "Data Center Count": 13}, {"Zipcode": "60010", "Data Center Count": 1}, {"Zipcode": "60016", "Data Center Count": 1}, {"Zipcode": "60018", "Data Center Count": 1}, {"Zipcode": "60056", "Data Center Count": 1}, {"Zipcode": "60115", "Data Center Count": 1}, {"Zipcode": "60131", "Data Center Count": 2}, {"Zipcode": "60143", "Data Center Count": 1}, {"Zipcode": "60148", "Data Center Count": 2}, {"Zipcode": "60164", "Data Center Count": 3}, {"Zipcode": "60191", "Data Center Count": 2}, {"Zipcode": "60502", "Data Center Count": 1}, {"Zipcode": "60523", "Data Center Count": 2}, {"Zipcode": "60532", "Data Center Count": 2}, {"Zipcode": "60605", "Data Center Count": 2}, {"Zipcode": "60607", "Data Center Count": 3}, {"Zipcode": "60608", "Data Center Count": 1}, {"Zipcode": "60616", "Data Center Count": 1}, {"Zipcode": "60617", "Data Center Count": 1}, {"Zipcode": "60632", "Data Center Count": 1}]}};
+      var embedOpt = {"mode": "vega-lite"};
+
+      function showError(el, error){
+          el.innerHTML = ('<div style="color:red;">'
+                          + '<p>JavaScript Error: ' + error.message + '</p>'
+                          + "<p>This usually means there's a typo in your chart specification. "
+                          + "See the javascript console for the full traceback.</p>"
+                          + '</div>');
+          throw error;
+      }
+      const el = document.getElementById('vis');
+      vegaEmbed("#vis", spec, embedOpt)
+        .catch(error => showError(el, error));
+    })(vegaEmbed);
+
+  </script>
+</body>
+</html>

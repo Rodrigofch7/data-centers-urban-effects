@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    #vis.vega-embed {
+      width: 100%;
+      display: flex;
+    }
+
+    #vis.vega-embed details,
+    #vis.vega-embed details summary {
+      position: relative;
+    }
+  </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-lite@6.1.0"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
+</head>
+<body>
+  <div id="vis"></div>
+  <script>
+    (function(vegaEmbed) {
+      var spec = {"config": {"view": {"continuousWidth": 300, "continuousHeight": 300}, "axis": {"labelColor": "#8b949e", "titleColor": "#e6edf3"}, "title": {"anchor": "start", "font": "Helvetica", "fontSize": 18}}, "data": {"name": "data-3e3392898ae5d42a83b2d11369010ee5"}, "mark": {"type": "bar", "color": "#800000", "stroke": "#f0a500", "strokeWidth": 0.5}, "background": "#0d1117", "encoding": {"tooltip": [{"field": "Data Center Count", "type": "quantitative"}], "x": {"axis": {"tickMinStep": 1}, "field": "Data Center Count", "title": "Number of Data Centers", "type": "quantitative"}, "y": {"field": "Operator", "sort": "-x", "title": "Company Name", "type": "nominal"}}, "params": [{"name": "param_1e9efca18e7a2868", "select": {"type": "interval", "encodings": ["x", "y"]}, "bind": "scales"}], "title": {"text": "Number of Data Centers by Each Company", "color": "#e6edf3"}, "$schema": "https://vega.github.io/schema/vega-lite/v6.1.0.json", "datasets": {"data-3e3392898ae5d42a83b2d11369010ee5": [{"Operator": "Aligned Data Centers", "Data Center Count": 3}, {"Operator": "Amazon", "Data Center Count": 1}, {"Operator": "CenterSquare", "Data Center Count": 1}, {"Operator": "CloudHQ", "Data Center Count": 1}, {"Operator": "Cogent Communications, Inc. / QTS", "Data Center Count": 1}, {"Operator": "CoreSite", "Data Center Count": 1}, {"Operator": "CoreWeave", "Data Center Count": 1}, {"Operator": "Csquare / CenterSquare", "Data Center Count": 1}, {"Operator": "DataBank", "Data Center Count": 2}, {"Operator": "Digital Fortress / Wovering Trading", "Data Center Count": 1}, {"Operator": "Digital Realty", "Data Center Count": 5}, {"Operator": "EdgeConneX", "Data Center Count": 1}, {"Operator": "Edged Energy", "Data Center Count": 1}, {"Operator": "Element Critical", "Data Center Count": 2}, {"Operator": "Equinix", "Data Center Count": 2}, {"Operator": "Iron Mountain Data Centers", "Data Center Count": 1}, {"Operator": "Lumen /  / DXC Technology", "Data Center Count": 1}, {"Operator": "Lumen / CloudHQ", "Data Center Count": 1}, {"Operator": "Meta", "Data Center Count": 1}, {"Operator": "Microsoft", "Data Center Count": 3}, {"Operator": "NTT DATA, Inc.", "Data Center Count": 1}, {"Operator": "NaviSite, Inc. / NYI", "Data Center Count": 1}, {"Operator": "QTS Data Centers", "Data Center Count": 1}, {"Operator": "Related Digital / Digital Crossroad", "Data Center Count": 1}, {"Operator": "STACK INFRASTRUCTURE", "Data Center Count": 1}, {"Operator": "Serverfarm", "Data Center Count": 1}, {"Operator": "Sinch / Digital Capital Partners", "Data Center Count": 1}, {"Operator": "Skybox Datacenters", "Data Center Count": 1}, {"Operator": "Stream Data Centers", "Data Center Count": 1}, {"Operator": "T5 Data Centers", "Data Center Count": 1}, {"Operator": "TierPoint", "Data Center Count": 2}, {"Operator": "XNet Information Systems, Inc. / Cyrus One", "Data Center Count": 1}]}};
+      var embedOpt = {"mode": "vega-lite"};
+
+      function showError(el, error){
+          el.innerHTML = ('<div style="color:red;">'
+                          + '<p>JavaScript Error: ' + error.message + '</p>'
+                          + "<p>This usually means there's a typo in your chart specification. "
+                          + "See the javascript console for the full traceback.</p>"
+                          + '</div>');
+          throw error;
+      }
+      const el = document.getElementById('vis');
+      vegaEmbed("#vis", spec, embedOpt)
+        .catch(error => showError(el, error));
+    })(vegaEmbed);
+
+  </script>
+</body>
+</html>

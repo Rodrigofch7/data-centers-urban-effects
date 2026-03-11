@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 # Import from: folder_name.file_name
-from python_scripts.zillow_data import process_zillow_yearly
+from data_centers_next_door.data_preparation.zillow_data import process_zillow_yearly
 
 @pytest.fixture
 def sample_zillow_data():
