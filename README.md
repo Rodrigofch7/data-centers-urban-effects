@@ -194,7 +194,7 @@ project-datacenter-urban-effects/
 ├── shiny_app/                               # Interactive dashboard
 │   ├── app.py
 │   ├── Data/
-│   └── requirements.txt
+│   
 │
 ├── milestones/                              # Project documentation
 │   ├── milestone1.md
@@ -204,6 +204,7 @@ project-datacenter-urban-effects/
 ├── pyproject.toml                           # Python dependency management
 ├── README.md
 └── .gitignore
+└── requirements.txt
 ```
 
 ---
