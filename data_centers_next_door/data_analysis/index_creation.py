@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from index import scoring, index
+from .index import scoring, index
 
 FILEPATH = Path(__file__).parent.parent.parent / "data" / "chicago_data_centers_final_w_changes.csv"
 OUTPATH = Path(__file__).parent.parent.parent / "data" / "chicago_data_centers_impact_scores.csv"
