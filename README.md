@@ -6,6 +6,10 @@
 > A computational and data-driven analysis of the impact of cloud infrastructure development on housing prices in Chicago.
 
 ![Project Screenshot](images/ProjectScreenshot.png)
+
+<a href="https://youtu.be/G9JRZpSuwp8" target="_blank">
+  <img src="https://img.youtube.com/vi/G9JRZpSuwp8/maxresdefault.jpg" alt="▶ Watch on YouTube" width="560" />
+</a>
 ---
 
 ## Table of Contents
