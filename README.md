@@ -7,7 +7,7 @@
 
 ![Project Screenshot](images/ProjectScreenshot.png)
 
-<a href="https://youtu.be/mNVFXUycbCQ" target="_blank">
+<a href="https://youtu.be/G9JRZpSuwp8?si=8vQdXWuSQKfNb9gI" target="_blank">
   <img src="https://img.youtube.com/vi/mNVFXUycbCQ/maxresdefault.jpg" alt="Watch on YouTube" width="560" />
   <br/>▶ Watch on YouTube
 </a>
