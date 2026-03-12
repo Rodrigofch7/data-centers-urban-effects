@@ -5,6 +5,7 @@ from pathlib import Path
 
 # Importing chicago data centers as pandas dataframe
 FILEPATH = Path(__file__).parent.parent.parent / "data" / "chicago_data_centers_impact_scores.csv"
+OUTPATH = Path(__file__).parent.parent.parent / "data" / "Visualizations" / "data_centers_over_time.html"
 
 chicago_data_centers = pd.read_csv(FILEPATH)
 
@@ -23,5 +24,4 @@ time_series = (alt.Chart(chicago_data_centers_by_year)
                .properties(title = "Number of Data Centers in Chicagoland"))
 
 #### Saving as html file
-time_series.save("data_centers_over_time.html")
-webbrowser.open("data_centers_over_time.html")
+time_series.save(OUTPATH)
