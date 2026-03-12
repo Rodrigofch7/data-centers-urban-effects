@@ -7,9 +7,9 @@
 
 ![Project Screenshot](images/ProjectScreenshot.png)
 
-<a href="https://youtu.be/G9JRZpSuwp8" target="_blank">
-  <img src="https://img.youtube.com/vi/G9JRZpSuwp8/maxresdefault.jpg" alt="Watch on YouTube" width="560" style="position:relative;display:block;" />
-  <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_play_button_icon_%282013%E2%80%932017%29.svg" width="80" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);" />
+<a href="https://youtu.be/mNVFXUycbCQ" target="_blank">
+  <img src="https://img.youtube.com/vi/mNVFXUycbCQ/maxresdefault.jpg" alt="Watch on YouTube" width="560" />
+  <br/>▶ Watch on YouTube
 </a>
 
 ---
