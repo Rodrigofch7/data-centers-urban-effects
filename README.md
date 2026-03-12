@@ -13,7 +13,7 @@
 - [Features](#features)
 - [Data Sources](#data-sources)
 - [Data Processing & Reconcilitation](#data-processing-&-reconcilitation)
-- [Data Methodology](#data-methodology)
+- [Data Analysis](#data-analysis)
 - [Getting Started](#getting-started)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
@@ -48,7 +48,7 @@ The project combines data cleaning, record linkage, and geospatial visualization
 |---|---|
 | [Data Center Map](https://www.datacentermap.com/usa/illinois/chicago/) | A publicly accessible directory of data center facilities in the Chicago metropolitan area, listing sites with basic location and provider information. The database aggregates facility listings from operators and external sources to provide insight into the presence and distribution of data infrastructure in Chicago. |
 | [Zillow](https://www.zillow.com/research/data/) | A comprehensive public repository from Zillow that provides historical and current data on U.S. housing markets. The site offers downloadable datasets such as the Zillow Home Value Index (ZHVI), which tracks home prices across regions and over time, making it useful for analyzing housing price trends. |
-| [NHGIS](https://www.nhgis.org/) | The National Historical Geographic Information System, maintained by IPUMS, provides free online access to summary statistics and GIS boundary files for U.S. census data across time. Used here to obtain geographic, demographic, utility, and household cost data at the ZIP code and tract level for the Chicago metro area. |
+| [IPUMS NHGIS](https://www.nhgis.org/) | The National Historical Geographic Information System, maintained by IPUMS, provides free online access to summary statistics and GIS boundary files for U.S. census data across time. Used here to obtain geographic, demographic, utility, and household cost data at the ZIP code and tract level for the Chicago metro area. |
 | [U.S. Census Bureau API](https://www.census.gov/data/developers/data-sets.html) | The official Census Bureau developer API, used to retrieve American Community Survey (ACS) estimates including demographic, economic, and housing characteristics at the ZIP code tabulation area (ZCTA) level. |
 | [TIGRIS (R package)](https://github.com/walkerke/tigris) | An R package that provides programmatic access to U.S. Census Bureau TIGER/Line shapefiles, including boundaries for ZIP code tabulation areas, counties, and other geographies. Used to retrieve spatial boundary files for mapping and spatial joins. |
 ---
@@ -149,7 +149,7 @@ This will:
 
 From the repo root:
 ```bash
-uv run shiny run shiny_app.app.py
+uv run shiny run shiny_app.app
 ```
 or
 ```bash
@@ -161,59 +161,187 @@ This launches the interactive visualization environment.
 ## Project Structure
 
 ```
-project-datacenter-urban-effects/
-│
-├── data/                                    # Raw and cleaned datasets
-│   ├── spatial_data/                        # Geospatial files
-│   │   ├── centers/                         # Data center shapefiles
-│   │   │   ├── DataCenters.shp
-│   │   │   ├── DataCenters.dbf
-│   │   │   ├── DataCenters.shx
-│   │   │   ├── DataCenters.prj
-│   │   │   └── ChicagoDataCentersWithConstruction...
-│   │   │
-│   │   └── cities/                          # City boundary GeoJSON & shapefiles
-│   │       ├── chicago.geojson
-│   │       ├── atlanta.geojson
-│   │       ├── new_york.geojson
-│   │       ├── combined_cities.shp
-│   │       ├── combined_cities.dbf
-│   │       ├── combined_cities.shx
-│   │       ├── combined_cities.prj
-│   │       └── cities_with_energy_home_prices.geojson
-│   │
-│   ├── chicago_data_centers_match (first_permit).csv
-│   ├── chicago_data_centers.csv
-│   ├── top_us_cities_datacenters.csv
-│   ├── zillow_data_zip_code_cook_county.csv
-│   └── zillow_yearly_estimates_cook_county.csv
-│
-├── python_scripts/                          # Data cleaning & processing pipeline
-│   ├── chicago_data_centers.py
-│   ├── webscrapping_data_centers.py
-│   ├── geocoding.py
-│   ├── zillow_data.py
-│   ├── preparing_data_for_dashboard.py
-│   └── aggregate_city_geometries.py
-│
-├── data_analysis/                           # Index construction & scoring logic
-│   ├── DataMethodology.md
-│   └── index.py
-│
-├── shiny_app/                               # Interactive dashboard
-│   ├── app.py
-│   ├── Data/
-│   
-│
-├── milestones/                              # Project documentation
-│   ├── milestone1.md
-│   └── milestone2.md
-│
-├── main.py                                  # Composite index prototype
-├── pyproject.toml                           # Python dependency management
+.
 ├── README.md
-└── .gitignore
-└── requirements.txt
+├── __pycache__
+│   ├── cleaning_utilities.cpython-313.pyc
+│   ├── conftest.cpython-313-pytest-9.0.2.pyc
+│   ├── datacenters_housing_merge.cpython-313.pyc
+│   └── datacentersvis.cpython-313.pyc
+├── data
+│   ├── Visualizations
+│   │   ├── data_centers_over_time.html
+│   │   ├── datacenters_vis_company.html
+│   │   ├── datacenters_vis_zipcode.html
+│   │   ├── housing_cost_dumbbell.html
+│   │   ├── housing_price_dumbbell.html
+│   │   └── impact_score_bar_chart.html
+│   ├── chicago_data_centers.csv
+│   ├── chicago_data_centers_2.csv
+│   ├── chicago_data_centers_final.csv
+│   ├── chicago_data_centers_final_w_changes.csv
+│   ├── chicago_data_centers_impact_scores.csv
+│   ├── chicago_metro_zips.csv
+│   ├── clean_elecwater_hc_scores
+│   │   ├── elec_water_cleaned.csv
+│   │   ├── monthHHC_cleaned.csv
+│   │   └── pivoted_HHCScores.csv
+│   ├── energy and water data
+│   │   ├── codebooks
+│   │   │   ├── nhgis0003_ds255_20215_zcta_codebook.txt
+│   │   │   ├── nhgis0003_ds263_20225_zcta_codebook.txt
+│   │   │   ├── nhgis0003_ds268_20235_zcta_codebook.txt
+│   │   │   └── nhgis0003_ds273_20245_zcta_codebook.txt
+│   │   ├── nhgis0003_ds255_20215_zcta.csv
+│   │   ├── nhgis0003_ds263_20225_zcta.csv
+│   │   ├── nhgis0003_ds268_20235_zcta.csv
+│   │   ├── nhgis0003_ds273_20245_zcta.csv
+│   │   └── nhgis_energy_water_wide.csv
+│   ├── hhc
+│   │   ├── codebook
+│   │   │   ├── nhgis0007_ds185_20115_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds192_20125_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds202_20135_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds207_20145_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds216_20155_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds226_20165_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds234_20175_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds240_20185_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds245_20195_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds250_20205_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds255_20215_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds263_20225_zcta_codebook.txt
+│   │   │   ├── nhgis0007_ds268_20235_zcta_codebook.txt
+│   │   │   └── nhgis0007_ds273_20245_zcta_codebook.txt
+│   │   ├── nhgis0007_ds185_20115_zcta.csv
+│   │   ├── nhgis0007_ds192_20125_zcta.csv
+│   │   ├── nhgis0007_ds202_20135_zcta.csv
+│   │   ├── nhgis0007_ds207_20145_zcta.csv
+│   │   ├── nhgis0007_ds216_20155_zcta.csv
+│   │   ├── nhgis0007_ds226_20165_zcta.csv
+│   │   ├── nhgis0007_ds234_20175_zcta.csv
+│   │   ├── nhgis0007_ds240_20185_zcta.csv
+│   │   ├── nhgis0007_ds245_20195_zcta.csv
+│   │   ├── nhgis0007_ds250_20205_zcta.csv
+│   │   ├── nhgis0007_ds255_20215_zcta.csv
+│   │   ├── nhgis0007_ds263_20225_zcta.csv
+│   │   ├── nhgis0007_ds268_20235_zcta.csv
+│   │   └── nhgis0007_ds273_20245_zcta.csv
+│   ├── housing_and_data_centers_data
+│   │   ├── chicago_data_centers.csv
+│   │   ├── chicago_data_centers_match (first_permit).csv
+│   │   ├── datacenters_housing_merged.csv
+│   │   ├── il_in_wi_datacenters.csv
+│   │   ├── top_us_cities_datacenters.csv
+│   │   ├── zillow_chicago_metro_region.csv
+│   │   └── zillow_yearly_estimates_chicago_metro.csv
+│   ├── housing_cost_data.csv
+│   ├── scratch_data
+│   │   └── chicago_data_centers_2.csv
+│   └── spatial_data
+│       ├── centers
+│       │   ├── ChicagoDataCentersWithConstructionDate.parquet
+│       │   ├── ChicagoMetroDataCenters.cpg
+│       │   ├── ChicagoMetroDataCenters.dbf
+│       │   ├── ChicagoMetroDataCenters.prj
+│       │   ├── ChicagoMetroDataCenters.shp
+│       │   ├── ChicagoMetroDataCenters.shx
+│       │   ├── DataCenters.cpg
+│       │   ├── DataCenters.dbf
+│       │   ├── DataCenters.prj
+│       │   ├── DataCenters.shp
+│       │   ├── DataCenters.shx
+│       │   └── DataCentersChicagoMetroArea.parquet
+│       └── cities
+│           └── ChicagoMetroArea.parquet
+├── data_centers_next_door
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   └── __init__.cpython-313.pyc
+│   ├── data_analysis
+│   │   ├── DataMethodology.md
+│   │   ├── __pycache__
+│   │   │   ├── index.cpython-313.pyc
+│   │   │   └── index_creation.cpython-313.pyc
+│   │   ├── index.py
+│   │   ├── index_creation.py
+│   │   └── tests_index_dummy_data.csv
+│   ├── data_preparation
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   ├── chicago_dc_clean_merge.cpython-313.pyc
+│   │   │   ├── datacenters_housing_merge.cpython-313.pyc
+│   │   │   └── zillow_data.cpython-313.pyc
+│   │   ├── chicago_dc_clean_merge.py
+│   │   ├── datacenters_housing_merge.py
+│   │   ├── preparing_data_for_dashboard.py
+│   │   ├── processing_water_energy.py
+│   │   └── zillow_data.py
+│   ├── data_visualizations
+│   │   ├── __pycache__
+│   │   │   ├── datacenters_by_zipcomp.cpython-313.pyc
+│   │   │   ├── hp_hc_dumbnell_plots.cpython-313.pyc
+│   │   │   └── impact_score_bar_chart.cpython-313.pyc
+│   │   ├── data_centers_over_time_viz.py
+│   │   ├── datacenters_by_zipcomp.py
+│   │   ├── hp_hc_dumbnell_plots.py
+│   │   └── impact_score_bar_chart.py
+│   ├── geocoding
+│   │   ├── geocoding.py
+│   │   └── geocoding_chicago_metro_area.py
+│   ├── hc_and_utility_scores
+│   │   ├── __pycache__
+│   │   │   └── cleaning_utilities.cpython-313.pyc
+│   │   └── cleaning_utilities.py
+│   └── webscrapping
+│       ├── __pycache__
+│       │   ├── webscrapping_data_centers.cpython-313.pyc
+│       │   └── webscrapping_data_centers_chicago_metro_region.cpython-313.pyc
+│       ├── webscrapping_data_centers.py
+│       └── webscrapping_data_centers_chicago_metro_region.py
+├── milestones
+│   ├── milestone1.md
+│   ├── milestone1.md:Zone.Identifier
+│   └── milestone2.md
+├── pyproject.toml
+├── requirements.txt
+├── shiny_app
+│   ├── Data
+│   │   ├── Chicago.gpkg
+│   │   ├── ChicagoDataCenters.gpkg
+│   │   ├── chicag_data_centers_impact_scores.csv
+│   │   ├── chicago_data_centers_final.csv
+│   │   ├── chicagoproper.gpkg
+│   │   ├── cook_county.gpkg
+│   │   ├── datacenters_housing_merged.csv
+│   │   ├── illinois.gpkg
+│   │   └── uchicago_logo.png
+│   ├── __pycache__
+│   │   └── app.cpython-313.pyc
+│   ├── app.py
+│   ├── requirements.txt
+│   └── rsconnect-python
+│       └── shiny_app.json
+├── tests
+│   ├── __pycache__
+│   │   ├── test_clean_merge.cpython-313-pytest-9.0.2.pyc
+│   │   ├── test_cleaning_utilities.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cleaning_utilities.cpython-313-pytest-9.0.2.pyc
+│   │   ├── test_dumbnell_bar_charts.cpython-313-pytest-9.0.2.pyc
+│   │   ├── test_index.cpython-313-pytest-9.0.2.pyc
+│   │   ├── test_webscrapping.cpython-313-pytest-9.0.2.pyc
+│   │   ├── test_webscrapping_data_centers_chicago_metro_region.cpython-313-pytest-9.0.2.pyc
+│   │   ├── test_zillow.cpython-313-pytest-9.0.2.pyc
+│   │   └── webscrapping_test.cpython-313-pytest-9.0.2.pyc
+│   ├── test_clean_merge.py
+│   ├── test_cleaning_utilities.py
+│   ├── test_dumbnell_bar_charts.py
+│   ├── test_index.py
+│   ├── test_webscrapping.py
+│   ├── test_webscrapping_data_centers_chicago_metro_region.py
+│   └── test_zillow.py
+└── uv.lock
 ```
 
 ---
@@ -268,11 +396,11 @@ See the LICENSE.md file for details.
 
 ## Contact
 
-**Logan Burton** — [@loganburton](https://github.com/StLaurentMTL) — loganemail@uchicago.edu
+**Logan Burton** — [@loganburton](https://github.com/StLaurentMTL) — lburton12@uchicago.edu
 
 **Rodrigo Chaves** — [@rchaves](https://github.com/Rodrigofch7) — rchaves@uchicago.edu
 
-**Sinan Grehan** — [@sinangrehan](https://github.com/sinangrehan) — sinanemaiul@uchicago.edu
+**Sinan Grehan** — [@sinangrehan](https://github.com/sinangrehan) — sinangrehan@uchicago.edu
 
 **Carlos Eduardo Vargas** — [@cev2030](https://github.com/cev2030) — cev@uchicago.edu
 
