@@ -5,6 +5,7 @@
 
 > A computational and data-driven analysis of the impact of cloud infrastructure development on housing prices in Chicago.
 
+![Project Screenshot](images/ProjectScreenshot.png)
 ---
 
 ## Table of Contents
@@ -15,7 +16,7 @@
 - [Data Processing & Reconcilitation](#data-processing-&-reconcilitation)
 - [Data Analysis](#data-analysis)
 - [Getting Started](#getting-started)
-- [Usage](#usage)
+- [Run the Dashboard Locally](#run-the-dashboard-locally)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
 - [License](#license)
@@ -67,7 +68,7 @@ $$
 score_{zip,t} = \sum_{i=0}^Ni\frac{n_i}{n_{total}} = 1*\frac{n_1}{n_{total}}+2*\frac{n_2}{n_{total}}+\dots
 $$
 
-where $n_i$ represents the number of respondents for the $i$th bucket. So $n_1$ would be the number of people who indicated that they pay between \$0-50, and $\frac{n_1}{n_{total}}$ is the proportion of all respondents who indicated so. This scoring method was applied to electricity data, water/sewage data, and household cost data to get electricity cost scores, water/sewage cost scores, and household cost scores across all zip codes in all 5-year periods available.
+where $n_i$ represents the number of respondents for the ith bucket. So $n_1$ would be the number of people who indicated that they pay between \$ 0-50, and $\frac{n_1}{n_{total}}$ is the proportion of all respondents who indicated so. This scoring method was applied to electricity data, water/sewage data, and household cost data to get electricity cost scores, water/sewage cost scores, and household cost scores across all zip codes in all 5-year periods available.
 
 ---
 
@@ -81,7 +82,8 @@ As an alternative specification, we also implement a z-score normalization appro
 
 A higher index score suggests that the data center had more of a costly impact on housing prices and household expenses (and vice versa for a lower index score). Please note that the implementation of these indices are not causal in nature, but rather aim to capture assocations between data centers and housing costs/prices in an easier to digest manner. For a more causal analysis, we suggest a Differences-in-Differences regression model.   
 
-For full technical documentation and mathematical formulation, see data_centers_next_door/data_analysis/DataMethodology.md￼.
+For full technical documentation and mathematical formulation, see data_centers_next_door/data_analysis/DataMethodology.md.
+
 ---
 
 ## Getting Started
@@ -120,32 +122,7 @@ uv sync
 
 ---
 
-## Usage
-
-The project can be used in two main ways, you can reproduce the data pipeline or run the interactive dashboard
-
-**Reproduce the Data Pipeline**
-
-From the project root:
-
-```bash
-# Clean and filter Chicago data centers
-uv run python_scripts/chicago_data_centers.py
-
-# Process Zillow housing data
-uv run python_scripts/zillow_data.py
-
-# Prepare merged dataset for dashboard
-uv run python_scripts/preparing_data_for_dashboard.py
-```
-
-This will:
-1. Filter data centers to Chicago
-2. Construct the first_permit variable
-3. Merge housing and infrastructure datasets
-4. Generate cleaned outputs in the data/ directory
-
-**Run the Dashboard**
+## Run the Dashboard Locally
 
 From the repo root:
 ```bash
@@ -300,6 +277,8 @@ This launches the interactive visualization environment.
 │       │   └── webscrapping_data_centers_chicago_metro_region.cpython-313.pyc
 │       ├── webscrapping_data_centers.py
 │       └── webscrapping_data_centers_chicago_metro_region.py
+├── images
+│   └── ProjectScreenshot.png
 ├── milestones
 │   ├── milestone1.md
 │   ├── milestone1.md:Zone.Identifier
