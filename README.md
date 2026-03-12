@@ -133,6 +133,7 @@ or
 uv run shiny run shiny_app/app.py
 ```
 This launches the interactive visualization environment.
+
 ---
 
 ## Project Structure
