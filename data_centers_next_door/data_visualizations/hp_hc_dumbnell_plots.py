@@ -1,6 +1,7 @@
 import pandas as pd
 import altair as alt
 
+
 def dumbbell_plot(
     df: pd.DataFrame,
     before_var: str,
@@ -32,19 +33,18 @@ def dumbbell_plot(
     Returns:
         The dumbbell plot.
     """
-    plot = df[[dc_code, operator_var, address_var, before_var, 
-               after_var]].copy()
+    plot = df[[dc_code, operator_var, address_var, before_var, after_var]].copy()
 
     # Reshaping data to long format:
     points = plot.melt(
         id_vars=[dc_code, operator_var, address_var],
         value_vars=[before_var, after_var],
         var_name="period",
-        value_name="value")
+        value_name="value",
+    )
 
     # Relabeling period values for the legend:
-    points["period"] = points["period"].map(
-        {before_var: before_lab, after_var: after_lab})
+    points["period"] = points["period"].map({before_var: before_lab, after_var: after_lab})
 
     # Connecting lines between before and after:
     lines = (
@@ -59,34 +59,43 @@ def dumbbell_plot(
                 alt.Tooltip(f"{operator_var}:N", title="Operator"),
                 alt.Tooltip(f"{address_var}:N", title="Address"),
                 alt.Tooltip(f"{before_var}:Q", title=before_lab, format=",.2f"),
-                alt.Tooltip(f"{after_var}:Q", title=after_lab, format=",.2f")]))
+                alt.Tooltip(f"{after_var}:Q", title=after_lab, format=",.2f"),
+            ],
+        )
+    )
 
     # Creating endpoints for before and after:
-    dots = (alt.Chart(points).mark_point(size=70, filled=True)
+    dots = (
+        alt.Chart(points)
+        .mark_point(size=70, filled=True)
         .encode(
             y=alt.Y(f"{dc_code}:N", title="Data Center"),
             x=alt.X("value:Q", title=value_lab, scale=alt.Scale(zero=False)),
             color=alt.Color(
-                "period:N", title="Period", 
-                scale=alt.Scale(domain=[before_lab, after_lab],
-                range=["blue", "red"])),
+                "period:N",
+                title="Period",
+                scale=alt.Scale(domain=[before_lab, after_lab], range=["blue", "red"]),
+            ),
             tooltip=[
                 alt.Tooltip(f"{dc_code}:N", title="Data Center"),
                 alt.Tooltip(f"{operator_var}:N", title="Operator"),
                 alt.Tooltip(f"{address_var}:N", title="Address"),
                 alt.Tooltip("period:N", title="Period"),
-                alt.Tooltip("value:Q", title=value_lab, format=",.2f")]))
-    
-    chart = ((lines + dots).properties(title=title,
-                                         width=1200,
-                                         height=min(800, 
-                                                    max(300, len(plot) * 25))))
+                alt.Tooltip("value:Q", title=value_lab, format=",.2f"),
+            ],
+        )
+    )
+
+    chart = (lines + dots).properties(
+        title=title, width=1200, height=min(800, max(300, len(plot) * 25))
+    )
 
     return chart
 
+
 def housing_price_dumbbell(df: pd.DataFrame) -> alt.Chart:
     """
-    This function creates a dumbbell plot for housing prices 
+    This function creates a dumbbell plot for housing prices
     before and after each data center permit year.
     """
     return dumbbell_plot(
@@ -96,7 +105,8 @@ def housing_price_dumbbell(df: pd.DataFrame) -> alt.Chart:
         value_lab="Average Housing Price",
         title="Housing Prices Before and After Data Center Permit",
         before_lab="Before Permit",
-        after_lab="After Permit")
+        after_lab="After Permit",
+    )
 
 
 def housing_costs_dumbbell(df: pd.DataFrame) -> alt.Chart:
@@ -111,7 +121,9 @@ def housing_costs_dumbbell(df: pd.DataFrame) -> alt.Chart:
         value_lab="Housing Cost Score",
         title="Housing Cost Scores Before and After Data Center Permit",
         before_lab="Before Permit",
-        after_lab="After Permit")
+        after_lab="After Permit",
+    )
+
 
 def main():
     """
@@ -131,6 +143,7 @@ def main():
     housing_cost_chart.save("data/Visualizations/housing_cost_dumbbell.html")
 
     print("Dumbnell plots saved in data folder.")
+
 
 if __name__ == "__main__":
     main()

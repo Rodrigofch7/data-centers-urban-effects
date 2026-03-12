@@ -3,10 +3,10 @@ import altair as alt
 
 from data_centers_next_door.data_visualizations.hp_hc_dumbnell_plots import (
     dumbbell_plot,
-    housing_price_dumbbell)
+    housing_price_dumbbell,
+)
 
-from data_centers_next_door.data_visualizations.impact_score_bar_chart import (
-    impactscore_barchart)
+from data_centers_next_door.data_visualizations.impact_score_bar_chart import impactscore_barchart
 
 
 def main():
@@ -51,6 +51,7 @@ def main():
     impact_value = impact_row["Impact_Score"]
 
     assert pd.notna(impact_value)
+
 
 if __name__ == "__main__":
     main()

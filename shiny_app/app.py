@@ -11,34 +11,34 @@ import matplotlib.colors as mcolors
 import io, base64
 import json
 
-# To run: uv run shiny run shiny_app.app.py or uv run shiny run shiny_app/app.py  
+# To run: uv run shiny run shiny_app.app.py or uv run shiny run shiny_app/app.py
 # To deploy: uv run rsconnect deploy shiny shiny_app/
 
 # =============================================================================
 # BRAND & DESIGN TOKENS
 # =============================================================================
-COLOR_MAROON            = "#800000"
-COLOR_MAROON_DARK       = "#5a0000"
-COLOR_MAROON_MID        = "#a00000"
+COLOR_MAROON = "#800000"
+COLOR_MAROON_DARK = "#5a0000"
+COLOR_MAROON_MID = "#a00000"
 
-COLOR_DARK_BACKGROUND   = "#0d1117"
-COLOR_PANEL_BACKGROUND  = "#161b22"
-COLOR_CARD_BACKGROUND   = "#1c2128"
-COLOR_BORDER            = "#30363d"
-COLOR_TEXT_PRIMARY      = "#e6edf3"
-COLOR_TEXT_SECONDARY    = "#8b949e"
-COLOR_TEXT_ACCENT       = "#f0a500"
+COLOR_DARK_BACKGROUND = "#0d1117"
+COLOR_PANEL_BACKGROUND = "#161b22"
+COLOR_CARD_BACKGROUND = "#1c2128"
+COLOR_BORDER = "#30363d"
+COLOR_TEXT_PRIMARY = "#e6edf3"
+COLOR_TEXT_SECONDARY = "#8b949e"
+COLOR_TEXT_ACCENT = "#f0a500"
 
 # =============================================================================
 # COLORBLIND-FRIENDLY COLORMAPS PER METRIC GROUP
 # =============================================================================
 COLORMAP_BY_METRIC_GROUP = {
-    "zillow":      "YlOrRd",
-    "census":      "RdPu",
-    "centers":     "YlGn",
+    "zillow": "YlOrRd",
+    "census": "RdPu",
+    "centers": "YlGn",
     "electricity": "YlOrBr",
-    "water":       "GnBu",
-    "hhc":         "OrRd",
+    "water": "GnBu",
+    "hhc": "OrRd",
 }
 
 
@@ -81,8 +81,8 @@ def build_choropleth_colormap(column_values: pd.Series, metric_label: str, metri
 # =============================================================================
 # COLUMN DEFINITIONS
 # =============================================================================
-ZILLOW_YEARS               = [2010, 2019, 2024]
-ZILLOW_COLUMN_LABELS       = [f"Median Home Value ({year})" for year in ZILLOW_YEARS]
+ZILLOW_YEARS = [2010, 2019, 2024]
+ZILLOW_COLUMN_LABELS = [f"Median Home Value ({year})" for year in ZILLOW_YEARS]
 
 CENSUS_COLUMN_LABELS = [
     "Median Household Income",
@@ -126,14 +126,14 @@ METRIC_GROUP_DISPLAY_CHOICES = {}
 # =============================================================================
 def load_all_geodata():
     """Load ZIP-code polygons, data center points, and the impact score CSV."""
-    app_dir            = os.path.dirname(os.path.abspath(__file__))
-    zip_polygons_path  = os.path.join(app_dir, "Data", "Chicago.gpkg")
-    data_centers_path  = os.path.join(app_dir, "Data", "ChicagoDataCenters.gpkg")
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    zip_polygons_path = os.path.join(app_dir, "Data", "Chicago.gpkg")
+    data_centers_path = os.path.join(app_dir, "Data", "ChicagoDataCenters.gpkg")
     impact_scores_path = os.path.join(app_dir, "Data", "chicag_data_centers_impact_scores.csv")
 
-    zip_polygons_gdf  = gpd.read_file(zip_polygons_path)
-    data_centers_gdf  = gpd.read_file(data_centers_path)
-    impact_scores_df  = (
+    zip_polygons_gdf = gpd.read_file(zip_polygons_path)
+    data_centers_gdf = gpd.read_file(data_centers_path)
+    impact_scores_df = (
         pd.read_csv(impact_scores_path) if os.path.exists(impact_scores_path) else pd.DataFrame()
     )
     return zip_polygons_gdf, data_centers_gdf, impact_scores_df, zip_polygons_path
@@ -141,23 +141,27 @@ def load_all_geodata():
 
 zip_polygons_gdf, data_centers_gdf, impact_scores_df, zip_polygons_path = load_all_geodata()
 
-zip_polygons_gdf  = zip_polygons_gdf.to_crs(epsg=4326)
-data_centers_gdf  = data_centers_gdf.to_crs(epsg=4326)
+zip_polygons_gdf = zip_polygons_gdf.to_crs(epsg=4326)
+data_centers_gdf = data_centers_gdf.to_crs(epsg=4326)
 
-zip_polygons_gdf.geometry  = zip_polygons_gdf.geometry.simplify(tolerance=0.001, preserve_topology=True)
-data_centers_gdf.geometry  = data_centers_gdf.geometry.simplify(tolerance=0.001, preserve_topology=True)
+zip_polygons_gdf.geometry = zip_polygons_gdf.geometry.simplify(
+    tolerance=0.001, preserve_topology=True
+)
+data_centers_gdf.geometry = data_centers_gdf.geometry.simplify(
+    tolerance=0.001, preserve_topology=True
+)
 
-_zip_centroids     = zip_polygons_gdf.geometry.to_crs(epsg=3857).centroid.to_crs(epsg=4326)
+_zip_centroids = zip_polygons_gdf.geometry.to_crs(epsg=3857).centroid.to_crs(epsg=4326)
 DEFAULT_MAP_CENTER = [float(_zip_centroids.y.mean()), float(_zip_centroids.x.mean())]
 
-TOOLTIP_GEO_FIELDS  = []
+TOOLTIP_GEO_FIELDS = []
 TOOLTIP_GEO_ALIASES = []
 for column_name, display_alias in [
-    ("Zip Code",   "📍 ZIP"),
-    ("City",       "🏙️ City"),
-    ("Community",  "🏘️ Community"),
-    ("County",     "🗺️ County"),
-    ("State",      "📌 State"),
+    ("Zip Code", "📍 ZIP"),
+    ("City", "🏙️ City"),
+    ("Community", "🏘️ Community"),
+    ("County", "🗺️ County"),
+    ("State", "📌 State"),
 ]:
     if column_name in zip_polygons_gdf.columns:
         TOOLTIP_GEO_FIELDS.append(column_name)
@@ -173,13 +177,13 @@ def get_columns_present_in_dataframe(candidate_columns: list) -> list:
     return [col for col in candidate_columns if col in zip_attributes_df.columns]
 
 
-ZILLOW_COLUMNS              = get_columns_present_in_dataframe(ZILLOW_COLUMN_LABELS)
-CENSUS_COLUMNS              = get_columns_present_in_dataframe(CENSUS_COLUMN_LABELS)
-DATA_CENTER_COLUMNS         = get_columns_present_in_dataframe(DATA_CENTER_COLUMN_LABELS)
-ELECTRICITY_COLUMNS         = get_columns_present_in_dataframe(ELECTRICITY_COLUMN_LABELS)
-WATER_SEWER_COLUMNS         = get_columns_present_in_dataframe(WATER_SEWER_COLUMN_LABELS)
+ZILLOW_COLUMNS = get_columns_present_in_dataframe(ZILLOW_COLUMN_LABELS)
+CENSUS_COLUMNS = get_columns_present_in_dataframe(CENSUS_COLUMN_LABELS)
+DATA_CENTER_COLUMNS = get_columns_present_in_dataframe(DATA_CENTER_COLUMN_LABELS)
+ELECTRICITY_COLUMNS = get_columns_present_in_dataframe(ELECTRICITY_COLUMN_LABELS)
+WATER_SEWER_COLUMNS = get_columns_present_in_dataframe(WATER_SEWER_COLUMN_LABELS)
 HOUSING_COST_BURDEN_COLUMNS = get_columns_present_in_dataframe(HOUSING_COST_BURDEN_COLUMN_LABELS)
-OPTIONAL_COLUMNS            = get_columns_present_in_dataframe(OPTIONAL_COLUMN_LABELS)
+OPTIONAL_COLUMNS = get_columns_present_in_dataframe(OPTIONAL_COLUMN_LABELS)
 
 ALL_NUMERIC_COLUMNS = (
     ZILLOW_COLUMNS
@@ -193,25 +197,42 @@ ALL_NUMERIC_COLUMNS = (
 
 for column_name in ALL_NUMERIC_COLUMNS:
     if column_name in zip_attributes_df.columns:
-        zip_attributes_df[column_name] = pd.to_numeric(zip_attributes_df[column_name], errors="coerce")
+        zip_attributes_df[column_name] = pd.to_numeric(
+            zip_attributes_df[column_name], errors="coerce"
+        )
     if column_name in zip_polygons_gdf.columns:
-        zip_polygons_gdf[column_name]  = pd.to_numeric(zip_polygons_gdf[column_name],  errors="coerce")
+        zip_polygons_gdf[column_name] = pd.to_numeric(
+            zip_polygons_gdf[column_name], errors="coerce"
+        )
 
 COLUMN_TO_METRIC_GROUP = {}
-for col in ZILLOW_COLUMNS:              COLUMN_TO_METRIC_GROUP[col] = "zillow"
-for col in CENSUS_COLUMNS:              COLUMN_TO_METRIC_GROUP[col] = "census"
-for col in DATA_CENTER_COLUMNS:         COLUMN_TO_METRIC_GROUP[col] = "centers"
-for col in ELECTRICITY_COLUMNS:         COLUMN_TO_METRIC_GROUP[col] = "electricity"
-for col in WATER_SEWER_COLUMNS:         COLUMN_TO_METRIC_GROUP[col] = "water"
-for col in HOUSING_COST_BURDEN_COLUMNS: COLUMN_TO_METRIC_GROUP[col] = "hhc"
-for col in OPTIONAL_COLUMNS:            COLUMN_TO_METRIC_GROUP[col] = "census"
+for col in ZILLOW_COLUMNS:
+    COLUMN_TO_METRIC_GROUP[col] = "zillow"
+for col in CENSUS_COLUMNS:
+    COLUMN_TO_METRIC_GROUP[col] = "census"
+for col in DATA_CENTER_COLUMNS:
+    COLUMN_TO_METRIC_GROUP[col] = "centers"
+for col in ELECTRICITY_COLUMNS:
+    COLUMN_TO_METRIC_GROUP[col] = "electricity"
+for col in WATER_SEWER_COLUMNS:
+    COLUMN_TO_METRIC_GROUP[col] = "water"
+for col in HOUSING_COST_BURDEN_COLUMNS:
+    COLUMN_TO_METRIC_GROUP[col] = "hhc"
+for col in OPTIONAL_COLUMNS:
+    COLUMN_TO_METRIC_GROUP[col] = "census"
 
-if ZILLOW_COLUMNS:              METRIC_GROUP_DISPLAY_CHOICES["zillow"]      = "🏠  Home Values"
-if CENSUS_COLUMNS:              METRIC_GROUP_DISPLAY_CHOICES["census"]      = "👥  Demographics"
-if DATA_CENTER_COLUMNS:         METRIC_GROUP_DISPLAY_CHOICES["centers"]     = "🏢  Data Centers"
-if ELECTRICITY_COLUMNS:         METRIC_GROUP_DISPLAY_CHOICES["electricity"] = "⚡  Electricity"
-if WATER_SEWER_COLUMNS:         METRIC_GROUP_DISPLAY_CHOICES["water"]       = "💧  Water & Sewer"
-if HOUSING_COST_BURDEN_COLUMNS: METRIC_GROUP_DISPLAY_CHOICES["hhc"]         = "💰 Housing Cost Burden"
+if ZILLOW_COLUMNS:
+    METRIC_GROUP_DISPLAY_CHOICES["zillow"] = "🏠  Home Values"
+if CENSUS_COLUMNS:
+    METRIC_GROUP_DISPLAY_CHOICES["census"] = "👥  Demographics"
+if DATA_CENTER_COLUMNS:
+    METRIC_GROUP_DISPLAY_CHOICES["centers"] = "🏢  Data Centers"
+if ELECTRICITY_COLUMNS:
+    METRIC_GROUP_DISPLAY_CHOICES["electricity"] = "⚡  Electricity"
+if WATER_SEWER_COLUMNS:
+    METRIC_GROUP_DISPLAY_CHOICES["water"] = "💧  Water & Sewer"
+if HOUSING_COST_BURDEN_COLUMNS:
+    METRIC_GROUP_DISPLAY_CHOICES["hhc"] = "💰 Housing Cost Burden"
 
 ZIP_POLYGONS_GEOJSON = zip_polygons_gdf.__geo_interface__
 
@@ -229,13 +250,19 @@ def load_boundary_layer(filename: str):
     return None
 
 
-illinois_boundary_gdf     = load_boundary_layer("illinois.gpkg")
-cook_county_boundary_gdf  = load_boundary_layer("cook_county.gpkg")
+illinois_boundary_gdf = load_boundary_layer("illinois.gpkg")
+cook_county_boundary_gdf = load_boundary_layer("cook_county.gpkg")
 chicago_city_boundary_gdf = load_boundary_layer("chicagoproper.gpkg")
 
-ILLINOIS_BOUNDARY_GEOJSON     = illinois_boundary_gdf.__geo_interface__     if illinois_boundary_gdf     is not None else None
-COOK_COUNTY_BOUNDARY_GEOJSON  = cook_county_boundary_gdf.__geo_interface__  if cook_county_boundary_gdf  is not None else None
-CHICAGO_CITY_BOUNDARY_GEOJSON = chicago_city_boundary_gdf.__geo_interface__ if chicago_city_boundary_gdf is not None else None
+ILLINOIS_BOUNDARY_GEOJSON = (
+    illinois_boundary_gdf.__geo_interface__ if illinois_boundary_gdf is not None else None
+)
+COOK_COUNTY_BOUNDARY_GEOJSON = (
+    cook_county_boundary_gdf.__geo_interface__ if cook_county_boundary_gdf is not None else None
+)
+CHICAGO_CITY_BOUNDARY_GEOJSON = (
+    chicago_city_boundary_gdf.__geo_interface__ if chicago_city_boundary_gdf is not None else None
+)
 
 
 # =============================================================================
@@ -251,13 +278,17 @@ def format_number_for_display(value, is_currency: bool = False, decimal_places: 
         return "—"
     value = float(value)
     if is_currency:
-        if abs(value) >= 1_000_000: return f"${value / 1_000_000:.1f}M"
-        if abs(value) >= 1_000:     return f"${value / 1_000:.0f}k"
+        if abs(value) >= 1_000_000:
+            return f"${value / 1_000_000:.1f}M"
+        if abs(value) >= 1_000:
+            return f"${value / 1_000:.0f}k"
         return f"${value:,.0f}"
     if decimal_places is not None:
         return f"{value:,.{decimal_places}f}"
-    if abs(value) >= 1_000_000: return f"{value / 1_000_000:.2f}M"
-    if abs(value) >= 1_000:     return f"{value:,.0f}"
+    if abs(value) >= 1_000_000:
+        return f"{value / 1_000_000:.2f}M"
+    if abs(value) >= 1_000:
+        return f"{value:,.0f}"
     return f"{value:,.3f}"
 
 
@@ -267,14 +298,17 @@ def format_number_for_display(value, is_currency: bool = False, decimal_places: 
 def build_data_center_tooltip_html(row: pd.Series) -> str:
     """Build the HTML tooltip shown when hovering a data center marker on the map."""
     facility_name = str(row.get("Facility Name", row.get("facility", "")) or "").strip()
-    zip_code      = str(row.get("Data Center ZIP Code", row.get("zip_code", "—")) or "—").strip()
+    zip_code = str(row.get("Data Center ZIP Code", row.get("zip_code", "—")) or "—").strip()
     operator_name = str(row.get("Operator", row.get("operator", "—")) or "—").strip()
-    city_name     = str(row.get("City", row.get("city_in_de", "—")) or "—").strip()
+    city_name = str(row.get("City", row.get("city_in_de", "—")) or "—").strip()
 
     for placeholder in ("", "nan", "None"):
-        if zip_code      == placeholder: zip_code      = "—"
-        if operator_name == placeholder: operator_name = "—"
-        if city_name     == placeholder: city_name     = "—"
+        if zip_code == placeholder:
+            zip_code = "—"
+        if operator_name == placeholder:
+            operator_name = "—"
+        if city_name == placeholder:
+            city_name = "—"
 
     header_html = (
         f"<b>🏢 {facility_name}</b>"
@@ -294,13 +328,11 @@ def build_data_center_tooltip_html(row: pd.Series) -> str:
 def encode_matplotlib_figure_as_html_img(fig, dpi: int = 150) -> str:
     """Save a matplotlib Figure to a base64 PNG and return an <img> HTML tag."""
     buffer = io.BytesIO()
-    fig.savefig(buffer, format="png", bbox_inches="tight",
-                facecolor=fig.get_facecolor(), dpi=dpi)
+    fig.savefig(buffer, format="png", bbox_inches="tight", facecolor=fig.get_facecolor(), dpi=dpi)
     buffer.seek(0)
     base64_png = base64.b64encode(buffer.read()).decode()
     plt.close(fig)
     return f'<img src="data:image/png;base64,{base64_png}" style="width:100%;border-radius:6px;">'
-
 
 
 def add_data_center_markers_to_map(folium_map: folium.Map):
@@ -541,7 +573,6 @@ body, .bslib-page-sidebar, .bslib-sidebar-layout {{ background: {COLOR_DARK_BACK
 # UI
 # =============================================================================
 app_ui = ui.page_navbar(
-
     # ── INFRASTRUCTURE ATLAS ──────────────────────────────────────────────────
     ui.nav_panel(
         "Infrastructure Atlas",
@@ -616,7 +647,7 @@ app_ui = ui.page_navbar(
                         "just 2014 and 2015, 8 new data centers started operating. We anticipate that this dramatic "
                         "rate of growth will continue in the upcoming years, especially as AI usage proliferates.",
                         style=f"font-family:'DM Sans',sans-serif;font-size:12px;color:{COLOR_TEXT_SECONDARY};"
-                              "line-height:1.7;padding:4px 8px 8px;margin:0;",
+                        "line-height:1.7;padding:4px 8px 8px;margin:0;",
                     ),
                     full_screen=True,
                 ),
@@ -628,49 +659,47 @@ app_ui = ui.page_navbar(
                         "with one datacenter each. It should be noted that some companies may be owned by the same "
                         "parent companies (e.g., Aligned Data Centers is owned by BlackRock and its financial partners).",
                         style=f"font-family:'DM Sans',sans-serif;font-size:12px;color:{COLOR_TEXT_SECONDARY};"
-                              "line-height:1.7;padding:4px 8px 8px;margin:0;",
+                        "line-height:1.7;padding:4px 8px 8px;margin:0;",
                     ),
                     full_screen=True,
                 ),
                 col_widths=(6, 6),
             ),
-                ui.card(
-                    ui.card_header("Before vs. After Permit Comparison"),
-                    ui.div(
-                        ui.input_select(
-                            "before_after_metric",
-                            None,
-                            choices={
-                                "price": "🏠  Housing Price",
-                                "hc_score": "💰  Housing Cost Score",
-                            },
-                            selected="price",
-                        ),
-                        style=f"padding:10px 16px 0;background:{COLOR_CARD_BACKGROUND};max-width:260px;",
+            ui.card(
+                ui.card_header("Before vs. After Permit Comparison"),
+                ui.div(
+                    ui.input_select(
+                        "before_after_metric",
+                        None,
+                        choices={
+                            "price": "🏠  Housing Price",
+                            "hc_score": "💰  Housing Cost Score",
+                        },
+                        selected="price",
                     ),
-                    ui.output_ui("atlas_before_after_price_chart"),
-                    full_screen=True,
+                    style=f"padding:10px 16px 0;background:{COLOR_CARD_BACKGROUND};max-width:260px;",
                 ),
+                ui.output_ui("atlas_before_after_price_chart"),
+                full_screen=True,
+            ),
             style="display:flex; flex-direction:column; gap:16px; padding:16px 12px;",
         ),
-                ui.card(
-                    ui.card_header("Facility Impact Directory"),
-                    ui.p(
-                        "The Facility Impact Directory shows the impact scores for each data center. "
-                        "A small number of facilities have the highest scores, suggesting larger combined changes in "
-                        "housing prices and housing cost indicators. Most data centers fall within a middle range, "
-                        "indicating moderate impact, while several on the right show lower scores and smaller changes. "
-                        "Overall, the distribution highlights variation in the potential local effects associated "
-                        "with different data center developments.",
-                        style=f"font-family:'DM Sans',sans-serif;font-size:12px;color:{COLOR_TEXT_SECONDARY};"
-                              "line-height:1.7;padding:8px 16px 4px;margin:0;",
-                    ),
-                    ui.output_ui("atlas_facility_directory_table"),
-                    full_screen=True,
+        ui.card(
+            ui.card_header("Facility Impact Directory"),
+            ui.p(
+                "The Facility Impact Directory shows the impact scores for each data center. "
+                "A small number of facilities have the highest scores, suggesting larger combined changes in "
+                "housing prices and housing cost indicators. Most data centers fall within a middle range, "
+                "indicating moderate impact, while several on the right show lower scores and smaller changes. "
+                "Overall, the distribution highlights variation in the potential local effects associated "
+                "with different data center developments.",
+                style=f"font-family:'DM Sans',sans-serif;font-size:12px;color:{COLOR_TEXT_SECONDARY};"
+                "line-height:1.7;padding:8px 16px 4px;margin:0;",
             ),
-
+            ui.output_ui("atlas_facility_directory_table"),
+            full_screen=True,
+        ),
     ),
-
     # ── MAP ────────────────────────────────────────────────────────────────────
     ui.nav_panel(
         "Map",
@@ -679,17 +708,18 @@ app_ui = ui.page_navbar(
                 ui.h4("Explore"),
                 ui.div("METRIC GROUP", class_="sidebar-section-title"),
                 ui.input_select(
-                    "metric_group", None,
+                    "metric_group",
+                    None,
                     choices=METRIC_GROUP_DISPLAY_CHOICES,
                     selected=list(METRIC_GROUP_DISPLAY_CHOICES.keys())[0],
                 ),
                 ui.div("VARIABLE", class_="sidebar-section-title"),
                 ui.output_ui("metric_variable_selector"),
                 ui.hr(),
-                ui.input_checkbox("show_data_center_markers",  "Data Centers",  value=True),
-                ui.input_checkbox("show_illinois_boundary",    "Illinois",      value=True),
-                ui.input_checkbox("show_cook_county_boundary", "Cook County",   value=True),
-                ui.input_checkbox("show_chicago_city_boundary","Chicago",       value=True),
+                ui.input_checkbox("show_data_center_markers", "Data Centers", value=True),
+                ui.input_checkbox("show_illinois_boundary", "Illinois", value=True),
+                ui.input_checkbox("show_cook_county_boundary", "Cook County", value=True),
+                ui.input_checkbox("show_chicago_city_boundary", "Chicago", value=True),
                 ui.hr(),
                 ui.HTML(f"""
                 <div id="map-guide-wrap" style="margin-bottom:12px;">
@@ -730,7 +760,7 @@ app_ui = ui.page_navbar(
                 ui.hr(),
                 ui.div(
                     "Sources: Zillow (2010, 2019, 2024) · ACS 2022 · NHGIS 2022 · Manual DC inventory",
-                    class_="source-note"
+                    class_="source-note",
                 ),
                 style=f"background:{COLOR_PANEL_BACKGROUND}; min-width:225px;",
             ),
@@ -743,10 +773,8 @@ app_ui = ui.page_navbar(
             ),
         ),
     ),
-
     ui.nav_spacer(),
     ui.nav_control(ui.tags.img(src="uchicago_logo.png", class_="uchicago-logo-nav")),
-
     header=ui.tags.head(
         ui.tags.style(DASHBOARD_CSS),
         ui.tags.link(rel="preconnect", href="https://fonts.googleapis.com"),
@@ -771,9 +799,8 @@ app_ui = ui.page_navbar(
           });
         """),
     ),
-
     title=ui.HTML(
-        "<span style=\"display:inline-flex;flex-direction:column;line-height:1.1;vertical-align:middle;gap:1px;\">"
+        '<span style="display:inline-flex;flex-direction:column;line-height:1.1;vertical-align:middle;gap:1px;">'
         "<span style=\"font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#f0a500;letter-spacing:0.2em;text-transform:uppercase;\">Chicagoland</span>"
         "<span style=\"font-family:'DM Serif Display',serif;font-size:17px;color:#fff;letter-spacing:0.02em;\">Data Center Dashboard</span>"
         "</span>"
@@ -787,7 +814,6 @@ app_ui = ui.page_navbar(
 # SERVER
 # =============================================================================
 def server(input, output, session):
-
     # ── SHARED REACTIVE DATA ─────────────────────────────────────────────────
 
     @reactive.Calc
@@ -800,12 +826,20 @@ def server(input, output, session):
             return pd.DataFrame()
         df = impact_scores_df.copy()
         numeric_impact_columns = [
-            "Housing_Avg_Price", "Housing_Avg_Price_Before_Permit",
-            "Housing_Avg_Price_After_Permit", "HC_Score_Before", "HC_Score_After",
-            "Housing_Change", "HC_Score_Change", "Complete",
-            "Housing_Change_score", "Housing_Change_z_score",
-            "HC_Score_Change_score", "HC_Score_Change_z_score",
-            "impact_score", "impact_z_score",
+            "Housing_Avg_Price",
+            "Housing_Avg_Price_Before_Permit",
+            "Housing_Avg_Price_After_Permit",
+            "HC_Score_Before",
+            "HC_Score_After",
+            "Housing_Change",
+            "HC_Score_Change",
+            "Complete",
+            "Housing_Change_score",
+            "Housing_Change_z_score",
+            "HC_Score_Change_score",
+            "HC_Score_Change_z_score",
+            "impact_score",
+            "impact_z_score",
         ]
         for col in numeric_impact_columns:
             if col in df.columns:
@@ -816,7 +850,7 @@ def server(input, output, session):
 
     def render_empty_state(
         headline: str = "Impact data file not found",
-        subtext: str  = "Place chicag_data_centers_impact_scores.csv in the Data/ folder",
+        subtext: str = "Place chicag_data_centers_impact_scores.csv in the Data/ folder",
     ):
         """Return a styled empty-state UI block with an info icon, headline, and subtext."""
         return ui.HTML(
@@ -839,10 +873,14 @@ def server(input, output, session):
         if df.empty:
             return render_empty_state()
 
-        num_facilities      = len(df)
-        avg_impact_score    = df["impact_score"].mean() if "impact_score" in df.columns else float("nan")
+        num_facilities = len(df)
+        avg_impact_score = (
+            df["impact_score"].mean() if "impact_score" in df.columns else float("nan")
+        )
 
-        avg_impact_color   = "#4ade80" if (not np.isnan(avg_impact_score)    and avg_impact_score    > 0)  else "#f87171"
+        avg_impact_color = (
+            "#4ade80" if (not np.isnan(avg_impact_score) and avg_impact_score > 0) else "#f87171"
+        )
 
         def build_kpi_card_html(label, value_text, subtext, accent_color):
             return (
@@ -857,10 +895,19 @@ def server(input, output, session):
                 f"</div>"
             )
 
-        cards_html = "".join([
-            build_kpi_card_html("Facilities",       str(num_facilities),                                                   "data centers in dataset",            COLOR_TEXT_ACCENT),
-            build_kpi_card_html("Avg Impact Score", f"{avg_impact_score:+.3f}" if not np.isnan(avg_impact_score) else "—", "composite score across all ZIPs",    avg_impact_color),
-        ])
+        cards_html = "".join(
+            [
+                build_kpi_card_html(
+                    "Facilities", str(num_facilities), "data centers in dataset", COLOR_TEXT_ACCENT
+                ),
+                build_kpi_card_html(
+                    "Avg Impact Score",
+                    f"{avg_impact_score:+.3f}" if not np.isnan(avg_impact_score) else "—",
+                    "composite score across all ZIPs",
+                    avg_impact_color,
+                ),
+            ]
+        )
         return ui.HTML(f"<div style='display:flex;gap:16px;padding:4px 4px 0;'>{cards_html}</div>")
 
     @render.ui
@@ -874,24 +921,35 @@ def server(input, output, session):
 
         if not df.empty and "First_Operation_Permit" in df.columns:
             permit_year_series = df[["First_Operation_Permit"]].copy()
-            permit_year_series["year"] = pd.to_numeric(permit_year_series["First_Operation_Permit"], errors="coerce")
+            permit_year_series["year"] = pd.to_numeric(
+                permit_year_series["First_Operation_Permit"], errors="coerce"
+            )
         elif not data_centers_gdf.empty:
             for col in data_centers_gdf.columns:
                 if any(k in col.lower() for k in ["permit", "operation", "year", "opened"]):
-                    permit_year_series = pd.DataFrame({"year": pd.to_numeric(data_centers_gdf[col], errors="coerce")})
+                    permit_year_series = pd.DataFrame(
+                        {"year": pd.to_numeric(data_centers_gdf[col], errors="coerce")}
+                    )
                     break
 
         if permit_year_series is None or permit_year_series["year"].dropna().empty:
-            return render_empty_state("No permit year data found", "Add First_Operation_Permit to impact CSV")
+            return render_empty_state(
+                "No permit year data found", "Add First_Operation_Permit to impact CSV"
+            )
 
         permit_year_series = permit_year_series.dropna(subset=["year"])
         permit_year_series["year"] = permit_year_series["year"].astype(int)
-        cumulative_by_year = permit_year_series["year"].value_counts().sort_index().cumsum().reset_index()
+        cumulative_by_year = (
+            permit_year_series["year"].value_counts().sort_index().cumsum().reset_index()
+        )
         cumulative_by_year.columns = ["year", "cumulative_count"]
 
-        chart_data_points = [{"year": int(r["year"]), "count": int(r["cumulative_count"])} for _, r in cumulative_by_year.iterrows()]
-        chart_data_json   = json.dumps(chart_data_points)
-        total_facilities  = int(cumulative_by_year["cumulative_count"].max())
+        chart_data_points = [
+            {"year": int(r["year"]), "count": int(r["cumulative_count"])}
+            for _, r in cumulative_by_year.iterrows()
+        ]
+        chart_data_json = json.dumps(chart_data_points)
+        total_facilities = int(cumulative_by_year["cumulative_count"].max())
 
         html = f"""
 <div style="font-family:monospace;padding:8px 4px;height:100%;">
@@ -965,11 +1023,12 @@ def server(input, output, session):
         datacenters_housing_df = pd.read_csv(DATACENTERS_HOUSING_CSV_PATH, dtype={"Zipcode": str})
 
         unique_dc_count_by_operator = (
-            datacenters_housing_df
-            .groupby("Operator")["Address"]
+            datacenters_housing_df.groupby("Operator")["Address"]
             .nunique()
             .reset_index(name="Data Center Count")
-            .sort_values("Data Center Count", ascending=False)  # ascending so largest bar ends up at top
+            .sort_values(
+                "Data Center Count", ascending=False
+            )  # ascending so largest bar ends up at top
         )
 
         chart_rows = [
@@ -1041,10 +1100,10 @@ def server(input, output, session):
         metric_choice = input.before_after_metric()
 
         if metric_choice == "price":
-            before_col  = "Housing_Avg_Price_Before_Permit"
-            after_col   = "Housing_Avg_Price_After_Permit"
+            before_col = "Housing_Avg_Price_Before_Permit"
+            after_col = "Housing_Avg_Price_After_Permit"
             x_axis_label = "Average Housing Price"
-            is_currency  = True
+            is_currency = True
             chart_description = (
                 "The dumbbell plots compares average housing prices and housing costs around each data center before and "
                 "after the first permit was issued. "
@@ -1055,10 +1114,10 @@ def server(input, output, session):
                 "locations, the overall pattern suggests a general upward trend."
             )
         else:
-            before_col  = "HC_Score_Before"
-            after_col   = "HC_Score_After"
+            before_col = "HC_Score_Before"
+            after_col = "HC_Score_After"
             x_axis_label = "Housing Cost Score"
-            is_currency  = False
+            is_currency = False
             chart_description = (
                 "The dumbbell plot compares housing cost scores around each data center before and after "
                 "the first permit was issued. "
@@ -1077,29 +1136,39 @@ def server(input, output, session):
             return render_empty_state()
 
         sort_col = "Housing_Change" if metric_choice == "price" else "HC_Score_Change"
-        plot_df = plot_df.dropna(subset=[sort_col]).sort_values(sort_col, ascending=False).reset_index(drop=True)
+        plot_df = (
+            plot_df.dropna(subset=[sort_col])
+            .sort_values(sort_col, ascending=False)
+            .reset_index(drop=True)
+        )
 
         chart_rows = []
         for _, row in plot_df.iterrows():
-            op    = str(row.get("Operator", "Unknown"))[:26]
-            zip_  = str(row.get("Zipcode", "")).strip()
+            op = str(row.get("Operator", "Unknown"))[:26]
+            zip_ = str(row.get("Zipcode", "")).strip()
             label = f"{op} ({zip_})" if zip_ else op
-            pb    = float(row[before_col])
-            pa    = float(row[after_col])
-            imp   = float(row["impact_score"])
-            pct   = (pa - pb) / (pb or 1) * 100
-            chart_rows.append({
-                "label":      label,
-                "before":     round(pb, 3),
-                "after":      round(pa, 3),
-                "before_fmt": format_number_for_display(pb, is_currency=is_currency, decimal_places=None if is_currency else 3),
-                "after_fmt":  format_number_for_display(pa, is_currency=is_currency, decimal_places=None if is_currency else 3),
-                "pct":        round(pct, 1),
-                "impact":     round(imp, 3),
-            })
+            pb = float(row[before_col])
+            pa = float(row[after_col])
+            imp = float(row["impact_score"])
+            pct = (pa - pb) / (pb or 1) * 100
+            chart_rows.append(
+                {
+                    "label": label,
+                    "before": round(pb, 3),
+                    "after": round(pa, 3),
+                    "before_fmt": format_number_for_display(
+                        pb, is_currency=is_currency, decimal_places=None if is_currency else 3
+                    ),
+                    "after_fmt": format_number_for_display(
+                        pa, is_currency=is_currency, decimal_places=None if is_currency else 3
+                    ),
+                    "pct": round(pct, 1),
+                    "impact": round(imp, 3),
+                }
+            )
 
-        pct_up   = sum(1 for r in chart_rows if r["after"] >= r["before"]) / len(chart_rows) * 100
-        ann_col  = "#4ade80" if pct_up >= 50 else "#f87171"
+        pct_up = sum(1 for r in chart_rows if r["after"] >= r["before"]) / len(chart_rows) * 100
+        ann_col = "#4ade80" if pct_up >= 50 else "#f87171"
         rows_json = json.dumps(chart_rows)
 
         html = f"""
@@ -1184,9 +1253,17 @@ def server(input, output, session):
             return render_empty_state()
 
         DESIRED_COLUMNS = [
-            "Operator", "Address", "Zipcode", "CountyName", "First_Operation_Permit",
-            "Housing_Avg_Price_Before_Permit", "Housing_Avg_Price_After_Permit",
-            "Housing_Change", "HC_Score_Change", "impact_score", "impact_z_score",
+            "Operator",
+            "Address",
+            "Zipcode",
+            "CountyName",
+            "First_Operation_Permit",
+            "Housing_Avg_Price_Before_Permit",
+            "Housing_Avg_Price_After_Permit",
+            "Housing_Change",
+            "HC_Score_Change",
+            "impact_score",
+            "impact_z_score",
         ]
         display_columns = [col for col in DESIRED_COLUMNS if col in df.columns] or list(df.columns)
         display_df = df[display_columns].copy()
@@ -1194,32 +1271,42 @@ def server(input, output, session):
             display_df = display_df.sort_values("impact_z_score", ascending=False)
 
         COLUMN_LABELS = {
-            "Operator": "Operator", "Address": "Address", "Zipcode": "ZIP",
-            "CountyName": "County", "First_Operation_Permit": "Year",
-            "Housing_Avg_Price_Before_Permit": "Price Before", "Housing_Avg_Price_After_Permit": "Price After",
-            "Housing_Change": "Hsg Δ%", "HC_Score_Change": "HC Δ",
-            "impact_score": "Impact", "impact_z_score": "Impact Z",
+            "Operator": "Operator",
+            "Address": "Address",
+            "Zipcode": "ZIP",
+            "CountyName": "County",
+            "First_Operation_Permit": "Year",
+            "Housing_Avg_Price_Before_Permit": "Price Before",
+            "Housing_Avg_Price_After_Permit": "Price After",
+            "Housing_Change": "Hsg Δ%",
+            "HC_Score_Change": "HC Δ",
+            "impact_score": "Impact",
+            "impact_z_score": "Impact Z",
         }
         SCORE_COLS = {"impact_score", "impact_z_score", "HC_Score_Change", "Housing_Change"}
         PRICE_COLS = {"Housing_Avg_Price_Before_Permit", "Housing_Avg_Price_After_Permit"}
 
         def fmt_cell(value, col):
-            if pd.isna(value): return f"<span style='color:{COLOR_BORDER};'>—</span>"
+            if pd.isna(value):
+                return f"<span style='color:{COLOR_BORDER};'>—</span>"
             if col in SCORE_COLS:
-                v = float(value); c = "#4ade80" if v > 0 else "#f87171"
+                v = float(value)
+                c = "#4ade80" if v > 0 else "#f87171"
                 return f"<span style='color:{c};font-weight:600;'>{v:+.3f}</span>"
             if col in PRICE_COLS:
                 return f"<span style='color:{COLOR_TEXT_SECONDARY};'>{format_number_for_display(float(value), is_currency=True)}</span>"
             if col == "First_Operation_Permit":
-                try: return f"<span style='color:{COLOR_TEXT_SECONDARY};'>{int(float(value))}</span>"
-                except: return str(value)
+                try:
+                    return f"<span style='color:{COLOR_TEXT_SECONDARY};'>{int(float(value))}</span>"
+                except:
+                    return str(value)
             return f"<span style='color:{COLOR_TEXT_PRIMARY};'>{value}</span>"
 
         header_html = "".join(
             f"<th style='padding:8px 12px;color:{COLOR_TEXT_SECONDARY};font-family:monospace;"
             f"font-size:9px;letter-spacing:0.11em;text-transform:uppercase;text-align:left;"
             f"white-space:nowrap;border-bottom:2px solid {COLOR_MAROON};position:sticky;top:0;"
-            f"background:{COLOR_PANEL_BACKGROUND};z-index:1;'>{COLUMN_LABELS.get(c,c)}</th>"
+            f"background:{COLOR_PANEL_BACKGROUND};z-index:1;'>{COLUMN_LABELS.get(c, c)}</th>"
             for c in display_columns
         )
         rows_html = ""
@@ -1227,7 +1314,7 @@ def server(input, output, session):
             bg = COLOR_CARD_BACKGROUND if i % 2 == 0 else COLOR_DARK_BACKGROUND
             cells = "".join(
                 f"<td style='padding:7px 12px;border-bottom:1px solid {COLOR_BORDER};"
-                f"font-family:monospace;font-size:11px;white-space:nowrap;'>{fmt_cell(row[c],c)}</td>"
+                f"font-family:monospace;font-size:11px;white-space:nowrap;'>{fmt_cell(row[c], c)}</td>"
                 for c in display_columns
             )
             rows_html += (
@@ -1255,25 +1342,34 @@ def server(input, output, session):
         """Render the variable dropdown for the currently selected metric group."""
         selected_group = input.metric_group()
         columns_by_group = {
-            "zillow": ZILLOW_COLUMNS, "census": CENSUS_COLUMNS,
-            "centers": DATA_CENTER_COLUMNS, "electricity": ELECTRICITY_COLUMNS,
-            "water": WATER_SEWER_COLUMNS, "hhc": HOUSING_COST_BURDEN_COLUMNS,
+            "zillow": ZILLOW_COLUMNS,
+            "census": CENSUS_COLUMNS,
+            "centers": DATA_CENTER_COLUMNS,
+            "electricity": ELECTRICITY_COLUMNS,
+            "water": WATER_SEWER_COLUMNS,
+            "hhc": HOUSING_COST_BURDEN_COLUMNS,
         }
         available_columns = columns_by_group.get(selected_group, [])
         if not available_columns:
             return ui.p("No columns available.", style="color:#f87171;font-size:12px;")
         default = available_columns[-1] if selected_group == "zillow" else available_columns[0]
-        return ui.input_select("metric", None, choices={c: c for c in available_columns}, selected=default)
+        return ui.input_select(
+            "metric", None, choices={c: c for c in available_columns}, selected=default
+        )
 
     def get_selected_metric_column() -> str:
         """Safely read the currently selected metric column."""
-        try:    return input.metric()
-        except: return ALL_NUMERIC_COLUMNS[0] if ALL_NUMERIC_COLUMNS else None
+        try:
+            return input.metric()
+        except:
+            return ALL_NUMERIC_COLUMNS[0] if ALL_NUMERIC_COLUMNS else None
 
     def get_selected_metric_group() -> str:
         """Safely read the currently selected metric group."""
-        try:    return input.metric_group()
-        except: return "census"
+        try:
+            return input.metric_group()
+        except:
+            return "census"
 
     @render.ui
     @reactive.event(
@@ -1290,16 +1386,18 @@ def server(input, output, session):
         and data center markers.
         """
         selected_metric = get_selected_metric_column()
-        selected_group  = get_selected_metric_group()
+        selected_group = get_selected_metric_group()
 
         if not selected_metric or selected_metric not in zip_polygons_gdf.columns:
             fallback = [c for c in ALL_NUMERIC_COLUMNS if c in zip_polygons_gdf.columns]
-            if not fallback: return ui.HTML("")
+            if not fallback:
+                return ui.HTML("")
             selected_metric = fallback[0]
-            selected_group  = COLUMN_TO_METRIC_GROUP.get(selected_metric, "census")
+            selected_group = COLUMN_TO_METRIC_GROUP.get(selected_metric, "census")
 
-        folium_map = folium.Map(location=DEFAULT_MAP_CENTER, zoom_start=8,
-                                tiles="OpenStreetMap", prefer_canvas=True)
+        folium_map = folium.Map(
+            location=DEFAULT_MAP_CENTER, zoom_start=8, tiles="OpenStreetMap", prefer_canvas=True
+        )
 
         choropleth_colormap, scale_min, scale_max = build_choropleth_colormap(
             zip_polygons_gdf[selected_metric], selected_metric, selected_group
@@ -1308,9 +1406,18 @@ def server(input, output, session):
         def get_zip_polygon_style(feature):
             val = feature["properties"].get(selected_metric)
             if val is None or (isinstance(val, float) and np.isnan(val)):
-                return {"fillColor": "#1c2128", "color": "#30363d", "weight": 0.4, "fillOpacity": 0.6}
-            return {"fillColor": choropleth_colormap(max(scale_min, min(scale_max, float(val)))),
-                    "color": "#21262d", "weight": 0.6, "fillOpacity": 0.75}
+                return {
+                    "fillColor": "#1c2128",
+                    "color": "#30363d",
+                    "weight": 0.4,
+                    "fillOpacity": 0.6,
+                }
+            return {
+                "fillColor": choropleth_colormap(max(scale_min, min(scale_max, float(val)))),
+                "color": "#21262d",
+                "weight": 0.6,
+                "fillOpacity": 0.75,
+            }
 
         def get_zip_polygon_highlight_style(feature):
             return {"fillOpacity": 1.0, "weight": 2.2, "color": COLOR_TEXT_ACCENT}
@@ -1322,7 +1429,8 @@ def server(input, output, session):
             tooltip=folium.GeoJsonTooltip(
                 fields=TOOLTIP_GEO_FIELDS + [selected_metric],
                 aliases=TOOLTIP_GEO_ALIASES + [f"📊 {selected_metric}"],
-                localize=True, sticky=True,
+                localize=True,
+                sticky=True,
                 style=(
                     f"background-color:{COLOR_CARD_BACKGROUND};color:{COLOR_TEXT_PRIMARY};"
                     "font-family:monospace;font-size:12px;padding:9px 13px;"
@@ -1333,7 +1441,8 @@ def server(input, output, session):
         ).add_to(folium_map)
 
         choropleth_colormap.add_to(folium_map)
-        folium_map.get_root().html.add_child(folium.Element(f"""
+        folium_map.get_root().html.add_child(
+            folium.Element(f"""
             <style>
             .legend {{ background:{COLOR_CARD_BACKGROUND}!important;border:1px solid {COLOR_BORDER}!important;
             border-radius:8px!important;color:#ffffff!important;font-family:monospace!important;
@@ -1341,22 +1450,44 @@ def server(input, output, session):
             .legend svg text {{ fill:#ffffff!important; }}
             .legend * {{ color:#ffffff!important; }}
             </style>
-        """))
+        """)
+        )
 
         if input.show_illinois_boundary() and ILLINOIS_BOUNDARY_GEOJSON is not None:
-            folium.GeoJson(ILLINOIS_BOUNDARY_GEOJSON,
-                style_function=lambda f: {"fillColor":"none","fillOpacity":0.0,"color":"#000000","weight":2},
-                interactive=False).add_to(folium_map)
+            folium.GeoJson(
+                ILLINOIS_BOUNDARY_GEOJSON,
+                style_function=lambda f: {
+                    "fillColor": "none",
+                    "fillOpacity": 0.0,
+                    "color": "#000000",
+                    "weight": 2,
+                },
+                interactive=False,
+            ).add_to(folium_map)
 
         if input.show_cook_county_boundary() and COOK_COUNTY_BOUNDARY_GEOJSON is not None:
-            folium.GeoJson(COOK_COUNTY_BOUNDARY_GEOJSON,
-                style_function=lambda f: {"fillColor":"none","fillOpacity":0.0,"color":"#ffffff","weight":2},
-                interactive=False).add_to(folium_map)
+            folium.GeoJson(
+                COOK_COUNTY_BOUNDARY_GEOJSON,
+                style_function=lambda f: {
+                    "fillColor": "none",
+                    "fillOpacity": 0.0,
+                    "color": "#ffffff",
+                    "weight": 2,
+                },
+                interactive=False,
+            ).add_to(folium_map)
 
         if input.show_chicago_city_boundary() and CHICAGO_CITY_BOUNDARY_GEOJSON is not None:
-            folium.GeoJson(CHICAGO_CITY_BOUNDARY_GEOJSON,
-                style_function=lambda f: {"fillColor":"none","fillOpacity":0.0,"color":"#ffffff","weight":2},
-                interactive=False).add_to(folium_map)
+            folium.GeoJson(
+                CHICAGO_CITY_BOUNDARY_GEOJSON,
+                style_function=lambda f: {
+                    "fillColor": "none",
+                    "fillOpacity": 0.0,
+                    "color": "#ffffff",
+                    "weight": 2,
+                },
+                interactive=False,
+            ).add_to(folium_map)
 
         if input.show_data_center_markers():
             add_data_center_markers_to_map(folium_map)

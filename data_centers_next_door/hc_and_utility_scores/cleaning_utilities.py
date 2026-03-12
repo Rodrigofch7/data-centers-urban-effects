@@ -2,11 +2,12 @@ import pandas as pd
 from pathlib import Path
 import re
 
-#--Helper Functions--
+
+# --Helper Functions--
 def rename_dfcols(col, prefix_map: dict, code_map: dict, match_pattern):
     """
     Renames column of dataframe for column names in this format:\n
-        {prefix}{code} -> {Elec/Water}{range}\n 
+        {prefix}{code} -> {Elec/Water}{range}\n
         (e.g. APCXE004 -> Elec 0-50)\n
     Variables given in IPUMS are poorly coded (e.g. APCXE004 represents Elec 0-50 column).
     This function is necessary to recode them to be understandable.
@@ -19,68 +20,73 @@ def rename_dfcols(col, prefix_map: dict, code_map: dict, match_pattern):
             return f"{mapped_prefix} {code_map[code]}"
     return col
 
+
 def calculate_elecScore(df):
     """
-    Constructs score by factorizing each electricity price range into 1-6, and 
-    multiplying each of those categories by their proportion of respondents 
+    Constructs score by factorizing each electricity price range into 1-6, and
+    multiplying each of those categories by their proportion of respondents
     (effectively a weighted average).
     """
     eleclst = df[
         [
-        "Elec 0-50",
-        "Elec 50-99",
-        "Elec 100-149",
-        "Elec 150-199",
-        "Elec 200-249",
-        "Elec 250+",
-        ]]
+            "Elec 0-50",
+            "Elec 50-99",
+            "Elec 100-149",
+            "Elec 150-199",
+            "Elec 200-249",
+            "Elec 250+",
+        ]
+    ]
     denom = df["totalElec"].replace(0, pd.NA)
     return eleclst.mul([1, 2, 3, 4, 5, 6], axis=1).sum(axis=1) / denom
 
+
 def calculate_waterScore(df):
     """
-    Constructs score by factorizing each water/sewage price range into 1-6, and 
-    multiplying each of those categories by their proportion of respondents 
+    Constructs score by factorizing each water/sewage price range into 1-6, and
+    multiplying each of those categories by their proportion of respondents
     (effectively a weighted average).
     """
     waterlst = df[
-    [
-        "Water 0-125",
-        "Water 125-249",
-        "Water 250-499",
-        "Water 500-749",
-        "Water 750-999",
-        "Water 1000+",
-    ]]
+        [
+            "Water 0-125",
+            "Water 125-249",
+            "Water 250-499",
+            "Water 500-749",
+            "Water 750-999",
+            "Water 1000+",
+        ]
+    ]
     denom = df["totalWater"].replace(0, pd.NA)
     return waterlst.mul([1, 2, 3, 4, 5, 6], axis=1).sum(axis=1) / denom
 
+
 def calculate_hhcscore(df):
     """
-    Constructs score by factorizing each household cost price range into 1-13, and 
-    multiplying each of those categories by their proportion of respondents 
+    Constructs score by factorizing each household cost price range into 1-13, and
+    multiplying each of those categories by their proportion of respondents
     (effectively a weighted average).
     """
     hhclst = df[
-            [
-                "HHC 0-100",
-                "HHC 100-200",
-                "HHC 200-300",
-                "HHC 300-400",
-                "HHC 400-500",
-                "HHC 500-600",
-                "HHC 600-700",
-                "HHC 700-800",
-                "HHC 800-900",
-                "HHC 900-1000",
-                "HHC 1000-1500",
-                "HHC 1500-2000",
-                "HHC 2000+",
-            ]
+        [
+            "HHC 0-100",
+            "HHC 100-200",
+            "HHC 200-300",
+            "HHC 300-400",
+            "HHC 400-500",
+            "HHC 500-600",
+            "HHC 600-700",
+            "HHC 700-800",
+            "HHC 800-900",
+            "HHC 900-1000",
+            "HHC 1000-1500",
+            "HHC 1500-2000",
+            "HHC 2000+",
         ]
+    ]
     denom = df["HHC Total"].replace(0, pd.NA)
-    return  (hhclst.mul([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], axis=1).sum(axis=1)
-            / denom)
+    return hhclst.mul([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], axis=1).sum(axis=1) / denom
+
 
 def consolidate_hhc_2000_plus(df):
     """
@@ -99,21 +105,29 @@ def consolidate_hhc_2000_plus(df):
     return df
 
 
-#--Main functions (cleaning the data)--
+# --Main functions (cleaning the data)--
 def cleaning_elec_water():
     """
     Cleaning electricity and water/sewage data by zip code from IPUMS NGHIS.\n
     Raw Data: counts of people that fall into price buckets (e.g. 0-50$, $50-100, etc.)\n
-    Output: Cleaned csv of electricity/water price score for each zip code in each 5 year 
+    Output: Cleaned csv of electricity/water price score for each zip code in each 5 year
     period between 2017-2021 to 2020-2024.\n
-    Raw data needs to be renamed since it contains variable names that can only be 
+    Raw data needs to be renamed since it contains variable names that can only be
     understood with the codebook that IPUMS NHGIS provides
     """
     # Importing and loading data
-    d2017t2021 = pd.read_csv(Path("data/energy and water data/nhgis0003_ds255_20215_zcta.csv"),dtype={'ZCTA5A': str})
-    d2018t2022 = pd.read_csv(Path("data/energy and water data/nhgis0003_ds263_20225_zcta.csv"),dtype={'ZCTA5A': str})
-    d2019t2023 = pd.read_csv(Path("data/energy and water data/nhgis0003_ds268_20235_zcta.csv"),dtype={'ZCTA5A': str})
-    d2020t2024 = pd.read_csv(Path("data/energy and water data/nhgis0003_ds273_20245_zcta.csv"),dtype={'ZCTA5A': str})
+    d2017t2021 = pd.read_csv(
+        Path("data/energy and water data/nhgis0003_ds255_20215_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    d2018t2022 = pd.read_csv(
+        Path("data/energy and water data/nhgis0003_ds263_20225_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    d2019t2023 = pd.read_csv(
+        Path("data/energy and water data/nhgis0003_ds268_20235_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    d2020t2024 = pd.read_csv(
+        Path("data/energy and water data/nhgis0003_ds273_20245_zcta.csv"), dtype={"ZCTA5A": str}
+    )
 
     # Mappings for renaming
     prefix_map = {
@@ -184,7 +198,6 @@ def cleaning_elec_water():
         # Creating scores
         df["elecScore"] = calculate_elecScore(df)
         df["waterScore"] = calculate_waterScore(df)
-        
 
     # Merging dataframes by isolating the columns they have in common, merging (by rowstacking)
     # off of that
@@ -241,23 +254,51 @@ def cleaning_hhcosts():
     2007-2011 to 2020-2024.
     """
 
-    # Importing data for household costs (hhc) 
-    hhc2007t2011 = pd.read_csv(Path("data/hhc/nhgis0007_ds185_20115_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2008t2012 = pd.read_csv(Path("data/hhc/nhgis0007_ds192_20125_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2009t2013 = pd.read_csv(Path("data/hhc/nhgis0007_ds202_20135_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2010t2014 = pd.read_csv(Path("data/hhc/nhgis0007_ds207_20145_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2011t2015 = pd.read_csv(Path("data/hhc/nhgis0007_ds216_20155_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2012t2016 = pd.read_csv(Path("data/hhc/nhgis0007_ds226_20165_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2013t2017 = pd.read_csv(Path("data/hhc/nhgis0007_ds234_20175_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2014t2018 = pd.read_csv(Path("data/hhc/nhgis0007_ds240_20185_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2015t2019 = pd.read_csv(Path("data/hhc/nhgis0007_ds245_20195_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2016t2020 = pd.read_csv(Path("data/hhc/nhgis0007_ds250_20205_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2017t2021 = pd.read_csv(Path("data/hhc/nhgis0007_ds255_20215_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2018t2022 = pd.read_csv(Path("data/hhc/nhgis0007_ds263_20225_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2019t2023 = pd.read_csv(Path("data/hhc/nhgis0007_ds268_20235_zcta.csv"),dtype={'ZCTA5A': str})
-    hhc2020t2024 = pd.read_csv(Path("data/hhc/nhgis0007_ds273_20245_zcta.csv"),dtype={'ZCTA5A': str})
+    # Importing data for household costs (hhc)
+    hhc2007t2011 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds185_20115_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2008t2012 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds192_20125_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2009t2013 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds202_20135_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2010t2014 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds207_20145_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2011t2015 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds216_20155_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2012t2016 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds226_20165_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2013t2017 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds234_20175_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2014t2018 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds240_20185_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2015t2019 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds245_20195_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2016t2020 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds250_20205_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2017t2021 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds255_20215_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2018t2022 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds263_20225_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2019t2023 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds268_20235_zcta.csv"), dtype={"ZCTA5A": str}
+    )
+    hhc2020t2024 = pd.read_csv(
+        Path("data/hhc/nhgis0007_ds273_20245_zcta.csv"), dtype={"ZCTA5A": str}
+    )
 
-    #Defining maps for renaming column names
+    # Defining maps for renaming column names
     prefix_map = {}
 
     suffix_map = {
@@ -316,9 +357,8 @@ def cleaning_hhcosts():
         # Getting column totals
         df["HHC Total"] = df.filter(regex=r"^HHC\s[\w\d\+\-]+").sum(axis=1)
         # Making household cost score
-        
-        df["HHCScore"] = calculate_hhcscore(df)
 
+        df["HHCScore"] = calculate_hhcscore(df)
 
     # Merging dataframes by isolating the columns they have in common, merging (by rowstacking)
     # off of that
@@ -391,29 +431,32 @@ def cleaning_hhcosts():
 
     combined_df.to_csv(Path("data/clean_elecwater_hc_scores/monthHHC_cleaned.csv"), index=False)
 
+
 def filter_and_pivot():
     """
     Takes household cost data, filters for Chicago metro area zip codes,
     and converts it into wide format for dashboard visualization
     """
-    all_us_df = pd.read_csv(Path("data/clean_elecwater_hc_scores/monthHHC_cleaned.csv"),dtype={"ZCTA5A": str})
-    #String of Chicago Metro Area Zip codes, split this into list
-    chicago_metro_zips = pd.read_csv("data/chicago_metro_zips.csv", 
-                                     dtype={"unique(chicagometro_housing$ZCTA5CE20)": str})
-    
-    #Filtering for U.S. zip codes in chicago_metro_zips
-    chicago_metro_df = all_us_df.merge(
-    chicago_metro_zips,
-    left_on="ZCTA5A",
-    right_on="unique(chicagometro_housing$ZCTA5CE20)",
-    how="inner"
+    all_us_df = pd.read_csv(
+        Path("data/clean_elecwater_hc_scores/monthHHC_cleaned.csv"), dtype={"ZCTA5A": str}
     )
-    #Pivoting HHC score to wide format 
-    chicago_pivoted = chicago_metro_df.pivot(index = "ZCTA5A",
-                                             columns="YEAR", 
-                                             values="HHCScore")
+    # String of Chicago Metro Area Zip codes, split this into list
+    chicago_metro_zips = pd.read_csv(
+        "data/chicago_metro_zips.csv", dtype={"unique(chicagometro_housing$ZCTA5CE20)": str}
+    )
+
+    # Filtering for U.S. zip codes in chicago_metro_zips
+    chicago_metro_df = all_us_df.merge(
+        chicago_metro_zips,
+        left_on="ZCTA5A",
+        right_on="unique(chicagometro_housing$ZCTA5CE20)",
+        how="inner",
+    )
+    # Pivoting HHC score to wide format
+    chicago_pivoted = chicago_metro_df.pivot(index="ZCTA5A", columns="YEAR", values="HHCScore")
 
     chicago_pivoted.to_csv(Path("data/clean_elecwater_hc_scores/pivoted_HHCScores.csv"))
+
 
 if __name__ == "__main__":
     cleaning_elec_water()

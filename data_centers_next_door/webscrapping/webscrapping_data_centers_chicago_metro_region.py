@@ -18,64 +18,84 @@ OUTPUT_PATH = ROOT / "data/housing_and_data_centers_data/il_in_wi_datacenters.cs
 
 CITIES = [
     # Illinois (137+55+2+2+2+6+1+4 = 209 total)
-    ("Chicago",          "illinois/chicago"),
-    ("Aurora",           "illinois/aurora"),
-    ("Bloomington",      "illinois/bloomington"),
-    ("Peoria",           "illinois/peoria"),
-    ("Champaign",        "illinois/champaign"),
-    ("Springfield",      "illinois/springfield"),
-    ("Rockford",         "illinois/rockford"),
-    ("Edwardsville",     "illinois/edwardsville"),
-    ("Rantoul",          "illinois/rantoul"),
+    ("Chicago", "illinois/chicago"),
+    ("Aurora", "illinois/aurora"),
+    ("Bloomington", "illinois/bloomington"),
+    ("Peoria", "illinois/peoria"),
+    ("Champaign", "illinois/champaign"),
+    ("Springfield", "illinois/springfield"),
+    ("Rockford", "illinois/rockford"),
+    ("Edwardsville", "illinois/edwardsville"),
+    ("Rantoul", "illinois/rantoul"),
     # Indiana (1+1+45+13+15+7+2+1+1+1+1 = 88 total)
-    ("Columbus",         "indiana/columbus"),
-    ("Hammond",          "indiana/hammond"),
-    ("Indianapolis",     "indiana/indianapolis"),
-    ("South Bend",       "indiana/south-bend"),
-    ("Fort Wayne",       "indiana/fort-wayne"),
-    ("Gary",             "indiana/gary"),
-    ("Evansville",       "indiana/evansville"),
-    ("La Porte",         "indiana/la-porte"),
-    ("Jeffersonville",   "indiana/jeffersonville"),
-    ("Noblesville",      "indiana/noblesville"),
-    ("Portage",          "indiana/portage"),
+    ("Columbus", "indiana/columbus"),
+    ("Hammond", "indiana/hammond"),
+    ("Indianapolis", "indiana/indianapolis"),
+    ("South Bend", "indiana/south-bend"),
+    ("Fort Wayne", "indiana/fort-wayne"),
+    ("Gary", "indiana/gary"),
+    ("Evansville", "indiana/evansville"),
+    ("La Porte", "indiana/la-porte"),
+    ("Jeffersonville", "indiana/jeffersonville"),
+    ("Noblesville", "indiana/noblesville"),
+    ("Portage", "indiana/portage"),
     # Wisconsin (3+2+2+12+12+1+16+1+2 = 51 total)
-    ("Appleton",         "wisconsin/appleton"),
-    ("Eau Claire",       "wisconsin/eau-claire"),
-    ("Green Bay",        "wisconsin/green-bay"),
-    ("Kenosha",          "wisconsin/kenosha"),
-    ("Madison",          "wisconsin/madison"),
-    ("Marshfield",       "wisconsin/marshfield"),
-    ("Milwaukee",        "wisconsin/milwaukee"),
-    ("Wausau",           "wisconsin/wausau"),
+    ("Appleton", "wisconsin/appleton"),
+    ("Eau Claire", "wisconsin/eau-claire"),
+    ("Green Bay", "wisconsin/green-bay"),
+    ("Kenosha", "wisconsin/kenosha"),
+    ("Madison", "wisconsin/madison"),
+    ("Marshfield", "wisconsin/marshfield"),
+    ("Milwaukee", "wisconsin/milwaukee"),
+    ("Wausau", "wisconsin/wausau"),
     ("Wisconsin Rapids", "wisconsin/wisconsin-rapids"),
 ]
 
 CITY_TO_STATE = {
     # Illinois
-    "Chicago": "IL", "Aurora": "IL", "Bloomington": "IL", "Peoria": "IL",
-    "Champaign": "IL", "Springfield": "IL", "Rockford": "IL",
-    "Edwardsville": "IL", "Rantoul": "IL",
+    "Chicago": "IL",
+    "Aurora": "IL",
+    "Bloomington": "IL",
+    "Peoria": "IL",
+    "Champaign": "IL",
+    "Springfield": "IL",
+    "Rockford": "IL",
+    "Edwardsville": "IL",
+    "Rantoul": "IL",
     # Indiana
-    "Columbus": "IN", "Hammond": "IN", "Indianapolis": "IN",
-    "South Bend": "IN", "Fort Wayne": "IN", "Gary": "IN",
-    "Evansville": "IN", "La Porte": "IN", "Jeffersonville": "IN",
-    "Noblesville": "IN", "Portage": "IN",
+    "Columbus": "IN",
+    "Hammond": "IN",
+    "Indianapolis": "IN",
+    "South Bend": "IN",
+    "Fort Wayne": "IN",
+    "Gary": "IN",
+    "Evansville": "IN",
+    "La Porte": "IN",
+    "Jeffersonville": "IN",
+    "Noblesville": "IN",
+    "Portage": "IN",
     # Wisconsin
-    "Appleton": "WI", "Eau Claire": "WI", "Green Bay": "WI",
-    "Kenosha": "WI", "Madison": "WI", "Marshfield": "WI",
-    "Milwaukee": "WI", "Wausau": "WI", "Wisconsin Rapids": "WI",
+    "Appleton": "WI",
+    "Eau Claire": "WI",
+    "Green Bay": "WI",
+    "Kenosha": "WI",
+    "Madison": "WI",
+    "Marshfield": "WI",
+    "Milwaukee": "WI",
+    "Wausau": "WI",
+    "Wisconsin Rapids": "WI",
 }
 
 TARGET_STATES = {"IL", "IN", "WI"}
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    "(KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 }
 
 
 # ── Core Logic (module-level so importable for tests) ─────────────────────────
+
 
 def parse_datacenter_html(html_content, city_name):
     """
@@ -100,13 +120,13 @@ def parse_datacenter_html(html_content, city_name):
             continue
 
         record = {
-            "scraped_city":  city_name,
-            "state":         state,
-            "facility":      facility_name,
-            "operator":      details[0] if len(details) > 0 else "N/A",
-            "street":        details[1] if len(details) > 1 else "N/A",
-            "zip_code":      details[2] if len(details) > 2 else "N/A",
-            "city_in_desc":  details[3] if len(details) > 3 else "N/A",
+            "scraped_city": city_name,
+            "state": state,
+            "facility": facility_name,
+            "operator": details[0] if len(details) > 0 else "N/A",
+            "street": details[1] if len(details) > 1 else "N/A",
+            "zip_code": details[2] if len(details) > 2 else "N/A",
+            "city_in_desc": details[3] if len(details) > 3 else "N/A",
         }
         records.append(record)
 

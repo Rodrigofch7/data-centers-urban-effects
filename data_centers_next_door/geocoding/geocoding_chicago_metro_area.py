@@ -12,19 +12,42 @@ import re
 #   uv run python -m data_centers_next_door.geocoding.geocoding_chicago_metro_area
 ROOT = Path(__file__).resolve().parents[2]
 
-INPUT_PATH  = ROOT / "data/housing_and_data_centers_data/il_in_wi_datacenters.csv"
+INPUT_PATH = ROOT / "data/housing_and_data_centers_data/il_in_wi_datacenters.csv"
 OUTPUT_PATH = ROOT / "data/spatial_data/centers/ChicagoMetroDataCenters.shp"
 
 IL_IN_WI_CITIES = [
     # Illinois
-    "Chicago", "Aurora", "Bloomington", "Peoria", "Champaign",
-    "Springfield", "Rockford", "Edwardsville", "Rantoul",
+    "Chicago",
+    "Aurora",
+    "Bloomington",
+    "Peoria",
+    "Champaign",
+    "Springfield",
+    "Rockford",
+    "Edwardsville",
+    "Rantoul",
     # Indiana
-    "Columbus", "Hammond", "Indianapolis", "South Bend", "Fort Wayne",
-    "Gary", "Evansville", "La Porte", "Jeffersonville", "Noblesville", "Portage",
+    "Columbus",
+    "Hammond",
+    "Indianapolis",
+    "South Bend",
+    "Fort Wayne",
+    "Gary",
+    "Evansville",
+    "La Porte",
+    "Jeffersonville",
+    "Noblesville",
+    "Portage",
     # Wisconsin
-    "Appleton", "Eau Claire", "Green Bay", "Kenosha", "Madison",
-    "Marshfield", "Milwaukee", "Wausau", "Wisconsin Rapids",
+    "Appleton",
+    "Eau Claire",
+    "Green Bay",
+    "Kenosha",
+    "Madison",
+    "Marshfield",
+    "Milwaukee",
+    "Wausau",
+    "Wisconsin Rapids",
 ]
 
 
@@ -33,7 +56,7 @@ def clean_address(street):
     """Removes Suite, Floor, and extra noise that confuses Nominatim."""
     if not street or pd.isna(street):
         return ""
-    s = re.split(r'#|Suite|Ste|Floor|Fl|Unit|,', street, flags=re.IGNORECASE)[0]
+    s = re.split(r"#|Suite|Ste|Floor|Fl|Unit|,", street, flags=re.IGNORECASE)[0]
     return s.strip()
 
 
@@ -45,7 +68,7 @@ def geocode_robust(street, city, state, geocode_osm, geocode_arcgis, max_retries
     3. ArcGIS Fallback
     4. OSM Street Only (last resort)
     """
-    full_query   = {"street": street, "city": city, "state": state, "country": "USA"}
+    full_query = {"street": street, "city": city, "state": state, "country": "USA"}
     cleaned_street = clean_address(street)
 
     for attempt in range(max_retries):
@@ -57,7 +80,9 @@ def geocode_robust(street, city, state, geocode_osm, geocode_arcgis, max_retries
 
             # Tier 2: Nominatim Cleaned
             if cleaned_street != street:
-                loc = geocode_osm({"street": cleaned_street, "city": city, "state": state, "country": "USA"})
+                loc = geocode_osm(
+                    {"street": cleaned_street, "city": city, "state": state, "country": "USA"}
+                )
                 if loc:
                     return loc, "osm_cleaned"
 
@@ -68,16 +93,20 @@ def geocode_robust(street, city, state, geocode_osm, geocode_arcgis, max_retries
                 return loc, "arcgis_fallback"
 
             # Tier 4: Street Only (OSM)
-            street_only = ' '.join(cleaned_street.split()[1:]) if len(cleaned_street.split()) > 1 else None
+            street_only = (
+                " ".join(cleaned_street.split()[1:]) if len(cleaned_street.split()) > 1 else None
+            )
             if street_only:
-                loc = geocode_osm({"street": street_only, "city": city, "state": state, "country": "USA"})
+                loc = geocode_osm(
+                    {"street": street_only, "city": city, "state": state, "country": "USA"}
+                )
                 if loc:
                     return loc, "osm_street_only"
 
             return None, "failed"
 
         except (GeocoderTimedOut, GeocoderUnavailable):
-            time.sleep(2 ** attempt)
+            time.sleep(2**attempt)
 
     return None, "timeout"
 
@@ -96,24 +125,25 @@ def main():
     print(f"Removed {before - after} duplicate address rows ({before} → {after} records)")
 
     # 3. Initialize geocoders
-    geolocator      = Nominatim(user_agent="datacenters_geocoder_v2")
-    _geocode_osm    = RateLimiter(geolocator.geocode, min_delay_seconds=1.1)
-    _geocode_arcgis = RateLimiter(ArcGIS().geocode,   min_delay_seconds=0.2)
+    geolocator = Nominatim(user_agent="datacenters_geocoder_v2")
+    _geocode_osm = RateLimiter(geolocator.geocode, min_delay_seconds=1.1)
+    _geocode_arcgis = RateLimiter(ArcGIS().geocode, min_delay_seconds=0.2)
 
     # 4. Geocode
     print("Starting robust geocoding...")
     results_list = []
     for _, row in tqdm(df.iterrows(), total=len(df)):
         loc, method = geocode_robust(
-            row["street"], row["city_in_desc"], row["state"],
-            _geocode_osm, _geocode_arcgis
+            row["street"], row["city_in_desc"], row["state"], _geocode_osm, _geocode_arcgis
         )
-        results_list.append({
-            "location_obj": loc,
-            "match_method": method,
-            "latitude":     loc.latitude  if loc else None,
-            "longitude":    loc.longitude if loc else None,
-        })
+        results_list.append(
+            {
+                "location_obj": loc,
+                "match_method": method,
+                "latitude": loc.latitude if loc else None,
+                "longitude": loc.longitude if loc else None,
+            }
+        )
 
     results_df = pd.DataFrame(results_list)
     df = pd.concat([df.reset_index(drop=True), results_df], axis=1)
@@ -125,13 +155,13 @@ def main():
     df = df.dropna(subset=["latitude", "longitude"])
     df = df.drop_duplicates(subset=["latitude", "longitude"]).copy()
     after_coord = len(df)
-    print(f"Removed {before_coord - after_coord} coordinate-level duplicates ({before_coord} → {after_coord} records)")
+    print(
+        f"Removed {before_coord - after_coord} coordinate-level duplicates ({before_coord} → {after_coord} records)"
+    )
 
     # 6. Save
     gdf = gpd.GeoDataFrame(
-        df,
-        geometry=gpd.points_from_xy(df.longitude, df.latitude),
-        crs="EPSG:4326"
+        df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:4326"
     )
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)

@@ -79,7 +79,7 @@ FILES = [
     },
 ]
 
-MAP_PATH   = ROOT / "data/spatial_data/cities/ChicagoMetroArea.parquet"
+MAP_PATH = ROOT / "data/spatial_data/cities/ChicagoMetroArea.parquet"
 OUTPUT_PATH = ROOT / "data/energy and water data/nhgis_energy_water_wide.csv"
 
 
@@ -91,12 +91,7 @@ def main():
     print(f"Loaded {len(chicago_zips)} Chicago metro ZIP codes from parquet")
 
     # Anchor: full ZIP list — every row in the final output is guaranteed to exist here
-    anchor = (
-        gdf[["ZCTA5CE20"]]
-        .drop_duplicates()
-        .rename(columns={"ZCTA5CE20": "ZCTA5A"})
-        .copy()
-    )
+    anchor = gdf[["ZCTA5CE20"]].drop_duplicates().rename(columns={"ZCTA5CE20": "ZCTA5A"}).copy()
 
     # ── Process each ACS file ─────────────────────────────────────────────────
     frames = []
@@ -115,7 +110,7 @@ def main():
         for suffix, label in WATER_COLS.items():
             rename[wp + suffix] = f"{label}_{year}"
 
-        ctx_cols  = [c for c in KEEP_CONTEXT if c in df.columns]
+        ctx_cols = [c for c in KEEP_CONTEXT if c in df.columns]
         data_cols = [c for c in rename.keys() if c in df.columns]
         df = df[ctx_cols + data_cols].rename(columns=rename)
 

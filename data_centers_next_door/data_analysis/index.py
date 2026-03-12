@@ -30,9 +30,9 @@ def scoring(dataset, variable, method="composite"):
     elif method == "z-score":
         z_score_name = f"{variable}_z_score"
 
-        dataset[z_score_name] = (
-            dataset[variable] - dataset[variable].mean()
-        ) / dataset[variable].std()
+        dataset[z_score_name] = (dataset[variable] - dataset[variable].mean()) / dataset[
+            variable
+        ].std()
 
 
 # Creating the index score based on weights. The weights MUST add to 1!
@@ -57,6 +57,6 @@ def index(dataset, housing_weight=0.50, HC_weight=0.50, method="composite"):
         )
 
     elif method == "z-score":
-        return (
-            dataset["HC_Score_Change_z_score"] * weights["cost of living weight"]
-        ) + (dataset["Housing_Change_z_score"] * weights["housing weight"])
+        return (dataset["HC_Score_Change_z_score"] * weights["cost of living weight"]) + (
+            dataset["Housing_Change_z_score"] * weights["housing weight"]
+        )

@@ -7,38 +7,27 @@ from pathlib import Path
 #   uv run python -m data_centers_next_door.data_preparation.zillow_data
 ROOT = Path(__file__).resolve().parents[2]
 
-MAP_PATH    = ROOT / "data/spatial_data/cities/ChicagoMetroArea.parquet"
-INPUT_PATH  = ROOT / "data/housing_and_data_centers_data/zillow_chicago_metro_region.csv"
+MAP_PATH = ROOT / "data/spatial_data/cities/ChicagoMetroArea.parquet"
+INPUT_PATH = ROOT / "data/housing_and_data_centers_data/zillow_chicago_metro_region.csv"
 OUTPUT_PATH = ROOT / "data/housing_and_data_centers_data/zillow_yearly_estimates_chicago_metro.csv"
 
 
 # ── Core processing function (importable for tests) ───────────────────────────
 def process_zillow_yearly(df):
-    metadata_cols = [col for col in df.columns if not col.startswith('X')]
-    date_cols     = [col for col in df.columns if col.startswith('X')]
+    metadata_cols = [col for col in df.columns if not col.startswith("X")]
+    date_cols = [col for col in df.columns if col.startswith("X")]
 
     df_long = pd.melt(
-        df,
-        id_vars=metadata_cols,
-        value_vars=date_cols,
-        var_name='Date_Str',
-        value_name='Estimate'
+        df, id_vars=metadata_cols, value_vars=date_cols, var_name="Date_Str", value_name="Estimate"
     )
 
-    df_long['Year']     = df_long['Date_Str'].str.lstrip('X').str.split('.').str[0]
-    df_long['Estimate'] = pd.to_numeric(df_long['Estimate'], errors='coerce')
+    df_long["Year"] = df_long["Date_Str"].str.lstrip("X").str.split(".").str[0]
+    df_long["Estimate"] = pd.to_numeric(df_long["Estimate"], errors="coerce")
 
-    yearly_grouped = (
-        df_long
-        .groupby(metadata_cols + ['Year'])['Estimate']
-        .mean()
-        .reset_index()
-    )
+    yearly_grouped = df_long.groupby(metadata_cols + ["Year"])["Estimate"].mean().reset_index()
 
     final_df = yearly_grouped.pivot(
-        index=metadata_cols,
-        columns='Year',
-        values='Estimate'
+        index=metadata_cols, columns="Year", values="Estimate"
     ).reset_index()
     final_df.columns.name = None
     return final_df
