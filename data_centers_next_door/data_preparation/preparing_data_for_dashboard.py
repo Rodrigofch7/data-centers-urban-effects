@@ -16,25 +16,27 @@ import warnings
 # To run:
 #   uv run python -m data_centers_next_door.data_preparation.preparing_data_for_dashboard
 
-ROOT = Path(__file__).resolve().parents[2]  
+ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env")
 
 API_KEY = os.environ.get("CENSUS_API_KEY")
 if not API_KEY:
-    raise ValueError("CENSUS_API_KEY not found. Make sure your .env file exists and contains CENSUS_API_KEY=...")
+    raise ValueError(
+        "CENSUS_API_KEY not found. Make sure your .env file exists and contains CENSUS_API_KEY=..."
+    )
 
 ACS_YEAR = 2022
 
-INPUT_PATH        = ROOT / "data/housing_and_data_centers_data/zillow_yearly_estimates_chicago_metro.csv"
-MAP_PATH          = ROOT / "data/spatial_data/cities/ChicagoMetroArea.parquet"
-DC_INPUT_PATH     = ROOT / "data/spatial_data/centers/DataCentersChicagoMetroArea.parquet"
+INPUT_PATH = ROOT / "data/housing_and_data_centers_data/zillow_yearly_estimates_chicago_metro.csv"
+MAP_PATH = ROOT / "data/spatial_data/cities/ChicagoMetroArea.parquet"
+DC_INPUT_PATH = ROOT / "data/spatial_data/centers/DataCentersChicagoMetroArea.parquet"
 ENERGY_WATER_PATH = ROOT / "data/energy and water data/nhgis_energy_water_wide.csv"
-HHC_PATH          = ROOT / "data/clean_elecwater_hc_scores/pivoted_HHCScores.csv"
-OUTPUT_CITIES     = ROOT / "shiny_app/Data/Chicago.gpkg"
-OUTPUT_CENTERS    = ROOT / "shiny_app/Data/ChicagoDataCenters.gpkg"
+HHC_PATH = ROOT / "data/clean_elecwater_hc_scores/pivoted_HHCScores.csv"
+OUTPUT_CITIES = ROOT / "shiny_app/Data/Chicago.gpkg"
+OUTPUT_CENTERS = ROOT / "shiny_app/Data/ChicagoDataCenters.gpkg"
 
 # Only keep 3 Zillow snapshot years
-YEAR_COLS = ['2010', '2019', '2024']
+YEAR_COLS = ["2010", "2019", "2024"]
 
 # Only the ACS variables we actually need
 ACS_VARS_CLEAN = {
@@ -50,53 +52,60 @@ ACS_VARS_CLEAN = {
 }
 
 EW_COLS_NEEDED = [
-    'elec_charged_2022',
-    'elec_150_199_2022', 'elec_200_249_2022', 'elec_250_plus_2022',
-    'elec_50_99_2022', 'elec_100_149_2022', 'elec_lt_50_2022',
-    'water_charged_2022',
-    'water_lt_125_2022',
-    'water_125_249_2022', 'water_250_499_2022',
-    'water_500_749_2022', 'water_750_999_2022', 'water_1000_plus_2022',
+    "elec_charged_2022",
+    "elec_150_199_2022",
+    "elec_200_249_2022",
+    "elec_250_plus_2022",
+    "elec_50_99_2022",
+    "elec_100_149_2022",
+    "elec_lt_50_2022",
+    "water_charged_2022",
+    "water_lt_125_2022",
+    "water_125_249_2022",
+    "water_250_499_2022",
+    "water_500_749_2022",
+    "water_750_999_2022",
+    "water_1000_plus_2022",
 ]
 
 FRIENDLY_NAMES = {
-    'ZCTA5CE20':  'Zip Code',
-    'ALAND20':    'Land Area (sq meters)',
-    'City':   'City',
-    'County': 'County',
-    'State':  'State',
-    'Total Data Centers':              'Total Data Centers',
-    'Data Centers per 100k Residents': 'Data Centers per 100,000 Residents',
-    '2010': 'Median Home Value (2010)',
-    '2019': 'Median Home Value (2019)',
-    '2024': 'Median Home Value (2024)',
-    'Median Household Income':  'Median Household Income',
-    'Population Density':       'Population Density (per sq km)',
-    'Broadband %':              'Broadband Adoption Rate (%)',
-    'Poverty %':                'Poverty Rate (%)',
-    'Unemployment Rate %':      'Unemployment Rate (%)',
-    'Renter %':                 'Renter-Occupied Share (%)',
-    'Elec % Above $50/month':   'Electricity: % Paying Above $50/month',
-    'Elec % Above $150/month':  'Electricity: % Paying Above $150/month',
-    'Elec % Above $250/month':  'Electricity: % Paying $250+/month',
-    'Water % Above $125/year':  'Water & Sewer: % Paying Above $125/year',
-    'Water % Above $500/year':  'Water & Sewer: % Paying Above $500/year',
-    'Water % Above $1000/year': 'Water & Sewer: % Paying $1,000+/year',
-    'facility':   'Facility Name',
-    'operator':   'Operator',
-    'street':     'Street Address',
-    'zip_code':   'Data Center ZIP Code',
-    'city_in_de': 'City',
-    'latitude':   'Latitude',
-    'longitude':  'Longitude',
-    'HHC Score (2007-2011)': 'Household Cost Score (2007–2011)',
-    'HHC Score (2019-2023)': 'Household Cost Score (2019–2023)',
-    'HHC Score (2020-2024)': 'Household Cost Score (2020–2024)',
+    "ZCTA5CE20": "Zip Code",
+    "ALAND20": "Land Area (sq meters)",
+    "City": "City",
+    "County": "County",
+    "State": "State",
+    "Total Data Centers": "Total Data Centers",
+    "Data Centers per 100k Residents": "Data Centers per 100,000 Residents",
+    "2010": "Median Home Value (2010)",
+    "2019": "Median Home Value (2019)",
+    "2024": "Median Home Value (2024)",
+    "Median Household Income": "Median Household Income",
+    "Population Density": "Population Density (per sq km)",
+    "Broadband %": "Broadband Adoption Rate (%)",
+    "Poverty %": "Poverty Rate (%)",
+    "Unemployment Rate %": "Unemployment Rate (%)",
+    "Renter %": "Renter-Occupied Share (%)",
+    "Elec % Above $50/month": "Electricity: % Paying Above $50/month",
+    "Elec % Above $150/month": "Electricity: % Paying Above $150/month",
+    "Elec % Above $250/month": "Electricity: % Paying $250+/month",
+    "Water % Above $125/year": "Water & Sewer: % Paying Above $125/year",
+    "Water % Above $500/year": "Water & Sewer: % Paying Above $500/year",
+    "Water % Above $1000/year": "Water & Sewer: % Paying $1,000+/year",
+    "facility": "Facility Name",
+    "operator": "Operator",
+    "street": "Street Address",
+    "zip_code": "Data Center ZIP Code",
+    "city_in_de": "City",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "HHC Score (2007-2011)": "Household Cost Score (2007–2011)",
+    "HHC Score (2019-2023)": "Household Cost Score (2019–2023)",
+    "HHC Score (2020-2024)": "Household Cost Score (2020–2024)",
 }
 
 
 def to_title_case(df):
-    for col in df.select_dtypes(include=['object', 'str']):
+    for col in df.select_dtypes(include=["object", "str"]):
         df[col] = df[col].astype(str).str.title()
     return df
 
@@ -107,24 +116,24 @@ def safe_pct(numerator, denominator):
 
 def fill_small_holes(geom, min_hole_area_m2=500_000):
     from shapely.geometry import Polygon, MultiPolygon
+
     def fill_poly(poly):
         if poly is None:
             return poly
-        new_interiors = [
-            ring for ring in poly.interiors
-            if Polygon(ring).area > min_hole_area_m2
-        ]
+        new_interiors = [ring for ring in poly.interiors if Polygon(ring).area > min_hole_area_m2]
         return Polygon(poly.exterior, new_interiors)
-    if geom.geom_type == 'Polygon':
+
+    if geom.geom_type == "Polygon":
         return fill_poly(geom)
-    elif geom.geom_type == 'MultiPolygon':
+    elif geom.geom_type == "MultiPolygon":
         return MultiPolygon([fill_poly(p) for p in geom.geoms])
     return geom
 
 
 def keep_largest_parts(geom, min_area_fraction=0.01):
     from shapely.geometry import MultiPolygon
-    if geom.geom_type == 'MultiPolygon':
+
+    if geom.geom_type == "MultiPolygon":
         total = geom.area
         parts = [p for p in geom.geoms if p.area / total >= min_area_fraction]
         if len(parts) == 1:
@@ -147,14 +156,16 @@ def main():
     # =========================================================================
     print("STEP 1: Processing Data Centers...")
     dc_df = pd.read_parquet(DC_INPUT_PATH)
-    dc_df['geometry'] = dc_df['geometry'].apply(lambda x: wkb.loads(x) if isinstance(x, bytes) else x)
-    dc_gdf = gpd.GeoDataFrame(dc_df, geometry='geometry', crs="EPSG:4326")
+    dc_df["geometry"] = dc_df["geometry"].apply(
+        lambda x: wkb.loads(x) if isinstance(x, bytes) else x
+    )
+    dc_gdf = gpd.GeoDataFrame(dc_df, geometry="geometry", crs="EPSG:4326")
 
-    dc_gdf['geometry'] = dc_gdf['geometry'].apply(extract_point)
+    dc_gdf["geometry"] = dc_gdf["geometry"].apply(extract_point)
     dc_gdf = dc_gdf[dc_gdf.geometry.geom_type == "Point"].reset_index(drop=True)
-    dc_gdf['_lon'] = dc_gdf.geometry.x.round(4)
-    dc_gdf['_lat'] = dc_gdf.geometry.y.round(4)
-    dc_gdf = dc_gdf.drop_duplicates(subset=['_lon', '_lat']).drop(columns=['_lon', '_lat'])
+    dc_gdf["_lon"] = dc_gdf.geometry.x.round(4)
+    dc_gdf["_lat"] = dc_gdf.geometry.y.round(4)
+    dc_gdf = dc_gdf.drop_duplicates(subset=["_lon", "_lat"]).drop(columns=["_lon", "_lat"])
     dc_gdf = dc_gdf.reset_index(drop=True)
     print(f"  -> {len(dc_gdf)} unique data center locations after deduplication")
 
@@ -167,44 +178,46 @@ def main():
     # =========================================================================
     print("STEP 2: Loading spatial file and counting data centers per ZIP...")
     map_gdf = gpd.read_parquet(MAP_PATH)
-    map_gdf['ZCTA5CE20'] = map_gdf['ZCTA5CE20'].astype(str).str.zfill(5)
+    map_gdf["ZCTA5CE20"] = map_gdf["ZCTA5CE20"].astype(str).str.zfill(5)
     print(f"  -> Spatial anchor: {len(map_gdf):,} ZIP codes")
 
     dc_gdf_proj = dc_gdf.to_crs(map_gdf.crs)
-    dc_with_zip = gpd.sjoin(dc_gdf_proj, map_gdf[['ZCTA5CE20', 'geometry']], how='left', predicate='within')
-    dc_with_zip['ZCTA5CE20'] = dc_with_zip['ZCTA5CE20'].astype(str).str.zfill(5)
+    dc_with_zip = gpd.sjoin(
+        dc_gdf_proj, map_gdf[["ZCTA5CE20", "geometry"]], how="left", predicate="within"
+    )
+    dc_with_zip["ZCTA5CE20"] = dc_with_zip["ZCTA5CE20"].astype(str).str.zfill(5)
 
-    unmatched = dc_with_zip['ZCTA5CE20'].isna().sum()
+    unmatched = dc_with_zip["ZCTA5CE20"].isna().sum()
     if unmatched:
         print(f"  -> Warning: {unmatched} data center(s) did not fall within any ZIP polygon")
 
     counts_per_zip = (
-        dc_with_zip.dropna(subset=['ZCTA5CE20'])
-        .groupby('ZCTA5CE20')
+        dc_with_zip.dropna(subset=["ZCTA5CE20"])
+        .groupby("ZCTA5CE20")
         .size()
-        .reset_index(name='Total Data Centers')
+        .reset_index(name="Total Data Centers")
     )
 
-    map_gdf = map_gdf.merge(counts_per_zip, on='ZCTA5CE20', how='left')
-    map_gdf['Total Data Centers'] = map_gdf['Total Data Centers'].fillna(0).astype(int)
+    map_gdf = map_gdf.merge(counts_per_zip, on="ZCTA5CE20", how="left")
+    map_gdf["Total Data Centers"] = map_gdf["Total Data Centers"].fillna(0).astype(int)
 
     # =========================================================================
     # STEP 2.5 — Clean geometries
     # =========================================================================
     print("STEP 2.5: Cleaning geometries...")
-    map_gdf['geometry'] = map_gdf['geometry'].apply(
+    map_gdf["geometry"] = map_gdf["geometry"].apply(
         lambda g: make_valid(g) if g is not None and not g.is_valid else g
     )
 
     map_gdf = map_gdf.to_crs(epsg=3857)
-    map_gdf['geometry'] = map_gdf['geometry'].apply(fill_small_holes)
+    map_gdf["geometry"] = map_gdf["geometry"].apply(fill_small_holes)
     map_gdf = map_gdf.to_crs(epsg=4326)
-    map_gdf['geometry'] = map_gdf['geometry'].apply(keep_largest_parts)
-    map_gdf['geometry'] = map_gdf['geometry'].simplify(tolerance=0.0001, preserve_topology=True)
-    map_gdf['geometry'] = map_gdf['geometry'].buffer(0.00001).buffer(-0.00001)
+    map_gdf["geometry"] = map_gdf["geometry"].apply(keep_largest_parts)
+    map_gdf["geometry"] = map_gdf["geometry"].simplify(tolerance=0.0001, preserve_topology=True)
+    map_gdf["geometry"] = map_gdf["geometry"].buffer(0.00001).buffer(-0.00001)
 
     invalid = (~map_gdf.geometry.is_valid).sum()
-    empty   = map_gdf.geometry.is_empty.sum()
+    empty = map_gdf.geometry.is_empty.sum()
     print(f"  -> Invalid geometries remaining: {invalid}")
     print(f"  -> Empty geometries: {empty}")
     print(f"  -> All geometries cleaned ✓")
@@ -213,15 +226,15 @@ def main():
     # STEP 3 — Zillow (3 snapshot years only)
     # =========================================================================
     print("STEP 3: Merging Zillow snapshot years (2010, 2019, 2024)...")
-    zillow_df = pd.read_csv(INPUT_PATH, dtype={'ZCTA5CE20': str})
-    zillow_df['ZCTA5CE20'] = zillow_df['ZCTA5CE20'].astype(str).str.zfill(5)
+    zillow_df = pd.read_csv(INPUT_PATH, dtype={"ZCTA5CE20": str})
+    zillow_df["ZCTA5CE20"] = zillow_df["ZCTA5CE20"].astype(str).str.zfill(5)
 
     available_years = [y for y in YEAR_COLS if y in zillow_df.columns]
-    zillow_df = zillow_df[['ZCTA5CE20'] + available_years]
+    zillow_df = zillow_df[["ZCTA5CE20"] + available_years]
     for col in available_years:
-        zillow_df[col] = pd.to_numeric(zillow_df[col], errors='coerce')
+        zillow_df[col] = pd.to_numeric(zillow_df[col], errors="coerce")
 
-    gdf = map_gdf.merge(zillow_df, on='ZCTA5CE20', how='left')
+    gdf = map_gdf.merge(zillow_df, on="ZCTA5CE20", how="left")
     print(f"  -> {gdf['ZCTA5CE20'].nunique():,} unique ZIPs after Zillow merge")
 
     # =========================================================================
@@ -229,31 +242,41 @@ def main():
     # =========================================================================
     print("STEP 4: Merging Energy & Water data and computing cost thresholds...")
     ew_df = pd.read_csv(ENERGY_WATER_PATH, dtype={"ZCTA5A": str})
-    ew_df['ZCTA5A'] = ew_df['ZCTA5A'].astype(str).str.zfill(5)
+    ew_df["ZCTA5A"] = ew_df["ZCTA5A"].astype(str).str.zfill(5)
 
-    keep_ew = ['ZCTA5A'] + [c for c in EW_COLS_NEEDED if c in ew_df.columns]
+    keep_ew = ["ZCTA5A"] + [c for c in EW_COLS_NEEDED if c in ew_df.columns]
     ew_df = ew_df[keep_ew]
     for col in keep_ew[1:]:
-        ew_df[col] = pd.to_numeric(ew_df[col], errors='coerce')
+        ew_df[col] = pd.to_numeric(ew_df[col], errors="coerce")
 
-    gdf = gdf.merge(ew_df, left_on='ZCTA5CE20', right_on='ZCTA5A', how='left')
-    gdf = gdf.drop(columns=['ZCTA5A'], errors='ignore')
+    gdf = gdf.merge(ew_df, left_on="ZCTA5CE20", right_on="ZCTA5A", how="left")
+    gdf = gdf.drop(columns=["ZCTA5A"], errors="ignore")
 
-    if 'elec_charged_2022' in gdf.columns:
-        charged_e = gdf['elec_charged_2022']
-        gdf['Elec % Above $50/month']  = safe_pct(charged_e - gdf.get('elec_lt_50_2022', 0), charged_e)
-        gdf['Elec % Above $150/month'] = safe_pct(
-            gdf.get('elec_150_199_2022', 0) + gdf.get('elec_200_249_2022', 0) + gdf.get('elec_250_plus_2022', 0),
-            charged_e)
-        gdf['Elec % Above $250/month'] = safe_pct(gdf.get('elec_250_plus_2022', 0), charged_e)
+    if "elec_charged_2022" in gdf.columns:
+        charged_e = gdf["elec_charged_2022"]
+        gdf["Elec % Above $50/month"] = safe_pct(
+            charged_e - gdf.get("elec_lt_50_2022", 0), charged_e
+        )
+        gdf["Elec % Above $150/month"] = safe_pct(
+            gdf.get("elec_150_199_2022", 0)
+            + gdf.get("elec_200_249_2022", 0)
+            + gdf.get("elec_250_plus_2022", 0),
+            charged_e,
+        )
+        gdf["Elec % Above $250/month"] = safe_pct(gdf.get("elec_250_plus_2022", 0), charged_e)
 
-    if 'water_charged_2022' in gdf.columns:
-        charged_w = gdf['water_charged_2022']
-        gdf['Water % Above $125/year']  = safe_pct(charged_w - gdf.get('water_lt_125_2022', 0), charged_w)
-        gdf['Water % Above $500/year']  = safe_pct(
-            gdf.get('water_500_749_2022', 0) + gdf.get('water_750_999_2022', 0) + gdf.get('water_1000_plus_2022', 0),
-            charged_w)
-        gdf['Water % Above $1000/year'] = safe_pct(gdf.get('water_1000_plus_2022', 0), charged_w)
+    if "water_charged_2022" in gdf.columns:
+        charged_w = gdf["water_charged_2022"]
+        gdf["Water % Above $125/year"] = safe_pct(
+            charged_w - gdf.get("water_lt_125_2022", 0), charged_w
+        )
+        gdf["Water % Above $500/year"] = safe_pct(
+            gdf.get("water_500_749_2022", 0)
+            + gdf.get("water_750_999_2022", 0)
+            + gdf.get("water_1000_plus_2022", 0),
+            charged_w,
+        )
+        gdf["Water % Above $1000/year"] = safe_pct(gdf.get("water_1000_plus_2022", 0), charged_w)
 
     gdf = gdf.drop(columns=[c for c in EW_COLS_NEEDED if c in gdf.columns])
     print("  -> Raw energy/water columns dropped; 6 threshold columns retained")
@@ -262,19 +285,19 @@ def main():
     # STEP 4.5 — Household Cost Scores
     # =========================================================================
     print("STEP 4.5: Merging Household Cost Scores...")
-    hhc_df = pd.read_csv(HHC_PATH, dtype={'ZCTA5A': str})
-    hhc_df['ZCTA5A'] = hhc_df['ZCTA5A'].astype(str).str.zfill(5)
+    hhc_df = pd.read_csv(HHC_PATH, dtype={"ZCTA5A": str})
+    hhc_df["ZCTA5A"] = hhc_df["ZCTA5A"].astype(str).str.zfill(5)
 
-    hhc_keep_cols = ['2007-2011', '2019-2023', '2020-2024']
+    hhc_keep_cols = ["2007-2011", "2019-2023", "2020-2024"]
     available_hhc = [c for c in hhc_keep_cols if c in hhc_df.columns]
-    hhc_df = hhc_df[['ZCTA5A'] + available_hhc].rename(
-        columns={c: f'HHC Score ({c})' for c in available_hhc}
+    hhc_df = hhc_df[["ZCTA5A"] + available_hhc].rename(
+        columns={c: f"HHC Score ({c})" for c in available_hhc}
     )
     for col in hhc_df.columns[1:]:
-        hhc_df[col] = pd.to_numeric(hhc_df[col], errors='coerce')
+        hhc_df[col] = pd.to_numeric(hhc_df[col], errors="coerce")
 
-    gdf = gdf.merge(hhc_df, left_on='ZCTA5CE20', right_on='ZCTA5A', how='left')
-    gdf = gdf.drop(columns=['ZCTA5A'], errors='ignore')
+    gdf = gdf.merge(hhc_df, left_on="ZCTA5CE20", right_on="ZCTA5A", how="left")
+    gdf = gdf.drop(columns=["ZCTA5A"], errors="ignore")
     print(f"  -> HHC score columns added: {[c for c in gdf.columns if 'HHC' in c]}")
 
     # =========================================================================
@@ -282,7 +305,9 @@ def main():
     # =========================================================================
     print("STEP 5: Fetching Census data...")
     c = Census(API_KEY, year=ACS_YEAR)
-    results = c.acs5.get(["NAME"] + list(ACS_VARS_CLEAN.keys()), {"for": "zip code tabulation area:*"})
+    results = c.acs5.get(
+        ["NAME"] + list(ACS_VARS_CLEAN.keys()), {"for": "zip code tabulation area:*"}
+    )
     census_df = (
         pd.DataFrame(results)
         .rename(columns={"zip code tabulation area": "census_zip"})
@@ -290,75 +315,93 @@ def main():
     )
 
     for col in ACS_VARS_CLEAN.values():
-        census_df[col] = pd.to_numeric(census_df[col], errors='coerce')
+        census_df[col] = pd.to_numeric(census_df[col], errors="coerce")
 
-    census_df['Broadband %']         = (census_df['Broadband Subscribers'] / census_df['Total Households'] * 100).round(2)
-    census_df['Poverty %']           = (census_df['Population Below Poverty'] / census_df['Total Population'] * 100).round(2)
-    census_df['Unemployment Rate %'] = (census_df['Unemployed Population'] / census_df['Labor Force Population'] * 100).round(2)
-    census_df['Renter %']            = (census_df['Renter Occupied Units'] / (census_df['Owner Occupied Units'] + census_df['Renter Occupied Units']) * 100).round(2)
+    census_df["Broadband %"] = (
+        census_df["Broadband Subscribers"] / census_df["Total Households"] * 100
+    ).round(2)
+    census_df["Poverty %"] = (
+        census_df["Population Below Poverty"] / census_df["Total Population"] * 100
+    ).round(2)
+    census_df["Unemployment Rate %"] = (
+        census_df["Unemployed Population"] / census_df["Labor Force Population"] * 100
+    ).round(2)
+    census_df["Renter %"] = (
+        census_df["Renter Occupied Units"]
+        / (census_df["Owner Occupied Units"] + census_df["Renter Occupied Units"])
+        * 100
+    ).round(2)
 
-    census_keep = ['census_zip', 'Total Population', 'Median Household Income',
-                   'Broadband %', 'Poverty %', 'Unemployment Rate %', 'Renter %']
+    census_keep = [
+        "census_zip",
+        "Total Population",
+        "Median Household Income",
+        "Broadband %",
+        "Poverty %",
+        "Unemployment Rate %",
+        "Renter %",
+    ]
     census_df = census_df[census_keep]
-    census_df['census_zip'] = census_df['census_zip'].astype(str).str.zfill(5)
+    census_df["census_zip"] = census_df["census_zip"].astype(str).str.zfill(5)
 
-    gdf = gdf.merge(census_df, left_on='ZCTA5CE20', right_on='census_zip', how='left')
-    gdf = gdf.drop(columns=['census_zip', 'NAME'], errors='ignore')
+    gdf = gdf.merge(census_df, left_on="ZCTA5CE20", right_on="census_zip", how="left")
+    gdf = gdf.drop(columns=["census_zip", "NAME"], errors="ignore")
 
     # =========================================================================
     # STEP 5.5 — City / County / State lookup
     # =========================================================================
     print("STEP 5.5: Adding City, County, State via pgeocode...")
-    nomi = pgeocode.Nominatim('us')
+    nomi = pgeocode.Nominatim("us")
 
     def get_zip_info(zipcode):
         result = nomi.query_postal_code(str(zipcode))
-        if result is not None and pd.notna(result.get('place_name')):
-            return pd.Series({
-                'City':   result.get('place_name', '—'),
-                'County': result.get('county_name', '—'),
-                'State':  result.get('state_name',  '—'),
-            })
-        return pd.Series({'City': '—', 'County': '—', 'State': '—'})
+        if result is not None and pd.notna(result.get("place_name")):
+            return pd.Series(
+                {
+                    "City": result.get("place_name", "—"),
+                    "County": result.get("county_name", "—"),
+                    "State": result.get("state_name", "—"),
+                }
+            )
+        return pd.Series({"City": "—", "County": "—", "State": "—"})
 
-    zip_info = gdf['ZCTA5CE20'].apply(get_zip_info)
+    zip_info = gdf["ZCTA5CE20"].apply(get_zip_info)
     gdf = pd.concat([gdf.reset_index(drop=True), zip_info], axis=1)
-    matched = zip_info['City'].ne('—').sum()
+    matched = zip_info["City"].ne("—").sum()
     print(f"  -> City/County/State resolved for {matched}/{len(gdf)} ZIPs")
 
     # =========================================================================
     # STEP 6 — Derived spatial variables
     # =========================================================================
     print("STEP 6: Computing population density and data centers per 100k residents...")
-    gdf['Population Density'] = (
-        gdf['Total Population'] / (gdf['ALAND20'] / 1_000_000)
-    ).round(2)
+    gdf["Population Density"] = (gdf["Total Population"] / (gdf["ALAND20"] / 1_000_000)).round(2)
 
-    gdf['Data Centers per 100k Residents'] = np.where(
-        gdf['Total Population'] > 0,
-        (gdf['Total Data Centers'] / gdf['Total Population'] * 100_000).round(4),
-        np.nan
+    gdf["Data Centers per 100k Residents"] = np.where(
+        gdf["Total Population"] > 0,
+        (gdf["Total Data Centers"] / gdf["Total Population"] * 100_000).round(4),
+        np.nan,
     )
 
     # =========================================================================
     # STEP 7 — KNN Imputation
     # =========================================================================
     print("STEP 7: Running KNN imputation...")
-    non_impute = {'Total Data Centers', 'geometry'}
+    non_impute = {"Total Data Centers", "geometry"}
     numeric_cols = [
-        col for col in gdf.select_dtypes(include=[np.number]).columns
-        if col not in non_impute
+        col for col in gdf.select_dtypes(include=[np.number]).columns if col not in non_impute
     ]
 
     impute_df = gdf[numeric_cols].copy()
     before_missing = impute_df.isna().sum().sum()
-    print(f"  -> {len(numeric_cols)} numeric columns | {before_missing:,} missing values before imputation")
+    print(
+        f"  -> {len(numeric_cols)} numeric columns | {before_missing:,} missing values before imputation"
+    )
 
-    scaler  = StandardScaler()
+    scaler = StandardScaler()
     imputer = KNNImputer(n_neighbors=5)
 
-    scaled   = scaler.fit_transform(impute_df)
-    imputed  = imputer.fit_transform(scaled)
+    scaled = scaler.fit_transform(impute_df)
+    imputed = imputer.fit_transform(scaled)
     restored = scaler.inverse_transform(imputed)
 
     result_df = pd.DataFrame(restored, columns=numeric_cols, index=gdf.index)
@@ -383,7 +426,7 @@ def main():
     assert len(gdf) == len(map_gdf), (
         f"ERROR: row count changed! Started with {len(map_gdf)} ZIPs, ended with {len(gdf)}"
     )
-    assert gdf['ZCTA5CE20'].nunique() == len(gdf), "ERROR: duplicate ZCTAs detected!"
+    assert gdf["ZCTA5CE20"].nunique() == len(gdf), "ERROR: duplicate ZCTAs detected!"
     print(f"  -> All {len(gdf):,} parquet ZIPs present in final output")
 
     # =========================================================================
@@ -393,7 +436,7 @@ def main():
     gdf = gdf.loc[:, ~gdf.columns.duplicated()]
     gdf = gdf.rename(columns=FRIENDLY_NAMES)
 
-    unnamed = [c for c in gdf.columns if c not in FRIENDLY_NAMES.values() and c != 'geometry']
+    unnamed = [c for c in gdf.columns if c not in FRIENDLY_NAMES.values() and c != "geometry"]
     if unnamed:
         print(f"  -> Columns not in rename map (kept as-is): {unnamed}")
 

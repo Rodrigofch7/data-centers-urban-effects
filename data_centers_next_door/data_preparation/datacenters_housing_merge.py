@@ -8,8 +8,12 @@ def merging():
     has years of construction) and merges it with housing data found by Rodrigo
     """
 
-    housing_path = pathlib.Path("data/housing_and_data_centers_data/zillow_yearly_estimates_chicago_metro.csv")
-    datacenters_path = pathlib.Path("data/housing_and_data_centers_data/chicago_data_centers_match (first_permit).csv")
+    housing_path = pathlib.Path(
+        "data/housing_and_data_centers_data/zillow_yearly_estimates_chicago_metro.csv"
+    )
+    datacenters_path = pathlib.Path(
+        "data/housing_and_data_centers_data/chicago_data_centers_match (first_permit).csv"
+    )
 
     # Loading data
     housing = pd.read_csv(housing_path)
@@ -51,6 +55,6 @@ def merging():
     # Writing csv
     merged.to_csv("data/housing_and_data_centers_data/datacenters_housing_merged.csv", index=False)
 
+
 if __name__ == "__main__":
     merging()
-  

@@ -5,6 +5,13 @@
 
 > A computational and data-driven analysis of the impact of cloud infrastructure development on housing prices in Chicago.
 
+![Project Screenshot](images/ProjectScreenshot.png)
+
+<a href="https://youtu.be/G9JRZpSuwp8?si=8vQdXWuSQKfNb9gI" target="_blank">
+  <img src="https://img.youtube.com/vi/mNVFXUycbCQ/maxresdefault.jpg" alt="Watch on YouTube" width="560" />
+  <br/>▶ Watch on YouTube
+</a>
+
 ---
 
 ## Table of Contents
@@ -13,10 +20,9 @@
 - [Features](#features)
 - [Data Sources](#data-sources)
 - [Data Processing & Reconcilitation](#data-processing-&-reconcilitation)
-- [Data Methodology](#data-methodology)
+- [Data Analysis](#data-analysis)
 - [Getting Started](#getting-started)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
+- [Run the Dashboard Locally](#run-the-dashboard-locally)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -38,7 +44,7 @@ The project combines data cleaning, record linkage, and geospatial visualization
 - **Data Cleaning & Deduplication** — Consolidates and cleans raw data center and housing records, removing duplicates and unmatched entries.
 - **Chicago-Focused Dataset** — Filters national data to construct a curated dataset of confirmed Chicago data centers and housing prices.
 - **First Permit Construction** — Builds a first_permit variable to approximate when each data center began development or operations.
-- **Housing Market Integration** — Merges data center data with ZIP code–level housing price data (2000–2025).
+- **Housing Market and Utility Data Integration** — Merges data center data with ZIP code–level housing price data and utility/household cost data (2000–2025).
 - **Spatial & Temporal Visualization** — Generates trend index, heat map, and other visualizations to explore correlations between infrastructure expansion and housing prices.
 
 ---
@@ -47,31 +53,49 @@ The project combines data cleaning, record linkage, and geospatial visualization
 | Source | Description |
 |---|---|
 | [Data Center Map](https://www.datacentermap.com/usa/illinois/chicago/) | A publicly accessible directory of data center facilities in the Chicago metropolitan area, listing sites with basic location and provider information. The database aggregates facility listings from operators and external sources to provide insight into the presence and distribution of data infrastructure in Chicago. |
-| [Zillow](https://www.zillow.com/research/data/) | A comprehensive public repository from Zillow that provides historical and current data on U.S. housing markets. The site offers downloadable datasets such as the Zillow Home Value Index (ZHVI), which tracks home prices across regions and over time, making it useful for analyzing housing price trends. |
-| [NHGIS](https://www.nhgis.org/) | The National Historical Geographic Information System, maintained by IPUMS, provides free online access to summary statistics and GIS boundary files for U.S. census data across time. Used here to obtain geographic and demographic data at the ZIP code and tract level for the Chicago metro area. |
+| [Business Insider][https://www.businessinsider.com/data-center-locations-us-map-ai-boom-2025-9) | . |
+| [Zillow](https://www.zillow.com/research/data/) | The data center location data used in this project is informed by a dataset compiled by Business Insider, which mapped U.S. data centers by linking public records—particularly air-permit filings for backup generators—to the companies operating the facilities. |
+| [IPUMS NHGIS](https://www.nhgis.org/) | The National Historical Geographic Information System, maintained by IPUMS, provides free online access to summary statistics and GIS boundary files for U.S. census data across time. Used here to obtain geographic, demographic, utility, and household cost data at the ZIP code and tract level for the Chicago metro area. |
 | [U.S. Census Bureau API](https://www.census.gov/data/developers/data-sets.html) | The official Census Bureau developer API, used to retrieve American Community Survey (ACS) estimates including demographic, economic, and housing characteristics at the ZIP code tabulation area (ZCTA) level. |
 | [TIGRIS (R package)](https://github.com/walkerke/tigris) | An R package that provides programmatic access to U.S. Census Bureau TIGER/Line shapefiles, including boundaries for ZIP code tabulation areas, counties, and other geographies. Used to retrieve spatial boundary files for mapping and spatial joins. |
 ---
 
 ## Data Processing & Reconciliation
 
-This project integrates infrastructure, housing, and demographic data from multiple sources. Data center locations were scraped and geocoded for spatial analysis. Housing price data (Zillow) was aggregated from monthly to annual values to align with socioeconomic indicators retrieved via the Census API (ACS 5-year estimates). All datasets were reconciled using geographic identifiers (ZIP codes and Census tracts) to enable spatial and temporal analysis.
+This project integrates infrastructure, housing, and demographic data from multiple sources. Data center locations were scraped and geocoded for spatial analysis. Housing price data (Zillow) was aggregated from monthly to annual values to align with socioeconomic indicators retrieved via the Census API (ACS 5-year estimates). Utility and housing cost consumer expenditure data were downloaded from IPUMS NHGIS database. All datasets were reconciled using geographic identifiers (ZIP codes and Census tracts) to enable spatial and temporal analysis.
 
-See DataProcess.md  for full documentation of the reconciliation and cleaning process.
+**Data Cleaning and Merging**
+
+The script `chicago_dc_clean_merge.py` implements the data preparation pipeline used to build the final dataset for the analysis. First, the scraped data center dataset is cleaned by filtering for Chicago locations, standardizing street addresses, and removing duplicate entries so that each facility appears only once. The housing dataset linked to data centers is then cleaned by selecting the relevant variables, renaming columns for clarity, and generating a unique identifier (`DataCenter_Code`) for each facility.
+
+The pipeline also processes housing cost score data by filtering it to the ZIP codes associated with the data centers and keeping the variables needed for the analysis. Finally, the housing cost dataset is merged with the cleaned data center dataset, retrieving the housing cost score for the year before and after each facility’s permit. These values are stored as `HC_Score_Before` and `HC_Score_After`, producing the final dataset used for analysis and visualization.
+
+**Utility and Household Cost Cleaning**
+
+The raw data for both were separate 5-year ACS estimates, meaning each csv was for data sampled over a 5-year period. For utility (electricity and water/sewage data), this only ranges from 2017-2021 to 2020-2024 5 year periods. Household cost data was included as an alternative data source because it ranges back to the 2007-2011 5-year period, and captures utility costs among other costs. According to the ACS 2024 [subject definitions](https://www2.census.gov/programs-surveys/acs/tech_docs/subject_definitions/2024_ACSSubjectDefinitions.pdf), "selected monthly owner costs are the sum of payments for mortgages, deeds of trust, contracts to purchase, or similar debts on the property (including payments for the first mortgage, second mortgages, home equity loans, and other junior mortgages); real estate taxes; fire, hazard, and flood insurance on the property; utilities (electricity, gas, and water and sewer); and fuels (oil, coal, kerosene, wood, etc.). It also includes, where appropriate, the monthly homeowners association (HOA) fee and/or condominium fee (Question 16) and mobile home costs (Question 24) (personal property
+taxes, site rent, registration fees, and license fees)." 
+
+The raw data sources take the form of price ranges/buckets (e.g. for a given zip code in a 5-year period, 50 people paid between \$0-50 for electricity, 20 paid \$50-100, and so on). This is the case for electricity, water/sewage, and household cost data. In order to numerically quantify the typical expenditure for these variables for a zip code in a 5-year period, a score was constructed by factorizing each bucket into a number. For example, 1 was assigned to \$0-50, 2 was assigned to \$50-100, up to how ever many buckets there were. Importantly, these price ranges are not the same between variables. This means that water/sewage had different price ranges (\$0-100, \$100-200, and so on) than electricity or household costs. After buckets were factorized to numbers, each zip code was assigned a score based on the weighted sum of each factor, as shown by the formula below:
+
+$$
+score_{zip,t} = \sum_{i=0}^Ni\frac{n_i}{n_{total}} = 1*\frac{n_1}{n_{total}}+2*\frac{n_2}{n_{total}}+\dots
+$$
+
+where $n_i$ represents the number of respondents for the ith bucket. So $n_1$ would be the number of people who indicated that they pay between \$ 0-50, and $\frac{n_1}{n_{total}}$ is the proportion of all respondents who indicated so. This scoring method was applied to electricity data, water/sewage data, and household cost data to get electricity cost scores, water/sewage cost scores, and household cost scores across all zip codes in all 5-year periods available.
 
 ---
 
-## Data Methodology
+## Data Analysis
 
-To evaluate how data center concentration relates to neighborhood affordability, we construct a composite index at the ZIP code level. The index integrates housing costs, demographic characteristics, and the number of data centers within each ZIP code into a single comparative measure.
+We implement a composite index based the changes in housing prices and household costs (e.g. electricity and ultility costs) pre- and post-data center's first permitting. The allows us to see the relative impact of the data center on the neighborhood for a specfic timeframe.  
 
-We standardize each variable using a decile-based ranking approach, assigning ZIP codes to ten equally sized bins based on empirical quantiles. Lower deciles correspond to lower relative scores, while higher deciles indicate comparatively higher values. These standardized scores are then combined using a weighted average to produce a Composite Index score for each ZIP code.
+The calculation of the index begins with the assignment of a standardized score based on decile-based rankings using empirical quantiles. Each data center is assigned to one of ten equally sized bins, with lower deciles corresponding lower scores and higher deciles corresponding to higher scores. 
 
 As an alternative specification, we also implement a z-score normalization approach, which standardizes variables by centering them around the mean and scaling by their standard deviation. This allows comparison across variables with different units of measurement and captures relative deviations rather than rank positions.
 
-Higher Composite Index scores indicate ZIP codes that are comparatively less affordable, while lower scores reflect relatively more affordable areas.
+A higher index score suggests that the data center had more of a costly impact on housing prices and household expenses (and vice versa for a lower index score). Please note that the implementation of these indices are not causal in nature, but rather aim to capture assocations between data centers and housing costs/prices in an easier to digest manner. For a more causal analysis, we suggest a Differences-in-Differences regression model.   
 
-For full technical documentation and mathematical formulation, see DataMethodology.md￼.
+For full technical documentation and mathematical formulation, see data_centers_next_door/data_analysis/DataMethodology.md.
 
 ---
 
@@ -111,103 +135,19 @@ uv sync
 
 ---
 
-## Usage
-
-The project can be used in two main ways, you can reproduce the data pipeline or run the interactive dashboard
-
-**Reproduce the Data Pipeline**
-
-From the project root:
-
-```bash
-# Clean and filter Chicago data centers
-uv run python_scripts/chicago_data_centers.py
-
-# Process Zillow housing data
-uv run python_scripts/zillow_data.py
-
-# Prepare merged dataset for dashboard
-uv run python_scripts/preparing_data_for_dashboard.py
-```
-
-This will:
-1. Filter data centers to Chicago
-2. Construct the first_permit variable
-3. Merge housing and infrastructure datasets
-4. Generate cleaned outputs in the data/ directory
-
-**Run the Dashboard**
+## Run the Dashboard Locally
 
 From the repo root:
 ```bash
-uv run shiny run shiny_app.app.py
+uv run shiny run shiny_app.app
 ```
 or
 ```bash
 uv run shiny run shiny_app/app.py
 ```
 This launches the interactive visualization environment.
----
-
-## Project Structure
-
-```
-project-datacenter-urban-effects/
-│
-├── data/                                    # Raw and cleaned datasets
-│   ├── spatial_data/                        # Geospatial files
-│   │   ├── centers/                         # Data center shapefiles
-│   │   │   ├── DataCenters.shp
-│   │   │   ├── DataCenters.dbf
-│   │   │   ├── DataCenters.shx
-│   │   │   ├── DataCenters.prj
-│   │   │   └── ChicagoDataCentersWithConstruction...
-│   │   │
-│   │   └── cities/                          # City boundary GeoJSON & shapefiles
-│   │       ├── chicago.geojson
-│   │       ├── atlanta.geojson
-│   │       ├── new_york.geojson
-│   │       ├── combined_cities.shp
-│   │       ├── combined_cities.dbf
-│   │       ├── combined_cities.shx
-│   │       ├── combined_cities.prj
-│   │       └── cities_with_energy_home_prices.geojson
-│   │
-│   ├── chicago_data_centers_match (first_permit).csv
-│   ├── chicago_data_centers.csv
-│   ├── top_us_cities_datacenters.csv
-│   ├── zillow_data_zip_code_cook_county.csv
-│   └── zillow_yearly_estimates_cook_county.csv
-│
-├── python_scripts/                          # Data cleaning & processing pipeline
-│   ├── chicago_data_centers.py
-│   ├── webscrapping_data_centers.py
-│   ├── geocoding.py
-│   ├── zillow_data.py
-│   ├── preparing_data_for_dashboard.py
-│   └── aggregate_city_geometries.py
-│
-├── data_analysis/                           # Index construction & scoring logic
-│   ├── DataMethodology.md
-│   └── index.py
-│
-├── shiny_app/                               # Interactive dashboard
-│   ├── app.py
-│   ├── Data/
-│   └── requirements.txt
-│
-├── milestones/                              # Project documentation
-│   ├── milestone1.md
-│   └── milestone2.md
-│
-├── main.py                                  # Composite index prototype
-├── pyproject.toml                           # Python dependency management
-├── README.md
-└── .gitignore
-```
 
 ---
-
 ## Contributing
 
 We welcome contributions that expand and strengthen this project beyond the course timeline.
@@ -258,11 +198,11 @@ See the LICENSE.md file for details.
 
 ## Contact
 
-**Logan Burton** — [@loganburton](https://github.com/StLaurentMTL) — loganemail@uchicago.edu
+**Logan Burton** — [@loganburton](https://github.com/StLaurentMTL) — lburton12@uchicago.edu
 
 **Rodrigo Chaves** — [@rchaves](https://github.com/Rodrigofch7) — rchaves@uchicago.edu
 
-**Sinan Grehan** — [@sinangrehan](https://github.com/sinangrehan) — sinanemaiul@uchicago.edu
+**Sinan Grehan** — [@sinangrehan](https://github.com/sinangrehan) — sinangrehan@uchicago.edu
 
 **Carlos Eduardo Vargas** — [@cev2030](https://github.com/cev2030) — cev@uchicago.edu
 
