@@ -3,7 +3,7 @@
 
 # Data Centers Next Door: How Cloud Infrastructure Shapes Housing and Local Resource Costs.
 
-> A computational and data-driven analysis of the impact of cloud infrastructure development on housing prices in Chicago.
+> A computational and data-driven analysis of the impact of cloud infrastructure development on housing prices and costs in Chicago.
 
 ![Project Screenshot](images/ProjectScreenshot.png)
 
