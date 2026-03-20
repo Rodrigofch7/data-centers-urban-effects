@@ -276,6 +276,7 @@ dependencies = [
     { name = "rsconnect-python" },
     { name = "ruff" },
     { name = "scikit-learn" },
+    { name = "scipy" },
     { name = "shapely" },
     { name = "shiny" },
 ]
@@ -311,6 +312,7 @@ requires-dist = [
     { name = "ruff", specifier = ">=0.14.10" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.14.10" },
     { name = "scikit-learn", specifier = ">=1.5.0" },
+    { name = "scipy", specifier = ">=1.17.1" },
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "shiny", specifier = ">=1.0.0" },
 ]
