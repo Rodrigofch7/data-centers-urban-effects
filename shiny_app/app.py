@@ -15,8 +15,8 @@ import io, base64
 from scipy import stats as scipy_stats
 import altair as alt
 
-# To run: # cd shiny_app -> shiny run --reload app.py
-# To deploy # cd shiny_app -> rsconnect deploy shiny .
+# To run: uv run shiny run shiny_app.app.py or uv run shiny run shiny_app/app.py
+# To deploy: uv run rsconnect deploy shiny shiny_app/
 
 # =============================================================================
 # BRAND & DESIGN TOKENS
@@ -1218,7 +1218,7 @@ def server(input, output, session):
     "box-shadow:0 4px 16px rgba(0,0,0,0.6);";
   document.body.appendChild(tip);
   function render(){{
-    const W=svg.getBoundingClientRect().width||280, H=500;
+    const W=svg.getBoundingClientRect().width||280, H=935;
     svg.setAttribute("height",H); svg.innerHTML="";
     const cw=W-PAD.l-PAD.r, ch=H-PAD.t-PAD.b;
     const minX=PTS[0].year, maxX=PTS[PTS.length-1].year, spanX=maxX-minX||1;
