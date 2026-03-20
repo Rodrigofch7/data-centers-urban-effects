@@ -199,5 +199,3 @@ See the LICENSE.md file for details.
 **Sinan Grehan** — [@sinangrehan](https://github.com/sinangrehan) — sinangrehan@uchicago.edu
 
 **Carlos Eduardo Vargas** — [@cev2030](https://github.com/cev2030) — cev@uchicago.edu
-
-Project Link: [https://github.com/uchicago-2026-capp30122/project-datacenter-urban-effects]
