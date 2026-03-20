@@ -5,14 +5,6 @@
 
 > A computational and data-driven analysis of the impact of cloud infrastructure development on housing prices and costs in Chicago.
 
-![Project Screenshot](images/ProjectScreenshot.png)
-
-<a href="https://youtu.be/G9JRZpSuwp8?si=8vQdXWuSQKfNb9gI" target="_blank">
-  <img src="https://img.youtube.com/vi/mNVFXUycbCQ/maxresdefault.jpg" alt="Watch on YouTube" width="560" />
-  <br/>▶ Watch on YouTube
-</a>
-
----
 
 ## Table of Contents
 
@@ -50,14 +42,16 @@ The project combines data cleaning, record linkage, and geospatial visualization
 ---
 
 ## Data Sources
+
 | Source | Description |
 |---|---|
-| [Data Center Map](https://www.datacentermap.com/usa/illinois/chicago/) | A publicly accessible directory of data center facilities in the Chicago metropolitan area, listing sites with basic location and provider information. The database aggregates facility listings from operators and external sources to provide insight into the presence and distribution of data infrastructure in Chicago. |
-| [Business Insider][https://www.businessinsider.com/data-center-locations-us-map-ai-boom-2025-9) | . |
-| [Zillow](https://www.zillow.com/research/data/) | The data center location data used in this project is informed by a dataset compiled by Business Insider, which mapped U.S. data centers by linking public records—particularly air-permit filings for backup generators—to the companies operating the facilities. |
-| [IPUMS NHGIS](https://www.nhgis.org/) | The National Historical Geographic Information System, maintained by IPUMS, provides free online access to summary statistics and GIS boundary files for U.S. census data across time. Used here to obtain geographic, demographic, utility, and household cost data at the ZIP code and tract level for the Chicago metro area. |
-| [U.S. Census Bureau API](https://www.census.gov/data/developers/data-sets.html) | The official Census Bureau developer API, used to retrieve American Community Survey (ACS) estimates including demographic, economic, and housing characteristics at the ZIP code tabulation area (ZCTA) level. |
-| [TIGRIS (R package)](https://github.com/walkerke/tigris) | An R package that provides programmatic access to U.S. Census Bureau TIGER/Line shapefiles, including boundaries for ZIP code tabulation areas, counties, and other geographies. Used to retrieve spatial boundary files for mapping and spatial joins. |
+| [Data Center Map](https://www.datacentermap.com/usa/illinois/chicago/) | A publicly accessible directory of data center facilities in the Chicago metropolitan area, listing sites with basic location and provider information. Aggregates facility listings from operators and external sources to map the presence and distribution of data infrastructure across the region. |
+| [Business Insider](https://www.businessinsider.com/data-center-locations-us-map-ai-boom-2025-9) | Investigative dataset mapping U.S. data centers by linking public air-permit filings for backup generators to facility operators. Used in this project as the primary source for first operation permit dates assigned to each data center. |
+| [Zillow Research](https://www.zillow.com/research/data/) | Zillow's public research portal, providing historical home value estimates at the ZIP code level. Used to measure housing price trends before and after data center permitting dates. |
+| [IPUMS NHGIS](https://www.nhgis.org/) | The National Historical Geographic Information System, maintained by IPUMS, provides free access to U.S. census summary statistics and GIS boundary files across time. Used to obtain geographic, demographic, utility, and household cost burden data at the ZIP code and tract level for the Chicago metro area. |
+| [U.S. Census Bureau API](https://www.census.gov/data/developers/data-sets.html) | The official Census Bureau developer API, used to retrieve American Community Survey (ACS) estimates — including demographic, economic, and housing characteristics — at the ZIP Code Tabulation Area (ZCTA) level. |
+| [TIGRIS (R package)](https://github.com/walkerke/tigris) | An R package providing programmatic access to U.S. Census Bureau TIGER/Line shapefiles, including boundaries for ZCTAs, counties, and other geographies. Used to retrieve spatial boundary files for mapping and spatial joins. |
+
 ---
 
 ## Data Processing & Reconciliation
