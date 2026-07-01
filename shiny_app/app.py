@@ -245,19 +245,40 @@ CHICAGO_GEOJSON     = chicago_gdf.__geo_interface__     if chicago_gdf     is no
 # NUMBER FORMATTING HELPERS
 # =============================================================================
 def fmt_number(v, is_price=False, decimals=None):
-    """Smart number formatter: $1.2M, $450k, 1,234, 45.3%"""
+    """Smart number formatter: $1.2M, -$450k, 1,234, 45.3%"""
     if v is None or (isinstance(v, float) and np.isnan(v)):
         return "—"
     v = float(v)
+    sign, av = ("-" if v < 0 else ""), abs(v)
     if is_price:
-        if abs(v) >= 1_000_000: return f"${v/1_000_000:.1f}M"
-        if abs(v) >= 1_000:     return f"${v/1_000:.0f}k"
-        return f"${v:,.0f}"
+        if av >= 1_000_000: return f"{sign}${av/1_000_000:.1f}M"
+        if av >= 1_000:     return f"{sign}${av/1_000:.0f}k"
+        return f"{sign}${av:,.0f}"
     if decimals is not None:
-        return f"{v:,.{decimals}f}"
-    if abs(v) >= 1_000_000: return f"{v/1_000_000:.2f}M"
-    if abs(v) >= 1_000:     return f"{v:,.0f}"
-    return f"{v:,.3f}"
+        return f"{sign}{av:,.{decimals}f}"
+    if av >= 1_000_000: return f"{sign}{av/1_000_000:.2f}M"
+    if av >= 1_000:     return f"{sign}{av:,.0f}"
+    return f"{sign}{av:,.3f}"
+
+def fmt_coef(v):
+    """Adaptive-precision formatter for regression coefficients/std errors.
+
+    A fixed decimal count is misleading across variables of very different
+    scale: it renders large coefficients with spurious extra digits and
+    rounds small-but-real ones down to a misleading '0.000'. This keeps
+    roughly constant significant precision by scaling decimals to magnitude,
+    falling back to scientific notation for very small values.
+    """
+    if v is None or (isinstance(v, float) and np.isnan(v)):
+        return "—"
+    v = float(v)
+    av = abs(v)
+    if av == 0:
+        return "0.000"
+    if av >= 1_000:   return f"{v:,.2f}"
+    if av >= 1:       return f"{v:,.4f}"
+    if av >= 0.001:   return f"{v:,.6f}"
+    return f"{v:.3e}"
 
 def smart_axis_formatter(col_name):
     """Return a matplotlib FuncFormatter appropriate for the column."""
@@ -1155,7 +1176,10 @@ def server(input, output, session):
             return _empty_state()
         n_fac   = len(df)
         avg_imp = df["impact_score"].mean() if "impact_score" in df.columns else float("nan")
-        imp_color = "#4ade80" if (not np.isnan(avg_imp) and avg_imp > 0) else "#f87171"
+        # impact_score is a 1-10 decile composite (never negative), so comparing
+        # against 0 always evaluates true. 5.5 is the scale's midpoint, so the
+        # color reflects whether facilities skew toward higher- or lower-impact deciles.
+        imp_color = "#4ade80" if (not np.isnan(avg_imp) and avg_imp > 5.5) else "#f87171"
         def kpi(label, val, sub, accent):
             return (
                 f"<div style='flex:1;background:{CARD_BG};border:1px solid {BORDER};"
@@ -1170,7 +1194,7 @@ def server(input, output, session):
             )
         cards = "".join([
             kpi("Facilities", str(n_fac), "data centers in dataset", TEXT_ACC),
-            kpi("Avg Impact Score", f"{avg_imp:+.3f}" if not np.isnan(avg_imp) else "—",
+            kpi("Avg Impact Score", f"{avg_imp:.3f}" if not np.isnan(avg_imp) else "—",
                 "composite score across all ZIPs", imp_color),
         ])
         return ui.HTML(f"<div style='display:flex;gap:16px;padding:4px 4px 0;'>{cards}</div>")
@@ -1440,11 +1464,16 @@ def server(input, output, session):
   svg.setAttribute("height",totalH);
   const allP=ROWS.flatMap(r=>[r.before,r.after]);
   const pMin=Math.min(...allP),pMax=Math.max(...allP),pRange=pMax-pMin||1;
+  // impact_score is an unsigned 1-10 decile composite, not a +/- deviation from
+  // zero, so the color scale is normalized against the dataset's actual min/max
+  // (low decile -> red, high decile -> green) rather than assumed to be centered on 0.
+  const allImp=ROWS.map(r=>r.impact);
+  const iMin=Math.min(...allImp),iMax=Math.max(...allImp),iRange=(iMax-iMin)||1;
   function W(){{return svg.getBoundingClientRect().width||600;}}
   function toX(p,w){{return LBL_W+(p-pMin)/pRange*(w-LBL_W-PAD_R);}}
   function iCol(imp){{
-    if(imp>=0){{const t=Math.min(imp/2,1);return `rgb(${{Math.round(30+130*t)}},${{Math.round(180*t+40)}},${{Math.round(50*t)}})`;}}
-    const t=Math.min(-imp/2,1);return `rgb(${{Math.round(220*t+35)}},${{Math.round(40*(1-t))}},${{Math.round(40*(1-t))}})`;
+    const t=Math.min(Math.max((imp-iMin)/iRange,0),1);
+    return `rgb(${{Math.round(220-190*t)}},${{Math.round(70+150*t)}},${{Math.round(70-30*t)}})`;
   }}
   function draw(){{
     const w=W(); svg.innerHTML="";
@@ -1467,7 +1496,7 @@ def server(input, output, session):
       const ad=document.createElementNS(NS,"circle"); ad.setAttribute("cx",ax); ad.setAttribute("cy",cy); ad.setAttribute("r","6"); ad.setAttribute("fill",ic); ad.setAttribute("stroke",C_DARK); ad.setAttribute("stroke-width","0.8"); svg.appendChild(ad);
       const pt=document.createElementNS(NS,"text"); pt.setAttribute("x",Math.max(bx,ax)+6); pt.setAttribute("y",cy+4); pt.setAttribute("fill",col); pt.setAttribute("font-size","8.5"); pt.setAttribute("font-family","monospace"); pt.textContent=(row.pct>=0?"+":"")+row.pct.toFixed(1)+"%"; svg.appendChild(pt);
       const hit=document.createElementNS(NS,"rect"); hit.setAttribute("x",0); hit.setAttribute("y",PAD_T+i*ROW_H); hit.setAttribute("width","100%"); hit.setAttribute("height",ROW_H); hit.setAttribute("fill","transparent"); hit.style.cursor="default";
-      hit.addEventListener("mousemove",e=>{{ tip.style.display="block"; tip.style.left=(e.clientX+8)+"px"; tip.style.top=(e.clientY+8)+"px"; tip.innerHTML=`<b style="color:#e6edf3;">${{row.label}}</b><br><span style="color:#60a5fa;">Before</span> ${{row.before_fmt}}&nbsp;&nbsp;<span style="color:${{ic}};">After</span> ${{row.after_fmt}}<br>Change <span style="color:${{col}};font-weight:600;">${{row.pct>=0?"+":""}}${{row.pct.toFixed(1)}}%</span>&nbsp;&nbsp;Impact <span style="color:${{ic}};font-weight:600;">${{row.impact>=0?"+":""}}${{row.impact.toFixed(3)}}</span>`; }});
+      hit.addEventListener("mousemove",e=>{{ tip.style.display="block"; tip.style.left=(e.clientX+8)+"px"; tip.style.top=(e.clientY+8)+"px"; tip.innerHTML=`<b style="color:#e6edf3;">${{row.label}}</b><br><span style="color:#60a5fa;">Before</span> ${{row.before_fmt}}&nbsp;&nbsp;<span style="color:${{ic}};">After</span> ${{row.after_fmt}}<br>Change <span style="color:${{col}};font-weight:600;">${{row.pct>=0?"+":""}}${{row.pct.toFixed(1)}}%</span>&nbsp;&nbsp;Impact <span style="color:${{ic}};font-weight:600;">${{row.impact.toFixed(3)}}</span>`; }});
       hit.addEventListener("mouseleave",()=>{{tip.style.display="none";}}); svg.appendChild(hit);
     }});
   }}
@@ -1496,16 +1525,24 @@ def server(input, output, session):
             "CountyName": "County", "First_Operation_Permit": "Year",
             "Housing_Avg_Price_Before_Permit": "Price Before",
             "Housing_Avg_Price_After_Permit": "Price After",
-            "Housing_Change": "Hsg Δ%", "HC_Score_Change": "HC Δ",
+            "Housing_Change": "Hsg Δ$", "HC_Score_Change": "HC Δ",
             "impact_score": "Impact", "impact_z_score": "Impact Z",
         }
-        SCORE_COLS = {"impact_score", "impact_z_score", "HC_Score_Change", "Housing_Change"}
-        PRICE_COLS = {"Housing_Avg_Price_Before_Permit", "Housing_Avg_Price_After_Permit"}
+        # impact_score is a 1-10 decile-based composite (never negative), so a
+        # forced "+" sign would misleadingly imply it's centered on zero.
+        # impact_z_score and HC_Score_Change are true signed deltas.
+        SIGNED_SCORE_COLS = {"impact_z_score", "HC_Score_Change"}
+        UNSIGNED_SCORE_COLS = {"impact_score"}
+        # Housing_Change is a raw before/after dollar difference, not a percent.
+        PRICE_COLS = {"Housing_Avg_Price_Before_Permit", "Housing_Avg_Price_After_Permit", "Housing_Change"}
         def fmt(val, col):
             if pd.isna(val): return f"<span style='color:{BORDER};'>—</span>"
-            if col in SCORE_COLS:
+            if col in SIGNED_SCORE_COLS:
                 fv = float(val); c = "#4ade80" if fv > 0 else "#f87171"
                 return f"<span style='color:{c};font-weight:600;'>{fv:+.3f}</span>"
+            if col in UNSIGNED_SCORE_COLS:
+                fv = float(val); c = "#4ade80" if fv > 0 else "#f87171"
+                return f"<span style='color:{c};font-weight:600;'>{fv:.3f}</span>"
             if col in PRICE_COLS:
                 return f"<span style='color:{TEXT_SEC};'>{fmt_number(float(val), is_price=True)}</span>"
             if col == "First_Operation_Permit":
@@ -2041,6 +2078,15 @@ def server(input, output, session):
             if pv < 0.1:  return "#facc15"
             return "#f87171"
 
+        def fmt_tstat(ti):
+            if ti is None or not np.isfinite(ti): return "—"
+            return f"{ti:,.3f}"
+
+        def fmt_pval(pv):
+            if pv is None or np.isnan(pv): return "—"
+            if pv < 0.001: return "<0.001"
+            return f"{pv:.3f}"
+
         coef_rows = ""
         for name, c, s, ti, pv in zip(coef_names, coefs, se, t, p):
             coef_rows += (
@@ -2048,11 +2094,11 @@ def server(input, output, session):
                 f" onmouseover=\"this.style.background='rgba(14,116,144,0.08)'\""
                 f" onmouseout=\"this.style.background='transparent'\">"
                 f"<td style='padding:7px 10px;color:{TEXT_ACC};font-family:monospace;font-size:11px;'>{name}</td>"
-                f"<td style='padding:7px 10px;color:{TEXT_PRI};text-align:right;font-family:monospace;font-size:11px;'>{fmt_number(c, decimals=4)}</td>"
-                f"<td style='padding:7px 10px;color:{TEXT_SEC};text-align:right;font-family:monospace;font-size:11px;'>{fmt_number(s, decimals=4)}</td>"
-                f"<td style='padding:7px 10px;color:{TEXT_SEC};text-align:right;font-family:monospace;font-size:11px;'>{ti:,.3f}</td>"
+                f"<td style='padding:7px 10px;color:{TEXT_PRI};text-align:right;font-family:monospace;font-size:11px;'>{fmt_coef(c)}</td>"
+                f"<td style='padding:7px 10px;color:{TEXT_SEC};text-align:right;font-family:monospace;font-size:11px;'>{fmt_coef(s)}</td>"
+                f"<td style='padding:7px 10px;color:{TEXT_SEC};text-align:right;font-family:monospace;font-size:11px;'>{fmt_tstat(ti)}</td>"
                 f"<td style='padding:7px 10px;color:{pval_color(pv)};text-align:right;font-family:monospace;font-size:11px;'>"
-                f"{'<0.001' if pv < 0.001 else f'{pv:.3f}'} {sig(pv)}</td>"
+                f"{fmt_pval(pv)} {sig(pv)}</td>"
                 f"</tr>"
             )
 
@@ -2214,11 +2260,13 @@ def server(input, output, session):
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
+        # residual = actual - predicted, so a positive residual means the
+        # actual value came in *higher* than the model predicted (under-prediction).
         pos = residuals >= 0
         ax.scatter(y_hat[pos],  residuals[pos],  color="#4ade80", alpha=0.65,
-                   edgecolors=DARK_BG, linewidths=0.3, s=44, zorder=3, label="Over-predicted")
-        ax.scatter(y_hat[~pos], residuals[~pos], color="#f87171", alpha=0.65,
                    edgecolors=DARK_BG, linewidths=0.3, s=44, zorder=3, label="Under-predicted")
+        ax.scatter(y_hat[~pos], residuals[~pos], color="#f87171", alpha=0.65,
+                   edgecolors=DARK_BG, linewidths=0.3, s=44, zorder=3, label="Over-predicted")
 
         try:
             sort_idx = np.argsort(y_hat)
